@@ -16,6 +16,8 @@ Requirements:
       separated by ":" with one user per line (see examples/users.txt)
       Only data of mentioned users will be extracted
       Example:
+```
       Thomas:PA55W0RD
       Emma:9876543
+```
 - IMPORTANT INFO about users.txt: userlist will soon be moved to config file thus making users.txt obsolete.
