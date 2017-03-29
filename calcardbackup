@@ -1,0 +1,645 @@
+#!/bin/bash
+
+#######################################################
+#
+# This script extracts Own-/Nextcloud calendars and addressbooks
+# and saves them as compressed file with date-extension in a backup-folder.
+# As default the database is being backed up as well and stored in
+# the same compressed file.
+# Additionally backups older than X days (see configuration below) can be deleted.
+#
+# Requirements:
+# - Own-/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
+# - Package curl and according database packages (mysql-server/mariadb-server or sqlite3)
+# - if backups shall be zipped (instead of defaul gzipped tarball): package zip
+# - this script needs to have read-access for Own-/Nextcloud path (to read values from config.php)
+# - file 'calcardbackup.config' in this scripts directory (see calcardbackup.config.example)
+# - currently: file 'users.txt' in this scripts directory with usernames and according passwords
+#      separated by ":" with one user per line (see examples/users.txt)
+#      Only data of mentioned users will be extracted
+#      Example:
+#      Thomas:PA55W0RD
+#      Emma:9876543
+# - comment about users.txt: userlist will soon be moved to config file thus making users.txt obsolete.
+#
+#######################################################
+
+
+
+#######################################################
+#######################################################
+##                                                   ##
+##    Don't touch  anything below unless you know    ##
+##           exactly what you are doing!             ##
+##                                                   ##
+#######################################################
+#######################################################
+
+
+function preparations {
+  # print timestamp
+  plus_line
+  echo "+"
+  echo "+  $(date) --> START calcardbackup.sh"
+  echo "+  Checking dependencies and preparing..."
+
+  # check for package curl
+  which curl > /dev/null || { echo "--"; echo "-- ERROR: Package 'curl' is needed for running this script. Install with 'apt-get install curl' and run script again" && error_exit; }
+  # check for package sed
+  which sed > /dev/null || { echo "--"; echo "-- ERROR: Package 'sed' is needed for running this script. Install with 'apt-get install sed' and run script again" && error_exit; }
+
+  # check for for configuration file in scripts directory and read its contents:
+  # check needs to be done (accept only comments and variable declarations, otherwise error out)
+  . calcardbackup.config
+
+  # get path to scripts dir:
+  actual_path=$(readlink -f "${BASH_SOURCE[0]}")
+  script_dir=$(dirname "$actual_path")
+
+  if [ -z ${nextcloud_url+x} ] || [ "${nextcloud_url}" == "https://www.example.com" ]; then
+    echo "--"
+    echo "-- ERROR: No URL to Own-/Nextclouds login-page given. This is mandatory!"
+    error_exit
+  fi
+
+  # declare default values, if not set:
+  if [ -z ${nextcloud_path+x} ]; then
+    nextcloud_path="/usr/share/nginx/www"
+  fi
+  if [ -z ${trustful_certificate+x} ]; then
+    trustful_certificate="yes"
+  fi
+  if [ -z ${userstxt_path+x} ]; then
+    userstxt_path="./"
+  fi
+  if [ -z ${backupfolder+x} ]; then
+    backupfolder="backups"
+  fi
+  if [ -z ${backupfile_date_extension+x} ]; then
+    backupfile_date_extension="-%Y-%m-%d"
+  fi
+  # make sure a configured date format in backupfile_date_extension is valid:
+  if [ ! $(date +"${backupfile_date_extension}" 2>/dev/null) ]; then
+    echo "-- NOTICE: backupfile_date_extension has no valid format. Using default (%Y-%m-%d) instead."
+    backupfile_date_extension="-%Y-%m-%d"
+  fi
+  if [ -z ${backup_database+x} ]; then
+    backup_database="yes"
+  fi
+  if [ -z ${delete_backups_older_than+x} ]; then
+    delete_backups_older_than="0"
+  fi
+  # make sure delete_backups_older_than is a positive integer and set it to 0 if not:
+  case "$delete_backups_older_than" in
+   ''|*[!0-9]*)
+      echo "-- NOTICE: delete_backups_older_than is not a positive number. Using default of 0 instead to not delete anything unwanted."
+      delete_backups_older_than="0"
+    ;;
+  esac
+
+  if [ -z ${compression_method+x} ]; then
+    compression_method="tar.gz"
+  elif [ "$compression_method" == "zip" ]; then
+    # check for package zip
+    which zip > /dev/null || {
+      echo "--"
+      echo "-- ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'."
+      echo "-- Therefore package zip is needed. Install with 'apt-get install zip' and run script again"
+      error_exit
+    }
+  else
+    compression_method="tar.gz"
+  fi
+
+  # remove trailing slashes:
+  nextcloud_url=$(echo "$nextcloud_url" | sed 's:/*$::')
+  nextcloud_path=$(readlink -m "$nextcloud_path")
+
+  if [ -z ${compression_level+x} ]; then
+    compression_level="6"
+  fi
+
+  # make sure compression_level has a valid value (1-9)
+  case "$compression_level" in
+    ''|*[!0-9]*)
+      echo "-- NOTICE: compression level is not a number. Using compression level of 6 instead."
+      compression_level="6"
+    ;;
+    *)
+      if [ "$compression_level" -lt 1 -o "$compression_level" -gt 9 ]; then
+        echo "-- NOTICE: compression level is out of range ($compression_level). Using compression level of 6 instead."
+        compression_level="6"
+      fi
+    ;;
+  esac
+
+  # if $backupfolder contains relative path, change to absolute path and remove trailing slash:
+  if [[ ! "$backupfolder" = /* ]]; then
+    backupfolder=$(readlink -m "${script_dir}/${backupfolder}")
+  else
+    backupfolder=$(readlink -m "$backupfolder")
+  fi
+  # if $userstxt_path contains relative path, change to absolute path and remove trailing slash:
+  if [[ ! "$userstxt_path" = /* ]]; then
+    userstxt_path=$(readlink -m "${script_dir}/${userstxt_path}")
+  else
+    userstxt_path=$(readlink -m "$userstxt_path")
+  fi
+
+  # check if users.txt is readable
+  if [ ! -r "${userstxt_path}/users.txt" ]; then
+    echo "--"
+    echo "-- ERROR: ${userstxt_path}/users.txt is not readable."
+    error_exit
+  fi
+
+  # assign insecure-option for curl if certificate not trustful:
+  if [ "$trustful_certificate" == "yes" ]; then
+    trust=""
+  else
+    trust="--insecure"
+  fi
+}
+
+function read_config_php {
+  # get parameters from Nextclouds config.php:
+  config="${nextcloud_path}/config/config.php"
+
+  # check whether Nextclouds config-file is readable:
+  if [ ! -r "$config" ]; then
+    echo "--"
+    echo "-- ERROR: Can't read the configuration file of your installation."
+    echo "-- I need to be able to read $config"
+    error_exit
+  fi
+
+  # get version of Nextcloud to configure correct dav-endpoint:
+  version_config_php=$(grep "version" "$config" | sed -r "s/([[:space:]]|version|=>|,|')//g")
+  # get version number (command drops everything from first occurence of . until the end)
+  mainversion=${version_config_php%%.*}
+  minimumversion="5"
+  davchangeversion="9"
+  if [ "$mainversion" -lt "$minimumversion" ]; then
+    echo "--"
+    echo "-- ERROR: This script only works with versions >= 5.0."
+    echo "-- You are using Owncloud $version_config_php."
+    error_exit
+  elif [ "$mainversion" -ge "$davchangeversion" ]; then
+    # Values for Nextcloud >= 9.0:
+    caldav="dav"
+    carddav="dav"
+    table_calendars="oc_calendars"
+    table_addressbooks="oc_addressbooks"
+    row_principaluri="principaluri"
+    row_uri="uri"
+    row_displayname="displayname"
+    # correction of export-link of addressbooks for Nextcloud >= 9.0:
+    extra_users="users/"
+  else
+    # Values for Owncloud < 9.0:
+    caldav="caldav"
+    carddav="carddav"
+    table_calendars="oc_clndr_calendars"
+    table_addressbooks="oc_contacts_addressbooks"
+    row_principaluri="userid"
+    row_uri="uri"
+    row_displayname="displayname"
+    # must be empty for Owncloud < 9.0:
+    extra_users=""
+  fi
+
+  # check whether configured nextcloud_url differs from overwrite.cli.url in config.php for versions >= 7.0:
+  if [ "$mainversion" -ge "7" ]; then
+    nextcloud_url_config=$(grep "overwrite.cli.url" "$config" | sed -r "s/([[:space:]]|overwrite\.cli\.url|=>|,|')//g")
+    if [ "$nextcloud_url_config" != "$nextcloud_url" ]; then
+      echo "--"
+      echo "-- ERROR: Configured Nextcloud-URL differs from 'overwrite.cli.url' in Nextclouds config.php"
+      echo "-- ${nextcloud_url}/   ==>   configured as nextcloud_url in top of this script"
+      echo "-- ${nextcloud_url_config}/   ==>   detected in $config"
+      error_exit
+    fi
+  fi
+}
+
+function read_status_php {
+  # check whether URL to Own-/Nextcloud is correct and store productname (Owncloud/Nextcloud):
+  status_php=$(curl -Ss -k "${nextcloud_url}/status.php")
+  # check whether Own-/Nextcloud can be found at nextcloud_url with return of status.php
+  # check regex with regex101.com (checked with versions mentioned below)
+  # Output of status.php of the different versions:
+  # Owncloud 5.0.9   {"installed":"true","version":"5.0.38","versionstring":"5.0.19","edition":""}
+  # Owncloud 6.0.9   {"installed":"true","version":"6.0.9.2","versionstring":"6.0.9","edition":""}
+  # Owncloud 7.0.15  {"installed":"true","version":"7.0.15.2","versionstring":"7.0.15","edition":""}
+  # Owncloud 8.0.16  {"installed":true,"maintenance":false,"version":"8.0.16.3","versionstring":"8.0.16","edition":""}
+  # Owncloud 8.1.12  {"installed":true,"maintenance":false,"version":"8.1.12.2","versionstring":"8.1.12","edition":""}
+  # Owncloud 8.2.10  {"installed":true,"maintenance":false,"version":"8.2.10.2","versionstring":"8.2.10","edition":""}
+  # Owncloud 9.0.8   {"installed":true,"maintenance":false,"version":"9.0.8.2","versionstring":"9.0.8","edition":""}
+  # Owncloud 9.1.4   {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"9.1.4","edition":""}
+  # Owncloud 10 alpha{"installed":"true","maintenance":"false","needsDbUpgrade":"false","version":"10.0.0.4","versionstring":"10.0.0 alpha","edition":"Community","productname":"ownCloud"}
+  # Nextcloud 9.0.57 {"installed":true,"maintenance":false,"version":"9.0.57.2","versionstring":"9.0.57","edition":""}
+  # Nextcloud 10.0.4 {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"10.0.4","edition":""}
+  # Nextcloud 11.0.2 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.2.7","versionstring":"11.0.2","edition":"","productname":"Nextcloud"}
+  grep -E -q '^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"(ownCloud|Nextcloud)")?\}$' <<< $status_php
+  if [ $? != 0 ]; then
+    echo "--"
+    echo "-- ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
+    error_exit
+  fi
+
+  # get version from status.php:
+  version_status_php=${status_php#*version\":\"}
+  version_status_php=${version_status_php%%\"*}
+  # get versions first number (needed for detection of Nextcloud 10):
+  mainversion_status_php=${version_status_php%%.*}
+  # get versionstring from status_php (needed for detection of Nextcloud 9):
+  versionstring_status_php=${status_php#*versionstring\":\"}
+  versionstring_status_php=${versionstring_status_php%%\"*}
+
+  productname="ownCloud"
+
+  # set productname to Nextcloud if status.php delivers it (this is the case for Nextcloud >= 11.0):
+  grep -E -q '"productname":"Nextcloud"' <<< $status_php && productname="Nextcloud"
+
+  # for mainversion 9 we need to find out whether product is owncloud or nextcloud
+  if [ "$mainversion_status_php" -eq "9" ]; then
+
+    # Nextcloud 10 has different main version numbers in version and versionstring delivered by status.php:
+    # get main version number from versionstring:
+    mainversionstring_status_php=${versionstring_status_php%%.*}
+
+    # Nextcloud 9 has last number of greater or equal than 50 in versionstring (first tagged version on github was 9.0.50):
+    # get last number of versionstring:
+    lastversionstring_status_php=${versionstring_status_php##*.}
+
+    if [ "$mainversion_status_php" -lt "$mainversionstring_status_php" ] || [ "$lastversionstring_status_php" -ge 50 ]; then
+      productname="Nextcloud"
+    fi
+  fi
+
+  echo "+  ${productname} ${versionstring_status_php} detected."
+
+  # check whether version of config.php is the same than version of status.php
+  if [ "$version_status_php" != "$version_config_php" ]; then
+    echo "--"
+    echo "-- ERROR: different versions detected:"
+    echo "-- ${productname} ${version_status_php} found at ${nextcloud_url}"
+    echo "-- ${productname} ${version_config_php} found at ${nextcloud_path}"
+    echo "-- check configured url and path at top of this script!"
+    error_exit
+  fi
+
+  # check for installed=true (and maintenance=false for versions >=8) in status.php
+  grep -E -q '"installed":"?true"?' <<< $status_php || {
+    echo "--"
+    echo "-- ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!"
+    echo "-- You need to check your ${productname} Installation!"
+    error_exit
+  }
+  if [ "$mainversion" -ge 8 ]; then
+    grep -E -q '"maintenance":"?false"?' <<< $status_php || {
+    echo "--"
+    echo "-- ERROR: ${productname} is in maintenance mode!"
+    echo "-- Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again"
+    error_exit
+    }
+  fi
+
+}
+
+function get_database_details {
+  # get database details:
+  dbtype=$(grep "dbtype" "$config" | sed -r "s/([[:space:]]|dbtype|=>|,|')//g")
+  case "$dbtype" in
+    mysql)
+      dbname=$(grep "dbname" "$config" | sed -r "s/([[:space:]]|dbname|=>|,|')//g")
+      dbhost=$(grep "dbhost" "$config" | sed -r "s/([[:space:]]|dbhost|=>|,|')//g")
+      dbuser=$(grep "dbuser" "$config" | sed -r "s/([[:space:]]|dbuser|=>|,|')//g")
+      dbpassword=$(grep "dbpassword" "$config" | sed -r "s/([[:space:]]|dbpassword|=>|,|')//g")
+      mysql_options="-h ${dbhost} -u${dbuser} -p${dbpassword} ${dbname} -se"
+      database="MySQL/MariaDB"
+    ;;
+    sqlite3)
+      # check if command-line-interface of sqlite3 is installed:
+      which sqlite3 > /dev/null || {
+        echo "--"
+        echo "-- ERROR: ${productname} database is sqlite3. Therefore this script requires package 'sqlite3'. Install with 'apt-get install sqlite3' and run script again" && error_exit
+      }
+      datadirectory=$(grep "datadirectory" "$config" | sed -r "s/([[:space:]]|datadirectory|=>|,|')//g")
+      sqlite3_database="${datadirectory}/owncloud.db"
+      database="SQLite3"
+      # check if sqlite3-database-file is readable:
+      if [ ! -r "${sqlite3_database}" ]; then
+        echo "--"
+        echo "-- ERROR: Can't copy ${productname}s SQLite3 database."
+        echo "-- I need to be able to read ${sqlite3_database}"
+        error_exit
+      fi
+    ;;
+    *)
+      echo "--"
+      echo "-- ERROR: Unsupported Database type: $dbtype"
+      echo "-- Only MySQL/MariaDB and SQLite3 are supported."
+      error_exit
+    ;;
+  esac
+  echo "+  Database of chosen ${productname} installation is ${database}."
+}
+
+function read_users_txt {
+  # Reads file users.txt:
+  readarray -t users < "${userstxt_path}/users.txt"
+  z=0
+  for i in "${users[@]}"
+  do
+    user[$z]=${i%%:*}
+    pass[$z]=${i#*:}
+    z=$((z+1))
+  done
+}
+
+function create_backup_folder {
+  # create backup folder:
+  mkdir -p "$backupfolder"
+  if [ ! $? -eq 0 ]; then
+    echo "--"
+    echo "-- ERROR: Backupfolder could not be created."
+    error_exit
+  fi
+
+  # check if backupfolder is writable
+  if [ ! -w "$backupfolder" ]; then
+    echo "--"
+    echo "-- ERROR: Backupfolder is not writable."
+    error_exit
+  fi
+  day=$(date +"${backupfile_date_extension}")
+  backupfolder_day="${backupfolder}/calcardbackup${day}"
+  mkdir -p "${backupfolder_day}"
+}
+
+function get_calendars {
+
+ # Get details of calendars from database
+  query_row_principaluri="select $row_principaluri from $table_calendars order by id"
+  query_row_uri="select $row_uri from $table_calendars order by id"
+  query_row_displayname="select $row_displayname from $table_calendars order by id"
+  case "$dbtype" in
+    mysql)
+      while read calline
+      do
+        principal+=("$calline")
+      done < <(mysql $mysql_options "${query_row_principaluri}" | sed 's/principals\/users\///')
+      while read calline
+      do
+        uri+=("$calline")
+      done < <(mysql $mysql_options "${query_row_uri}")
+      while read calline
+      do
+        displayname+=("$calline")
+      done < <(mysql $mysql_options "${query_row_displayname}")
+    ;;
+    sqlite3)
+      while read calline
+      do
+        principal+=("$calline")
+      done < <(sqlite3 "${sqlite3_database}" "${query_row_principaluri}" | sed 's/principals\/users\///')
+      while read calline
+      do
+        uri+=("$calline")
+      done < <(sqlite3 "${sqlite3_database}" "${query_row_uri}")
+      while read calline
+      do
+        displayname+=("$calline")
+      done < <(sqlite3 "${sqlite3_database}" "${query_row_displayname}")
+    ;;
+  esac
+
+  # Get calendars and save them in backup-folder:
+  echo "+  Starting backup. Please be patient: Depending on the size of calendars or addressbooks this may take a while..."
+
+  # counter for exported calendars (if no calendar was exported there is no valid nextcloud user in users.txt):
+  exported=0
+
+  count=${#uri[@]}
+  for (( i=0; i<$count; i++ ))
+  do
+    for index in "${!users[@]}"
+    do
+      if [ "${principal[$i]}" == "${user[$index]}" ] && [ "${uri[$i]}" != "contact_birthdays" ]; then
+        filename=${displayname[$i]// /_}
+        printf "+  Saving calendar ${principal[$i]}-${filename}.ics..."
+        curl -sS $trust -o "${backupfolder_day}/${principal[$i]}-${filename}.ics" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${caldav}/calendars/${user[$index]}/${uri[$i]}?export"
+        err=$?
+        if [ ! $err -eq 0 ]; then
+          curl_error
+        fi
+        # check whether we truly received an ics file:
+        if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}.ics" | grep "BEGIN:VCALENDAR") ]; then
+          mv "${backupfolder_day}/${principal[$i]}-${filename}.ics" "${backupfolder_day}/${principal[$i]}-${filename}.ics-ERROR.txt"
+          printf "\n--\n-- ERROR: the saved file is not a valid calendar-file. Something went wrong.\n"
+          echo "-- My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt."
+          echo "-- You may also want to check the saved file for any hints what went wrong: ${backupfolder_day}/${principal[$i]}-${filename}.ics-ERROR.txt"
+          error_exit
+        fi
+        exported=$((exported + 1))
+        printf "...success!\n"
+        break
+      fi
+    done
+  done
+
+  # there is no matching Nextcloud user, if no calendar has been exported.
+  if [ $exported == 0 ]; then
+    echo "--"
+    echo "-- ERROR: no match between given users in file 'users.txt' and registered ${productname} users!"
+    echo "-- You need to check '${userstxt_path}/users.txt'!"
+    error_exit
+  fi
+}
+
+function get_addressbooks {
+
+  # unset arrays, so we can start to fill them again with addressbooks details:
+  unset principal
+  unset uri
+  unset displayname
+
+  # Get details of adressbooks from database
+  query_row_principaluri="select $row_principaluri from $table_addressbooks order by id"
+  query_row_uri="select $row_uri from $table_addressbooks order by id"
+  query_row_displayname="select $row_displayname from $table_addressbooks order by id"
+  case "$dbtype" in
+    mysql)
+      while read calline
+      do
+        principal+=("$calline")
+      done < <(mysql $mysql_options "${query_row_principaluri}" | sed 's/principals\/users\///')
+      while read calline
+      do
+        uri+=("$calline")
+      done < <(mysql $mysql_options "${query_row_uri}")
+      while read calline
+      do
+        displayname+=("$calline")
+      done < <(mysql $mysql_options "${query_row_displayname}")
+    ;;
+    sqlite3)
+      while read calline
+      do
+        principal+=("$calline")
+      done < <(sqlite3 "${sqlite3_database}" "${query_row_principaluri}" | sed 's/principals\/users\///')
+      while read calline
+      do
+        uri+=("$calline")
+      done < <(sqlite3 "${sqlite3_database}" "${query_row_uri}")
+      while read calline
+      do
+        displayname+=("$calline")
+      done < <(sqlite3 "${sqlite3_database}" "${query_row_displayname}")
+    ;;
+  esac
+
+  # no need for an exported counter, because already done in calendar section
+
+  count=${#uri[@]}
+  for (( i=0; i<$count; i++ ))
+  do
+    for index in "${!users[@]}"
+    do
+      if [ "${principal[$i]}" == "${user[$index]}" ]; then
+        filename=${displayname[$i]// /_}
+        printf "+  Saving addressbook ${principal[$i]}-${filename}.vcf..."
+        curl -sS $trust -o "${backupfolder_day}/${principal[$i]}-${filename}.vcf" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${carddav}/addressbooks/${extra_users}${user[$index]}/${uri[$i]}?export"
+        err=$?
+        if [ ! $err -eq 0 ]; then
+          curl_error
+        fi
+
+        # check if we received a file, since nextcloud doesn't export empty addressbooks:
+        if [ ! -r "${backupfolder_day}/${principal[$i]}-${filename}.vcf" ]; then
+          printf "...not saved. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
+          break
+        fi
+
+        # check whether we truly received an vcf file:
+        if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}.vcf" | grep "BEGIN:VCARD") ]; then
+          mv "${backupfolder_day}/${principal[$i]}-${filename}.vcf" "${backupfolder_day}/${principal[$i]}-${filename}.vcf-ERROR.txt"
+          printf "\n--\n-- ERROR: the saved file is not a valid vcard-file. Something went wrong.\n"
+          echo "-- My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt."
+          echo "-- You may also want to check the saved file for any hints what went wrong: ${backupfolder_day}/${principal[$i]}-${filename}.vcf-ERROR.txt"
+          error_exit
+        fi
+        printf "...success!\n"
+        break
+      fi
+    done
+  done
+}
+
+function dump_database {
+  if [ "$backup_database" == "yes" ]; then
+    printf "+  Backing up database..."
+    case "$dbtype" in
+      mysql)
+        mysqldump --lock-tables --host=${dbhost} --user=${dbuser} --password=${dbpassword} --databases ${dbname} > "${backupfolder_day}/${productname}_mysql_backup.sql"
+      ;;
+      sqlite3)
+        cp -a "${sqlite3_database}" "${backupfolder_day}/"
+      ;;
+    esac
+    printf "...success!\n"
+  else
+    echo "+  Not backing up database (as configured)."
+  fi
+}
+
+function pack_it {
+  echo "+  Compressing backup as *.${compression_method} file with compression level ${compression_level}. Be patient - this may take a while."
+  working_dir=$(pwd)
+  cd "$backupfolder"
+  if [ "${compression_method}" == "zip" ]; then
+    # zip folder with backed up files:
+    zip -r -q -${compression_level} "calcardbackup${day}.zip" "calcardbackup${day}"
+    if [ $? -ne 0 ]; then { compress_error="1"; }
+    fi
+  else
+    # use tar.gz to compress backed up files (piped to gzip to be able to use compression_level):
+    tar -c "calcardbackup${day}" | gzip -f -${compression_level} > "calcardbackup${day}.tar.gz"
+    if [ $? -ne 0 ]; then { compress_error="1"; }
+    fi
+  fi
+  if [ "$compress_error" == "1" ]; then
+    echo "--"
+    echo "-- ERROR: Compressing the files produced an error. See lines right above."
+    error_exit
+  fi
+  cd "$working_dir"
+  rm -r "$backupfolder_day"
+  echo "+  Backup successfully compressed!"
+  echo "+  Find your backup here: ${backupfolder}/calcardbackup${day}.${compression_method}"
+}
+
+function delete_old_backups {
+  if [ "$delete_backups_older_than" -ge 1 ]; then
+    deleted=$(find "${backupfolder}"/calcardbackup-* -type f -mtime +${delete_backups_older_than} -delete -exec echo "+   " {} \;)
+    if [ "$?" -ne 0 ]; then
+      printf "\n-- ERROR: deleting backups older than ${delete_backups_older_than} days produced above error.\n"
+      error_exit
+    elif [ "$deleted" != "" ]; then
+      echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
+      echo "${deleted}"
+    else
+      echo "+  No backups older than ${delete_backups_older_than} days found to delete."
+    fi
+  else
+    echo "+  Not deleting any older backups as configured."
+  fi
+}
+
+function finish {
+  # print timestamp
+  echo "+  $(date) --> END calcardbackup.sh"
+  echo "+"
+  echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  echo
+}
+
+function plus_line {
+  printf "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+}
+
+function curl_error {
+  if [ $err -eq 60 ]; then
+    echo "--"
+    echo "-- ERROR: Curl cannot authenticate peer certificate with known CA certificates."
+    echo "-- You need to configure trustful_certificate=\"no\" at the top of this script."
+    error_exit
+  fi
+  echo "--"
+  echo "-- ERROR: Curl cannot save the requested calendar file. This can have various reasons."
+  echo "-- For clarification lookup Curl Error number $err"
+  error_exit
+}
+
+function error_exit {
+  echo "-- Exiting."
+  echo "--"
+  echo "-------------  Errors occured. See messages above!  -------------"
+  echo
+  exit 1
+}
+
+preparations
+read_config_php
+read_status_php
+get_database_details
+read_users_txt
+create_backup_folder
+get_calendars
+get_addressbooks
+dump_database
+pack_it
+delete_old_backups
+finish
+
+exit 0

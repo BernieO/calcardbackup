@@ -1,0 +1,6 @@
+# ToDos for calcardbackup
+
+- put userlist as an array-declaration in calcardbackup.config and get rid of users.txt
+- check with regex, that only variables are declared in calcardbackup.config !
+
+- fill README.md with explanation
