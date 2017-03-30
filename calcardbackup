@@ -24,7 +24,13 @@
 #
 #######################################################
 
-
+##########
+#
+# change to path to config file, if config file is located outside of this scripts directory:
+config_path="./"
+#
+#
+##########
 
 #######################################################
 #######################################################
@@ -48,13 +54,36 @@ function preparations {
   # check for package sed
   which sed > /dev/null || { echo "--"; echo "-- ERROR: Package 'sed' is needed for running this script. Install with 'apt-get install sed' and run script again" && error_exit; }
 
-  # check for for configuration file in scripts directory and read its contents:
-  # check needs to be done (accept only comments and variable declarations, otherwise error out)
-  . calcardbackup.config
-
   # get path to scripts dir:
   actual_path=$(readlink -f "${BASH_SOURCE[0]}")
   script_dir=$(dirname "$actual_path")
+
+  if [ -z ${config_path+x} ]; then
+    config_path="$script_dir"
+  fi
+  # if $config_path contains relative path, change to absolute path and remove trailing slash:
+  if [[ ! "$config_path" = /* ]]; then
+    config_path=$(readlink -m "${script_dir}/${config_path}")
+  else
+    config_path=$(readlink -m "$config_path")
+  fi
+
+  # check if config file is readable:
+  if [ ! -r "${config_path}/calcardbackup.config" ]; then
+    echo "--"
+    echo "-- ERROR: config file ${config_path}/calcardbackup.config is not readable."
+    error_exit
+  fi
+  # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
+  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+([[][0-9]+[]])?="[^"]+"[[:space:]]*)(#.*)?$' "${config_path}/calcardbackup.config"
+  if [ "$?" -eq 0 ]; then
+    echo "-- ERROR: invalid config file! only variable-declarations, comments and empty lines allowed."
+    echo "-- Edit configuration file and run sript again."
+    error_exit
+  else
+    # config file is readable and has correct syntax. So let's include it now:
+    . "${config_path}/calcardbackup.config"
+  fi
 
   if [ -z ${nextcloud_url+x} ] || [ "${nextcloud_url}" == "https://www.example.com" ]; then
     echo "--"
