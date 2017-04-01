@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# calcardbackup by BernieO - extracts Own-/Nextcloud calendars and addressbooks
+# Source: https://github.com/BernieO/calcardbackup
+# Copyright (C) 2017 BernieO
+#
+# This script is licensed under the GNU AFFERO GENERAL PUBLIC LICENSE v3.0
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 #######################################################
 #
 # This script extracts Own-/Nextcloud calendars and addressbooks
