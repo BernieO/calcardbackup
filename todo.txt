@@ -1,13 +1,10 @@
 # ToDos for calcardbackup
 
-- put userlist as an array-declaration in calcardbackup.config and get rid of users.txt
-- make declaration of URL optional for versions >=7.0 (there URL can be read from overwrite.cli.url in config.php)
+- better error handling after url-autodetection, depending on url coming from config file or config.php (overwrite.cli.url)
 - corrections and better explanation in README.md
 - corrections and better explanation in config file
-- corrections and better explanation in text section at top of script
+- make text section at top of script shorter
  
-
-
 done:
+- make declaration of URL optional for versions >=7.0 (there URL can be read from overwrite.cli.url in config.php) (01.04.2017)
 - check with regex, that only variables are declared in calcardbackup.config! (30.03.2017)
-
