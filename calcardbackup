@@ -75,7 +75,7 @@ function preparations {
     error_exit
   fi
   # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
-  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+([[][0-9]+[]])?="[^"]+"[[:space:]]*)(#.*)?$' "${config_path}/calcardbackup.config"
+  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]+"[[:space:]]*)(#.*)?$' "${config_path}/calcardbackup.config"
   if [ "$?" -eq 0 ]; then
     echo "-- ERROR: invalid config file! only variable-declarations, comments and empty lines allowed."
     echo "-- Edit configuration file and run sript again."
@@ -377,12 +377,10 @@ function get_database_details {
 function read_users_txt {
   # Reads file users.txt:
   readarray -t users < "${userstxt_path}/users.txt"
-  z=0
-  for i in "${users[@]}"
+  for i in "${!users[@]}"
   do
-    user[$z]=${i%%:*}
-    pass[$z]=${i#*:}
-    z=$((z+1))
+    user[$i]=${users[$i]%%:*}
+    pass[$i]=${users[$i]#*:}
   done
 }
 
