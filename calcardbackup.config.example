@@ -6,23 +6,23 @@
 # copy this file to the same directory as calcardbackup.sh
 # and change values according to your setup.
 #
+# Most of the values can stay unchanged.
+# Running the script will give hints, of something has to be changed.
+#
 #######################################################
 
 
-# nextcloud_url is mandatory to be configured below.
-# Although there is a default value for nextcloud_path, it is a good idea
-# to check whether it suits to your setup.
-# Rest of the values may stay unchanged. Running the script will give hints,
-# if something has to be changed.
-
-# MANDATORY: URL of Nextcloud Login-page:
-nextcloud_url="https://www.example.com/"
-
-# absolute path to Nextcloud-Installation:
+# absolute path to Own-/Nextcloud-Installation:
 #nextcloud_path="/usr/share/nginx/www/"
 
+# The script tries to automatically detect the URL of Own-/Nextcloud,
+# which should work in most cases for versions >= 7.0
+# For versions < 7.0 this is mandatory:
+# URL of Own-/Nextcloud Login-page:
+nextcloud_url="https://www.example.com/"
+
 # Is certificate trustful?
-# If you have a self signed certificate you may have to change this to "no"
+# If you have a self signed certificate you might have to change this to "no"
 #trustful_certificate="yes"
 
 # Path to file users.txt (see requirements above).
@@ -34,9 +34,9 @@ nextcloud_url="https://www.example.com/"
 #backupfolder="backups/"
 
 # date extension for backup files.
-# default is %Y-%m-%d which is YYYY-MM-DD resulting
-# in backup files named like "calcardbackup-2017-03-23.tar.gz"
-# to change have a look at format options under "man date"
+# default is "-%Y-%m-%d" resulting
+# in backup files named e.g. "calcardbackup-2017-03-23.tar.gz"
+# to change, have a look at format options under "man date"
 #backupfile_date_extension="-%Y-%m-%d"
 
 # backup nextcloud-database as well?
