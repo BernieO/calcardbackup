@@ -6,17 +6,14 @@
 # copy this file to the same directory as calcardbackup.sh
 # and change values according to your setup.
 #
+#######################################################
+
+
 # nextcloud_url is mandatory to be configured below.
-# The userlist at the end of this file needs to be filled with
-# own-/Nextcloud users and their according passwords.
-#
 # Although there is a default value for nextcloud_path, it is a good idea
 # to check whether it suits to your setup.
 # Rest of the values may stay unchanged. Running the script will give hints,
 # if something has to be changed.
-#
-#######################################################
-
 
 # MANDATORY: URL of Nextcloud Login-page:
 nextcloud_url="https://www.example.com/"
@@ -27,6 +24,10 @@ nextcloud_url="https://www.example.com/"
 # Is certificate trustful?
 # If you have a self signed certificate you may have to change this to "no"
 #trustful_certificate="yes"
+
+# Path to file users.txt (see requirements above).
+# Relative to scripts directory or absolute path:
+#userstxt_path="./"
 
 # Path to folder where backed up files will be saved.
 # Relative to scripts directory or absolute path:
@@ -55,22 +56,6 @@ nextcloud_url="https://www.example.com/"
 # 9 = slower, smaller filesize
 #compression_level="6"
 
-# Userlist:
-# Uncomment and fill with Own-/Nextcloud users and their according
-# passwords separated by a colon as in following examples.
-# It is possible to add more lines if needed.
-#
-# user[1]="Thomas:PA55W0RD"
-# user[2]="Emma:9867543"
-# user[3]="USER:PASSWORD"
-# user[4]="USER:PASSWORD"
-# user[5]="USER:PASSWORD"
-# user[6]="USER:PASSWORD"
-# user[7]="USER:PASSWORD"
-# user[8]="USER:PASSWORD"
-# user[9]="USER:PASSWORD"
-# user[10]="USER:PASSWORD"
-# user[11]="USER:PASSWORD"
 
 
 ######  end of config file for calcardbackup.sh  ######

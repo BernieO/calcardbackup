@@ -77,7 +77,6 @@ function preparations {
   # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
   grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+([[][0-9]+[]])?="[^"]+"[[:space:]]*)(#.*)?$' "${config_path}/calcardbackup.config"
   if [ "$?" -eq 0 ]; then
-    echo "--"
     echo "-- ERROR: invalid config file! only variable-declarations, comments and empty lines allowed."
     echo "-- Edit configuration file and run sript again."
     error_exit
@@ -98,6 +97,9 @@ function preparations {
   fi
   if [ -z ${trustful_certificate+x} ]; then
     trustful_certificate="yes"
+  fi
+  if [ -z ${userstxt_path+x} ]; then
+    userstxt_path="./"
   fi
   if [ -z ${backupfolder+x} ]; then
     backupfolder="backups"
@@ -165,6 +167,19 @@ function preparations {
     backupfolder=$(readlink -m "${script_dir}/${backupfolder}")
   else
     backupfolder=$(readlink -m "$backupfolder")
+  fi
+  # if $userstxt_path contains relative path, change to absolute path and remove trailing slash:
+  if [[ ! "$userstxt_path" = /* ]]; then
+    userstxt_path=$(readlink -m "${script_dir}/${userstxt_path}")
+  else
+    userstxt_path=$(readlink -m "$userstxt_path")
+  fi
+
+  # check if users.txt is readable
+  if [ ! -r "${userstxt_path}/users.txt" ]; then
+    echo "--"
+    echo "-- ERROR: ${userstxt_path}/users.txt is not readable."
+    error_exit
   fi
 
   # assign insecure-option for curl if certificate not trustful:
@@ -359,22 +374,15 @@ function get_database_details {
   echo "+  Database of chosen ${productname} installation is ${database}."
 }
 
-function get_user_pass {
-  # checks for userlist and splits entries of userlist into user + password:
-
-  # is variable $user existing? (needs to be filled with values in config file)
-  if [ -z ${user[@]+x} ]; then
-    echo "--"
-    echo "-- ERROR. No users in config files userlist!"
-    echo "-- Check userlist at the end of config file: ${config_path}/calcardbackup.config"
-    error_exit
-  fi
-
-  # split entries in userlist in usernames and according passwords:
-  for i in ${!user[@]}
+function read_users_txt {
+  # Reads file users.txt:
+  readarray -t users < "${userstxt_path}/users.txt"
+  z=0
+  for i in "${users[@]}"
   do
-    pass[$i]=${user[$i]#*:}
-    user[$i]=${user[$i]%%:*}
+    user[$z]=${i%%:*}
+    pass[$z]=${i#*:}
+    z=$((z+1))
   done
 }
 
@@ -444,7 +452,7 @@ function get_calendars {
   count=${#uri[@]}
   for (( i=0; i<$count; i++ ))
   do
-    for index in "${!user[@]}"
+    for index in "${!users[@]}"
     do
       if [ "${principal[$i]}" == "${user[$index]}" ] && [ "${uri[$i]}" != "contact_birthdays" ]; then
         filename=${displayname[$i]// /_}
@@ -525,7 +533,7 @@ function get_addressbooks {
   count=${#uri[@]}
   for (( i=0; i<$count; i++ ))
   do
-    for index in "${!user[@]}"
+    for index in "${!users[@]}"
     do
       if [ "${principal[$i]}" == "${user[$index]}" ]; then
         filename=${displayname[$i]// /_}
@@ -654,7 +662,7 @@ preparations
 read_config_php
 read_status_php
 get_database_details
-get_user_pass
+read_users_txt
 create_backup_folder
 get_calendars
 get_addressbooks
