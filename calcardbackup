@@ -251,23 +251,27 @@ function read_config_php {
   nextcloud_url_default="https://www.example.com"
   nextcloud_url_overwrite=$(grep "overwrite.cli.url" "$config" | sed -r "s/([[:space:]]|overwrite\.cli\.url|=>|,|')//g")
   if [ "$nextcloud_url" != "$nextcloud_url_default" ] && [ "$nextcloud_url" != "$nextcloud_url_overwrite" ] && [ "$nextcloud_url_overwrite" != "" ]; then
-    # Error, if nextcloud_url has been configured to something other than default or overwrite.cli.url (if overwrite.cli.url is not present or empty)
+    # use overwrite.cli.uri and print Warning, if nextcloud_url has been configured to something other than default
+    # or overwrite.cli.url (lasst test: make sure overwrite.cli.url is present and not empty):
     echo "--"
-    echo "-- ERROR: Configured Nextcloud-URL differs from 'overwrite.cli.url' in Nextclouds config.php"
+    echo "-- WARNING: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
     echo "-- ${nextcloud_url}/   ==>   configured as nextcloud_url in config file ${config_path}/calcardbackup.config"
     echo "-- ${nextcloud_url_overwrite}/   ==>   detected in $config"
-    error_exit
+    echo "-- Using the latter one!"
+    echo "--"
+    nextcloud_url=$nextcloud_url_overwrite
   elif [ "$nextcloud_url" == "$nextcloud_url_default" ] && [ "$nextcloud_url_overwrite" == "" ]; then
     # Error, if nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
     echo "--"
-    echo "-- ERROR: Nextcloud-URL not configured and can't get url from ${config}"
-    echo "-- nextcloud_url needs to be configured in config file ${config_path}/calcardbackup.config"
+    echo "-- ERROR: Can't retrieve url from ${config}"
+    echo "-- In your case nextcloud_url needs to be configured in config file ${config_path}/calcardbackup.config"
     error_exit
-  else
-    # Print url which will be used (and has been found in overwrite.cli.url)
-    echo "+  URL that will be used: ${nextcloud_url_overwrite}"
+  elif [ "$nextcloud_url_overwrite" != "" ]; then
+    # if overwrite.cli.uri is found (and nextcloud_url is on default value): use it as nextcloud_url
     nextcloud_url=$nextcloud_url_overwrite
-fi
+  fi
+  # Print url which will be used:
+  echo "+  Using URL ${nextcloud_url}"
 }
 
 function read_status_php {
