@@ -276,7 +276,11 @@ function read_config_php {
 
 function read_status_php {
   # check whether URL to Own-/Nextcloud is correct and store productname (Owncloud/Nextcloud):
-  status_php=$(curl -Ss -k "${nextcloud_url}/status.php")
+  status_php=$(curl -s $trust "${nextcloud_url}/status.php")
+  err=$?
+  if [ $err -ne 0 ]; then
+    curl_error
+  fi
   # check whether Own-/Nextcloud can be found at nextcloud_url with return of status.php
   # check regex with regex101.com (checked with versions mentioned below)
   # Output of status.php of the different versions:
@@ -479,9 +483,9 @@ function get_calendars {
       if [ "${principal[$i]}" == "${user[$index]}" ] && [ "${uri[$i]}" != "contact_birthdays" ]; then
         filename=${displayname[$i]// /_}
         printf "+  Saving calendar ${principal[$i]}-${filename}.ics..."
-        curl -sS $trust -o "${backupfolder_day}/${principal[$i]}-${filename}.ics" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${caldav}/calendars/${user[$index]}/${uri[$i]}?export"
+        curl -s $trust -o "${backupfolder_day}/${principal[$i]}-${filename}.ics" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${caldav}/calendars/${user[$index]}/${uri[$i]}?export"
         err=$?
-        if [ ! $err -eq 0 ]; then
+        if [ $err -ne 0 ]; then
           curl_error
         fi
         # check whether we truly received an ics file:
@@ -560,7 +564,7 @@ function get_addressbooks {
       if [ "${principal[$i]}" == "${user[$index]}" ]; then
         filename=${displayname[$i]// /_}
         printf "+  Saving addressbook ${principal[$i]}-${filename}.vcf..."
-        curl -sS $trust -o "${backupfolder_day}/${principal[$i]}-${filename}.vcf" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${carddav}/addressbooks/${extra_users}${user[$index]}/${uri[$i]}?export"
+        curl -s $trust -o "${backupfolder_day}/${principal[$i]}-${filename}.vcf" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${carddav}/addressbooks/${extra_users}${user[$index]}/${uri[$i]}?export"
         err=$?
         if [ ! $err -eq 0 ]; then
           curl_error
@@ -660,14 +664,23 @@ function plus_line {
 }
 
 function curl_error {
-  if [ $err -eq 60 ]; then
+  if [ $err -eq 6 ]; then
     echo "--"
-    echo "-- ERROR: Curl cannot authenticate peer certificate with known CA certificates."
+    echo "-- ERROR: Curl error 6: could not resolve host ${nextcloud_url}."
+    if [ "$nextcloud_url" == "$nextcloud_url_overwrite" ]; then
+      echo "-- Either that host is temporarily unavailable or 'overwrite.cli.uri' in ${config} is wrong."
+    else
+      echo "-- Either that host is temporarily unavailable or nextcloud_url in '${config_path}/calcardbackup.config' is wrong."
+    fi
+    error_exit
+  elif [ $err -eq 60 ]; then
+    echo "--"
+    echo "-- ERROR: Curl error 60: cannot authenticate peer certificate with known CA certificates."
     echo "-- You need to configure trustful_certificate=\"no\" at the top of this script."
     error_exit
   fi
   echo "--"
-  echo "-- ERROR: Curl cannot save the requested calendar file. This can have various reasons."
+  echo "-- ERROR: Curl cannot get the requested file. This can have various reasons."
   echo "-- For clarification lookup Curl Error number $err"
   error_exit
 }
