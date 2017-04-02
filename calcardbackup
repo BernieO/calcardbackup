@@ -23,7 +23,7 @@
 # - Package curl and according database packages (mysql-server/mariadb-server or sqlite3)
 # - if backups shall be zipped (instead of defaul gzipped tarball): package zip
 # - this script needs to have read-access for Own-/Nextcloud path (to read values from config.php)
-# - file 'calcardbackup.config' in this scripts directory (see calcardbackup.config.example)
+# - file 'calcardbackup.conf' in this scripts directory (see calcardbackup.conf.example)
 # - currently: file 'users.txt' in this scripts directory with usernames and according passwords
 #      separated by ":" with one user per line (see examples/users.txt)
 #      Only data of mentioned users will be extracted
@@ -79,20 +79,20 @@ function preparations {
   fi
 
   # check if config file is readable:
-  if [ ! -r "${config_path}/calcardbackup.config" ]; then
+  if [ ! -r "${config_path}/calcardbackup.conf" ]; then
     echo "--"
-    echo "-- ERROR: config file ${config_path}/calcardbackup.config is not readable."
+    echo "-- ERROR: config file ${config_path}/calcardbackup.conf is not readable."
     error_exit
   fi
   # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
-  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]+"[[:space:]]*)(#.*)?$' "${config_path}/calcardbackup.config"
+  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]+"[[:space:]]*)(#.*)?$' "${config_path}/calcardbackup.conf"
   if [ "$?" -eq 0 ]; then
     echo "-- ERROR: invalid config file! only variable-declarations, comments and empty lines allowed."
     echo "-- Edit configuration file and run sript again."
     error_exit
   else
     # config file is readable and has correct syntax. So let's include it now:
-    . "${config_path}/calcardbackup.config"
+    . "${config_path}/calcardbackup.conf"
   fi
 
   if [ -z ${nextcloud_url+x} ] || [ "${nextcloud_url}" == "https://www.example.com" ]; then
@@ -255,7 +255,7 @@ function read_config_php {
     # or overwrite.cli.url (lasst test: make sure overwrite.cli.url is present and not empty):
     echo "--"
     echo "-- WARNING: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
-    echo "-- ${nextcloud_url}/   ==>   configured as nextcloud_url in config file ${config_path}/calcardbackup.config"
+    echo "-- ${nextcloud_url}/   ==>   configured as nextcloud_url in config file ${config_path}/calcardbackup.conf"
     echo "-- ${nextcloud_url_overwrite}/   ==>   detected in $config"
     echo "-- Using the latter one!"
     echo "--"
@@ -264,7 +264,7 @@ function read_config_php {
     # Error, if nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
     echo "--"
     echo "-- ERROR: Can't retrieve url from ${config}"
-    echo "-- In your case nextcloud_url needs to be configured in config file ${config_path}/calcardbackup.config"
+    echo "-- In your case nextcloud_url needs to be configured in config file ${config_path}/calcardbackup.conf"
     error_exit
   elif [ "$nextcloud_url_overwrite" != "" ]; then
     # if overwrite.cli.uri is found (and nextcloud_url is on default value): use it as nextcloud_url
@@ -670,7 +670,7 @@ function curl_error {
     if [ "$nextcloud_url" == "$nextcloud_url_overwrite" ]; then
       echo "-- Either that host is temporarily unavailable or 'overwrite.cli.uri' in ${config} is wrong."
     else
-      echo "-- Either that host is temporarily unavailable or nextcloud_url in '${config_path}/calcardbackup.config' is wrong."
+      echo "-- Either that host is temporarily unavailable or nextcloud_url in '${config_path}/calcardbackup.conf' is wrong."
     fi
     error_exit
   elif [ $err -eq 60 ]; then
