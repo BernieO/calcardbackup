@@ -11,7 +11,7 @@ Requirements:
 - this script needs to have read-access for Own-/Nextcloud path (to read values from config.php)
 - file 'calcardbackup.conf' in this scripts directory (see calcardbackup.conf.example)
 - file 'users.txt' in this scripts directory with usernames and according passwords separated by ":" with one user per line (see users.txt.example). Only data of mentioned users will be extracted.
-Example:
+Example users.txt:
 ```
 Thomas:PA55W0RD
 Emma:9876543

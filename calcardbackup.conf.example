@@ -1,61 +1,63 @@
 #######################################################
 #
-# config file for script calcardbackup.sh
+# config file for script calcardbackup
 # ---------------------------------------
 #
-# copy this file to the same directory as calcardbackup.sh
+# copy this file to the same directory as calcardbackup,
+# rename it to calcardbackup.conf
 # and change values according to your setup.
 #
 # Most of the values can stay unchanged.
 # Running the script will give hints, of something has to be changed.
 #
+# Don't forget to 
+#
 #######################################################
 
 
 # absolute path to Own-/Nextcloud-Installation:
-#nextcloud_path="/usr/share/nginx/www/"
+nextcloud_path="/usr/share/nginx/www/"
 
 # The script tries to automatically detect the URL of Own-/Nextcloud,
 # which should work in most cases for versions >= 7.0
-# For versions < 7.0 this is mandatory:
+# For versions < 7.0 this is mandatory!
 # URL of Own-/Nextcloud Login-page:
 nextcloud_url="https://www.example.com/"
 
 # Is certificate trustful?
 # If you have a self signed certificate you might have to change this to "no"
-#trustful_certificate="yes"
+trustful_certificate="yes"
 
-# Path to file users.txt (see requirements above).
-# Relative to scripts directory or absolute path:
-#userstxt_path="./"
+# path to file users.txt (see README.md)
+# relative to scripts directory or absolute path
+userstxt_path="./"
 
-# Path to folder where backed up files will be saved.
-# Relative to scripts directory or absolute path:
-#backupfolder="backups/"
+# path to folder where backed up files will be saved.
+# relative to scripts directory or absolute path:
+backupfolder="backups/"
 
-# date extension for backup files.
-# default is "-%Y-%m-%d" resulting
+# date extension for backup files. Default is "-%Y-%m-%d" resulting
 # in backup files named e.g. "calcardbackup-2017-03-23.tar.gz"
 # to change, have a look at format options under "man date"
-#backupfile_date_extension="-%Y-%m-%d"
+backupfile_date_extension="-%Y-%m-%d"
 
 # backup nextcloud-database as well?
-#backup_database="yes"
+backup_database="yes"
 
 # though tested - use at own risk(!):
 # delete backups after how many days?
 # the default value of "0" means never delete backups
-#delete_backups_older_than="0"
+delete_backups_older_than="0"
 
-# use "zip" instead of "tar.gz" to compress backups?
+# change to "zip" instead of "tar.gz" to compress backup with zip
 # (package zip needs to be installed)
-#compression_method="zip"
+compression_method="tar.gz"
 
-# choose compression level between 1 and 9.
+# choose compression level between 1 and 9
 # 1 = faster, bigger filesize
 # 9 = slower, smaller filesize
-#compression_level="6"
+compression_level="6"
 
 
 
-######  end of config file for calcardbackup.sh  ######
+########  end of config file for calcardbackup  ########
