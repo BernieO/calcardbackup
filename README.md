@@ -24,7 +24,7 @@ Additionally backups older than X days can be deleted.
 
 4. Fill file `users.txt` with usernames and according passwords separated by a colon with one user per line (again with your favorite text editor).
 
-5. change ownership of repo to your webservers user (here `www-data`) and restrict access to `users.txt`:
+5. change ownership of repo to your webservers user (here `www-data`) and restrict access to `users.txt`:<br>
 `chown -R www-data:www-data .`<br>
 `chmod 600 users.txt`
 
