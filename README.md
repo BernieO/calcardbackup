@@ -6,9 +6,8 @@ Additionally backups older than X days can be deleted.
 
 ## Requirements
 - Own-/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
-- Packages sed, curl and according database packages (mysql-server/mariadb-server or sqlite3)
-- if backups shall be zipped (instead of defaul gzipped tarball): package zip
-- this script needs to have read-access for Own-/Nextcloud path (to read values from config.php)
+- Packages `sed` `curl` and according database packages (`mysql-server`/`mariadb-server` or `sqlite3`)
+- if backups shall be zipped (instead of defaul gzipped tarball): package `zip`
 
 ## Installation
 
