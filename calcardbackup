@@ -453,6 +453,13 @@ function get_calendars {
   # counter for exported calendars (if no calendar was exported there is no valid nextcloud user in users.txt):
   exported=0
 
+  # Check whether database returned 0 entries (meaning there is not a single calendar):
+  if [ ${#uri[@]} == 0  ]; then
+    echo "-- INFO: Couldn't find a single calendar in your ${productname}!"
+    # exported=1, because we want to go on and look for addressbooks
+    exported=1
+  fi
+
   count=${#uri[@]}
   for (( i=0; i<$count; i++ ))
   do
