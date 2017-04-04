@@ -12,7 +12,7 @@
 #
 # Don't forget to create file 'users.txt' in scripts dir filled with
 # usernames and according passwords with one user per line and
-# separated by a colon. See file 'users.txt.example'
+# separated by a colon. See files 'README.md' and 'users.txt.example'
 #
 #######################################################
 

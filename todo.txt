@@ -1,7 +1,12 @@
 # ToDos for calcardbackup
 
- 
+
+left to be done:
+- 
+
+
 done:
+- make default to not backup database (04.04.2017)
 - corrections and better explanation in config file (04.04.2017)
 - catch if no calendars are in database and print info (currently this results in no user match error) (04.04.2017)
 - corrections and better explanation in README.md (03.04.2017)
