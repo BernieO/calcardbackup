@@ -1,11 +1,11 @@
 # calcardbackup
 
-This script extracts Own-/Nextcloud calendars and addressbooks and saves them as compressed file with date-extension in a backup-folder.
-As default the database is being backed up as well and stored in the same compressed file.
-Additionally backups older than X days can be deleted.
+This script extracts Own-/Nextcloud calendars and addressbooks and saves them as compressed file with a date-extension in a backup-folder.<br>
+Optional the Own-/Nextcloud-database can be backed up as well and stored in the same compressed file (default: no backup of database).<br>
+Additionally there is an config option to delete backups that are older than X days (default: no delete).
 
 ## Requirements
-- Own-/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
+- local installation of Own-/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
 - Packages `sed` `curl` and according database packages (`mysql-server`/`mariadb-server` or `sqlite3`)
 - if backups shall be zipped (instead of defaul gzipped tarball): package `zip`
 
@@ -16,8 +16,8 @@ Additionally backups older than X days can be deleted.
 `cd calcardbackup`
 
 2. Copy example files:<br>
-`cp -a calcardbackup.conf.example calcardbackup.conf`<br>
-`cp -a users.txt.example users.txt`
+`cp calcardbackup.conf.example calcardbackup.conf`<br>
+`cp users.txt.example users.txt`
 
 3. Change path to your Own-/Nextcloud installation in config file `calcardbackup.conf` with your favorite text editor.
 

@@ -34,7 +34,7 @@ function preparations {
   # print timestamp
   plus_line
   echo "+"
-  echo "+  $(date) --> START calcardbackup.sh"
+  echo "+  $(date) --> START calcardbackup"
   echo "+  Checking dependencies and preparing..."
 
   # check for package curl
@@ -101,7 +101,7 @@ function preparations {
     backupfile_date_extension="-%Y-%m-%d"
   fi
   if [ -z ${backup_database+x} ]; then
-    backup_database="yes"
+    backup_database="no"
   fi
   if [ -z ${delete_backups_older_than+x} ]; then
     delete_backups_older_than="0"
@@ -589,7 +589,7 @@ function dump_database {
     esac
     printf "...success!\n"
   else
-    echo "+  Not backing up database (as configured)."
+    echo "+  Not backing up ${productname} database."
   fi
 }
 
@@ -638,7 +638,7 @@ function delete_old_backups {
 
 function finish {
   # print timestamp
-  echo "+  $(date) --> END calcardbackup.sh"
+  echo "+  $(date) --> END calcardbackup"
   echo "+"
   echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   echo

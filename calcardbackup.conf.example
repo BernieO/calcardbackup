@@ -43,8 +43,8 @@ backupfolder="backups/"
 # to change, have a look at format options under "man date"
 backupfile_date_extension="-%Y-%m-%d"
 
-# backup nextcloud-database as well?
-backup_database="yes"
+# Choose "yes" if you want to backup nextcloud-database as well:
+backup_database="no"
 
 # though tested - use at own risk(!):
 # delete backups after how many days?
