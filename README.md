@@ -7,7 +7,7 @@ Additionally there is an config option to delete backups that are older than X d
 ## Requirements
 - local installation of Own-/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
 - Packages `sed` `curl` and according database packages (`mysql-server`/`mariadb-server` or `sqlite3`)
-- if backups shall be zipped (instead of defaul gzipped tarball): package `zip`
+- if backups shall be zipped (instead of default gzipped tarball): package `zip`
 
 ## Installation
 
