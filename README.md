@@ -23,11 +23,13 @@ Additionally there is an config option to delete backups that are older than X d
 
 4. Fill file `users.txt` with usernames and according passwords separated by a colon with one user per line (again with your favorite text editor).
 
-5. change ownership of repo to your webservers user (here `www-data`) and restrict access to `users.txt`:<br>
+5. Change ownership of repo to your webservers user (here `www-data`) and restrict access to `users.txt`:<br>
 `chown -R www-data:www-data .`<br>
 `chmod 600 users.txt`
 
-5. Run the script as user `www-data`:<br>
+6. Run script as user `www-data`:<br>
 `sudo -u www-data ./calcardbackup`
 
-6. Check output of script - it will tell, if anything else has to be configured in calcardbackup.conf
+7. Check output of script - it will tell, if anything is missing or has to be configured in `calcardbackup.conf`
+
+8. Find your backup in directory `backups/`
