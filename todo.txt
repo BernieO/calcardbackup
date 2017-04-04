@@ -1,10 +1,10 @@
 # ToDos for calcardbackup
 
-- corrections and better explanation in README.md
-- corrections and better explanation in config file
-- catch if no calendars are in database and print info (currently this results in no user match error)
  
 done:
+- corrections and better explanation in config file (04.04.2017)
+- catch if no calendars are in database and print info (currently this results in no user match error) (04.04.2017)
+- corrections and better explanation in README.md (03.04.2017)
 - make text section at top of script shorter (02.04.2017)
 - better error handling after url-autodetection, depending on url coming from config file or config.php (overwrite.cli.url) (02.04.2017)
 - make declaration of URL optional for versions >=7.0 (there URL can be read from overwrite.cli.url in config.php) (01.04.2017)

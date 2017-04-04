@@ -11,8 +11,8 @@
 # Running the script will give hints, of something has to be changed.
 #
 # Don't forget to create file 'users.txt' in scripts dir filled with
-# usernames and according passwords separated by a colon with one
-# user per line and separated by a colon. See file 'users.txt.example'
+# usernames and according passwords with one user per line and
+# separated by a colon. See file 'users.txt.example'
 #
 #######################################################
 
