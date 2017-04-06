@@ -46,16 +46,25 @@ function preparations {
   actual_path=$(readlink -f "${BASH_SOURCE[0]}")
   script_dir=$(dirname "$actual_path")
 
-  if [ -z ${config_path+x} ]; then
-    config_path="$script_dir"
-  fi
+  # assign default values, if variables are unset or empty:
+  config_path=${config_path:-"./"}
+  nextcloud_path=${nextcloud_path:-"/usr/share/nginx/www"}
+  nextcloud_url=${nextcloud_url:-"https://www.example.com"}
+  trustful_certificate=${trustful_certificate:-"yes"} # everything other than "yes" will be handled as "no"
+  userstxt_path=${userstxt_path:-"./"}
+  backupfolder=${backupfolder:-"backups"}
+  backupfile_date_extension=${backupfile_date_extension:-"-%Y-%m-%d"}
+  backup_database=${backup_database:-"no"} # everything other than "no" will be handled as "yes"
+  delete_backups_older_than=${delete_backups_older_than:-"0"}
+  compression_method=${compression_method:-"tar.gz"}
+  compression_level=${compression_level:-"6"}
+
   # if $config_path contains relative path, change to absolute path and remove trailing slash:
   if [[ ! "$config_path" = /* ]]; then
     config_path=$(readlink -m "${script_dir}/${config_path}")
   else
     config_path=$(readlink -m "$config_path")
   fi
-
   # check if config file is readable:
   if [ ! -r "${config_path}/calcardbackup.conf" ]; then
     echo "--"
@@ -73,50 +82,55 @@ function preparations {
     . "${config_path}/calcardbackup.conf"
   fi
 
-  if [ -z ${nextcloud_url+x} ] || [ "${nextcloud_url}" == "https://www.example.com" ]; then
+  # remove trailing slashes:
+  nextcloud_path=$(readlink -m "$nextcloud_path")
+  nextcloud_url=$(echo "$nextcloud_url" | sed 's:/*$::')
+  # Nextclouds config.php is to be found at:
+  configphp="${nextcloud_path}/config/config.php"
+
+  # assign insecure-option for curl if certificate not trustful:
+  if [ "$trustful_certificate" == "yes" ]; then
+    trust=""
+  else
+    trust="--insecure"
+  fi
+
+  # if $userstxt_path contains relative path, change to absolute path and remove trailing slash:
+  if [[ ! "$userstxt_path" = /* ]]; then
+    userstxt_path=$(readlink -m "${script_dir}/${userstxt_path}")
+  else
+    userstxt_path=$(readlink -m "$userstxt_path")
+  fi
+  # check if users.txt is readable
+  if [ ! -r "${userstxt_path}/users.txt" ]; then
     echo "--"
-    echo "-- ERROR: No URL to Own-/Nextclouds login-page given. This is mandatory!"
+    echo "-- ERROR: ${userstxt_path}/users.txt is not readable."
     error_exit
   fi
 
-  # declare default values, if not set:
-  if [ -z ${nextcloud_path+x} ]; then
-    nextcloud_path="/usr/share/nginx/www"
+  # if $backupfolder contains relative path, change to absolute path and remove trailing slash:
+  if [[ ! "$backupfolder" = /* ]]; then
+    backupfolder=$(readlink -m "${script_dir}/${backupfolder}")
+  else
+    backupfolder=$(readlink -m "$backupfolder")
   fi
-  if [ -z ${trustful_certificate+x} ]; then
-    trustful_certificate="yes"
-  fi
-  if [ -z ${userstxt_path+x} ]; then
-    userstxt_path="./"
-  fi
-  if [ -z ${backupfolder+x} ]; then
-    backupfolder="backups"
-  fi
-  if [ -z ${backupfile_date_extension+x} ]; then
-    backupfile_date_extension="-%Y-%m-%d"
-  fi
-  # make sure a configured date format in backupfile_date_extension is valid:
+
+  # make sure the configured date format in backupfile_date_extension is valid:
   if [ ! $(date +"${backupfile_date_extension}" 2>/dev/null) ]; then
-    echo "-- NOTICE: backupfile_date_extension has no valid format. Using default (%Y-%m-%d) instead."
+    echo "-- NOTICE: backupfile_date_extension has no valid format. Using default (-%Y-%m-%d) instead."
     backupfile_date_extension="-%Y-%m-%d"
   fi
-  if [ -z ${backup_database+x} ]; then
-    backup_database="no"
-  fi
-  if [ -z ${delete_backups_older_than+x} ]; then
-    delete_backups_older_than="0"
-  fi
+
   # make sure delete_backups_older_than is a positive integer and set it to 0 if not:
   case "$delete_backups_older_than" in
    ''|*[!0-9]*)
-      echo "-- NOTICE: delete_backups_older_than is not a positive number. Using default of 0 instead to not delete anything unwanted."
+      echo "-- NOTICE: delete_backups_older_than is not a positive number."
+      echo "-- Using default of 0 instead to not delete anything unwanted."
       delete_backups_older_than="0"
     ;;
   esac
 
-  if [ -z ${compression_method+x} ]; then
-    compression_method="tar.gz"
-  elif [ "$compression_method" == "zip" ]; then
+  if [ "$compression_method" == "zip" ]; then
     # check for package zip
     which zip > /dev/null || {
       echo "--"
@@ -126,17 +140,6 @@ function preparations {
     }
   else
     compression_method="tar.gz"
-  fi
-
-  # remove trailing slashes:
-  nextcloud_url=$(echo "$nextcloud_url" | sed 's:/*$::')
-  nextcloud_path=$(readlink -m "$nextcloud_path")
-
-  # Nextclouds config.php is to be found at:
-  configphp="${nextcloud_path}/config/config.php"
-
-  if [ -z ${compression_level+x} ]; then
-    compression_level="6"
   fi
 
   # make sure compression_level has a valid value (1-9)
@@ -152,33 +155,6 @@ function preparations {
       fi
     ;;
   esac
-
-  # if $backupfolder contains relative path, change to absolute path and remove trailing slash:
-  if [[ ! "$backupfolder" = /* ]]; then
-    backupfolder=$(readlink -m "${script_dir}/${backupfolder}")
-  else
-    backupfolder=$(readlink -m "$backupfolder")
-  fi
-  # if $userstxt_path contains relative path, change to absolute path and remove trailing slash:
-  if [[ ! "$userstxt_path" = /* ]]; then
-    userstxt_path=$(readlink -m "${script_dir}/${userstxt_path}")
-  else
-    userstxt_path=$(readlink -m "$userstxt_path")
-  fi
-
-  # check if users.txt is readable
-  if [ ! -r "${userstxt_path}/users.txt" ]; then
-    echo "--"
-    echo "-- ERROR: ${userstxt_path}/users.txt is not readable."
-    error_exit
-  fi
-
-  # assign insecure-option for curl if certificate not trustful:
-  if [ "$trustful_certificate" == "yes" ]; then
-    trust=""
-  else
-    trust="--insecure"
-  fi
 }
 
 function getvalue_from_configphp() {
