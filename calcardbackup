@@ -14,7 +14,7 @@
 #
 # main configuration needs to be in ./calcardbackup.conf (see calcardbackup.conf.example)
 # if calcardbackup.conf needs to be outside this scripts directory change following path:
-config_path="./"
+#config_path="./"
 #
 #######################################################
 
@@ -46,18 +46,18 @@ function preparations {
   actual_path=$(readlink -f "${BASH_SOURCE[0]}")
   script_dir=$(dirname "$actual_path")
 
-  # assign default values, if variables are unset or empty:
+  # assign default values:
   config_path=${config_path:-"./"}
-  nextcloud_path=${nextcloud_path:-"/usr/share/nginx/www"}
-  nextcloud_url=${nextcloud_url:-"https://www.example.com"}
-  trustful_certificate=${trustful_certificate:-"yes"} # everything other than "yes" will be handled as "no"
-  userstxt_path=${userstxt_path:-"./"}
-  backupfolder=${backupfolder:-"backups"}
-  backupfile_date_extension=${backupfile_date_extension:-"-%Y-%m-%d"}
-  backup_database=${backup_database:-"no"} # everything other than "no" will be handled as "yes"
-  delete_backups_older_than=${delete_backups_older_than:-"0"}
-  compression_method=${compression_method:-"tar.gz"}
-  compression_level=${compression_level:-"6"}
+  nextcloud_path="/usr/share/nginx/www"
+  nextcloud_url="https://www.example.com"
+  trustful_certificate="yes"
+  userstxt_path="./"
+  backupfolder="backups"
+  backupfile_date_extension="-%Y-%m-%d"
+  backup_database="no"
+  delete_backups_older_than="0"
+  compression_method="tar.gz"
+  compression_level="6"
 
   # if $config_path contains relative path, change to absolute path and remove trailing slash:
   if [[ ! "$config_path" = /* ]]; then
@@ -65,10 +65,11 @@ function preparations {
   else
     config_path=$(readlink -m "$config_path")
   fi
-  # check if config file is readable:
-  if [ ! -r "${config_path}/calcardbackup.conf" ]; then
+
+  # check if config file is a file and readable:
+  if [ ! -f "${config_path}/calcardbackup.conf" ] || [ ! -r "${config_path}/calcardbackup.conf" ]; then
     echo "--"
-    echo "-- ERROR: config file ${config_path}/calcardbackup.conf is not readable."
+    echo "-- ERROR: config file ${config_path}/calcardbackup.conf is not a file or not readable."
     error_exit
   fi
   # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
@@ -82,18 +83,21 @@ function preparations {
     . "${config_path}/calcardbackup.conf"
   fi
 
-  # remove trailing slashes:
+  # remove trailing slashes from nextcloud_path and nextcloud_url:
   nextcloud_path=$(readlink -m "$nextcloud_path")
   nextcloud_url=$(echo "$nextcloud_url" | sed 's:/*$::')
-  # Nextclouds config.php is to be found at:
+  # Nextclouds config.php should be found at:
   configphp="${nextcloud_path}/config/config.php"
 
-  # assign insecure-option for curl if certificate not trustful:
-  if [ "$trustful_certificate" == "yes" ]; then
-    trust=""
-  else
-    trust="--insecure"
+  # check trustful_certificate for valid value:
+  if [[ ! ${trustful_certificate} =~ (yes|no) ]]; then
+    echo "-- NOTICE: Parameter 'trustful_certificate' is not valid (allowed is only \"yes\" or \"no\")."
+    echo "-- NOTICE: Using default value instead: trustful_certificate=\"yes\""
+    trustful_certificate="yes"
   fi
+  # assign insecure-option for curl, depending on certificates trustfullness:
+  [ "$trustful_certificate" == "yes" ] && trust=""
+  [ "$trustful_certificate" == "no" ] && trust="--insecure"
 
   # if $userstxt_path contains relative path, change to absolute path and remove trailing slash:
   if [[ ! "$userstxt_path" = /* ]]; then
@@ -101,31 +105,39 @@ function preparations {
   else
     userstxt_path=$(readlink -m "$userstxt_path")
   fi
-  # check if users.txt is readable
-  if [ ! -r "${userstxt_path}/users.txt" ]; then
+  # check if users.txt is a file and readable:
+  if [ ! -f "${userstxt_path}/users.txt" ] || [ ! -r "${userstxt_path}/users.txt" ]; then
     echo "--"
-    echo "-- ERROR: ${userstxt_path}/users.txt is not readable."
+    echo "-- ERROR: ${userstxt_path}/users.txt is not a file or not readable."
     error_exit
   fi
 
   # if $backupfolder contains relative path, change to absolute path and remove trailing slash:
-  if [[ ! "$backupfolder" = /* ]]; then
+  if [[ ! "${backupfolder}" = /* ]]; then
     backupfolder=$(readlink -m "${script_dir}/${backupfolder}")
   else
     backupfolder=$(readlink -m "$backupfolder")
   fi
 
-  # make sure the configured date format in backupfile_date_extension is valid:
+  # make sure the configured date format in $backupfile_date_extension is valid:
   if [ ! $(date +"${backupfile_date_extension}" 2>/dev/null) ]; then
-    echo "-- NOTICE: backupfile_date_extension has no valid format. Using default (-%Y-%m-%d) instead."
+    echo "-- NOTICE: Parameter 'backupfile_date_extension' has no valid format (check 'man date' for valid formats)."
+    echo "-- NOTICE: Using default value instead: backupfile_date_extension=\"-%Y-%m-%d\""
     backupfile_date_extension="-%Y-%m-%d"
+  fi
+
+  # check $backup_database for valid value:
+  if [[ ! ${backup_database} =~ ^(yes|no)$ ]]; then
+    echo "-- NOTICE: Parameter 'backup_database' is not valid (only \"yes\" or \"no\" allowed)."
+    echo "-- NOTICE: Using default value instead: backup_database=\"no\""
+    backup_database="no"
   fi
 
   # make sure delete_backups_older_than is a positive integer and set it to 0 if not:
   case "$delete_backups_older_than" in
    ''|*[!0-9]*)
-      echo "-- NOTICE: delete_backups_older_than is not a positive number."
-      echo "-- Using default of 0 instead to not delete anything unwanted."
+      echo "-- NOTICE: Parameter 'delete_backups_older_than' is not a positive number."
+      echo "-- NOTICE: Using default value instead (not deleting anything): delete_backups_older_than=\"0\""
       delete_backups_older_than="0"
     ;;
   esac
@@ -135,30 +147,25 @@ function preparations {
     which zip > /dev/null || {
       echo "--"
       echo "-- ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'."
-      echo "-- Therefore package zip is needed. Install with 'apt-get install zip' and run script again"
+      echo "-- Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
       error_exit
     }
-  else
+  elif [ "${compression_method}" != "tar.gz" ]; then
+    echo "-- NOTICE: Parameter 'compression_method' is not valid (only \"zip\" or \"tar.gz\" allowed)."
+    echo "-- NOTICE: Using default value instead: compression_method=\"tar.gz\""
     compression_method="tar.gz"
   fi
 
   # make sure compression_level has a valid value (1-9)
-  case "$compression_level" in
-    ''|*[!0-9]*)
-      echo "-- NOTICE: compression level is not a number. Using compression level of 6 instead."
-      compression_level="6"
-    ;;
-    *)
-      if [ "$compression_level" -lt 1 -o "$compression_level" -gt 9 ]; then
-        echo "-- NOTICE: compression level is out of range ($compression_level). Using compression level of 6 instead."
-        compression_level="6"
-      fi
-    ;;
-  esac
+  if [[ ! ${compression_level} =~ ^[1-9]$ ]]; then
+    echo "-- NOTICE: Parameter 'compression_level' is not a number between 1-9."
+    echo "-- NOTICE: Using default value instead: compression_level=\"6\""
+    compression_level="6"
+  fi
 }
 
 function getvalue_from_configphp() {
-  # function to get value from config.php
+  # reads a line with a given paramter from config.php and echoes the parameters value:
   value=$(grep "$1" "$configphp")
   value=${value%\'*}
   value=${value##*\'}
