@@ -37,5 +37,5 @@ Additionally there is an config option to delete backups that are older than X d
 
 ## Interested in more details?
 
-Find more details here (sorry, currently only in german):
+Find more details here (sorry, currently only in german):  
 [Blog article about calcardbackup](https://bob.gatsmas.de/articles/kalender-und-adressbuchbackup-von-own-nextcloud-calcardbackup)
