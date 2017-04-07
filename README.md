@@ -5,6 +5,7 @@ Optional the Own-/Nextcloud-database can be backed up as well and stored in the 
 Additionally there is an config option to delete backups that are older than X days (default: no delete).
 
 ## Requirements
+
 - local installation of Own-/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
 - Packages `sed` `curl` and according database packages (`mysql-server`/`mariadb-server` or `sqlite3`)
 - if backups shall be zipped (instead of default gzipped tarball): package `zip`
@@ -33,3 +34,8 @@ Additionally there is an config option to delete backups that are older than X d
 7. Check output of script - it will tell, if anything is missing or has to be configured in `calcardbackup.conf`
 
 8. Find your backup in directory `backups/`
+
+## Interested in more details?
+
+Find more details here (sorry, currently only in german):
+https://bob.gatsmas.de/articles/kalender-und-adressbuchbackup-von-own-nextcloud-calcardbackup
