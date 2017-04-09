@@ -1,8 +1,8 @@
 # calcardbackup
 
-This Bash-script exports calendars and addressbooks from Owncloud/Nextcloud as .ics and .vcf files and saves them compressed (.tar.gz or .zip) in a given folder.<br>
-Optionally the Owncloud/Nextcloud-database can be backed up as well (default: no backup of database).<br>
-Additionally there is an config option to delete backups that are older than X days (default: no delete).
+This Bash-script exports calendars and addressbooks of given users from Owncloud/Nextcloud to .ics and .vcf files and saves them compressed (.tar.gz or .zip) in a given folder.<br>
+Optionally the Owncloud/Nextcloud database can be backed up as well (default: no backup of database).<br>
+Additionally there is a config option to delete backups that are older than X days (default: no delete).
 
 ## Requirements
 
@@ -22,7 +22,7 @@ Additionally there is an config option to delete backups that are older than X d
 
 3. Change path to your Own-/Nextcloud installation in config file `calcardbackup.conf` with your favorite text editor.
 
-4. Fill file `users.txt` with usernames and according passwords separated by a colon with one user per line (again with your favorite text editor).
+4. In `users.txt`, insert usernames and according passwords separated by a colon with one user per line (again with your favorite text editor) of all users to be backed up.
 
 5. Change ownership of repo to your webservers user (here `www-data`) and restrict access to `users.txt`:<br>
 `chown -R www-data:www-data .`<br>
@@ -31,9 +31,9 @@ Additionally there is an config option to delete backups that are older than X d
 6. Run script as user `www-data`:<br>
 `sudo -u www-data ./calcardbackup`
 
-7. Check output of script - it will tell, if anything is missing or has to be configured in `calcardbackup.conf`
+7. Check output of script - it will tell, if anything is missing or has to be configured in `calcardbackup.conf`.
 
-8. Find your backup in directory `backups/`
+8. Find your backup in directory `backups/`.
 
 ## Interested in more details?
 
