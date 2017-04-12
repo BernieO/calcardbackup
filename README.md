@@ -12,7 +12,7 @@ Additionally there is a config option to delete backups that are older than X da
 
 ## Installation
 
-1. Clone the repository to your server and enter the repo:<br>
+1. Clone the repository to your server (outside of webroot!) and enter the repo:<br>
 `git clone https://github.com/BernieO/calcardbackup`<br>
 `cd calcardbackup`
 

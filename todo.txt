@@ -2,10 +2,11 @@
 
 
 left to be done:
-- 
+- hook file that can be executed after calcardbackup has finished and can use some variables of calcardbackup
 
 
 done:
+- new functions get_absolute_path() and check_readable_file() for repeating tasks (12.04.2017) 
 - make default to not backup database (04.04.2017)
 - corrections and better explanation in config file (04.04.2017)
 - catch if no calendars are in database and print info (currently this results in no user match error) (04.04.2017)
