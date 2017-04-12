@@ -30,6 +30,26 @@
 #######################################################
 
 
+function get_absolute_path() {
+  # if $1 relative path, change to absolute path and remove trailing slash:
+  if [[ ! "$1" = /* ]]; then
+    absolute_path=$(readlink -m "${script_dir}/${1}")
+  else
+    absolute_path=$(readlink -m "${1}")
+  fi
+  echo ${absolute_path}
+}
+
+function check_readable_file() {
+  # checks if argument-1 is a file and readable. Argument-2 is error message if not.
+  if [ ! -f "$1" ] || [ ! -r "$1" ]; then
+    echo "--"
+    echo "-- ERROR: Can't read ${2}"
+    echo "-- I need to be able to read ${1}"
+    error_exit
+  fi
+}
+
 function preparations {
   # print timestamp
   plus_line
@@ -59,19 +79,11 @@ function preparations {
   compression_method="tar.gz"
   compression_level="6"
 
-  # if $config_path contains relative path, change to absolute path and remove trailing slash:
-  if [[ ! "$config_path" = /* ]]; then
-    config_path=$(readlink -m "${script_dir}/${config_path}")
-  else
-    config_path=$(readlink -m "$config_path")
-  fi
+  # absolute path to config file:
+  config_path=$(get_absolute_path ${config_path})
 
   # check if config file is a file and readable:
-  if [ ! -f "${config_path}/calcardbackup.conf" ] || [ ! -r "${config_path}/calcardbackup.conf" ]; then
-    echo "--"
-    echo "-- ERROR: config file ${config_path}/calcardbackup.conf is not a file or not readable."
-    error_exit
-  fi
+  check_readable_file "${config_path}/calcardbackup.conf" "calcardbackups config file."
   # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
   grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]+"[[:space:]]*)(#.*)?$' "${config_path}/calcardbackup.conf"
   if [ "$?" -eq 0 ]; then
@@ -99,25 +111,13 @@ function preparations {
   [ "$trustful_certificate" == "yes" ] && trust=""
   [ "$trustful_certificate" == "no" ] && trust="--insecure"
 
-  # if $userstxt_path contains relative path, change to absolute path and remove trailing slash:
-  if [[ ! "$userstxt_path" = /* ]]; then
-    userstxt_path=$(readlink -m "${script_dir}/${userstxt_path}")
-  else
-    userstxt_path=$(readlink -m "$userstxt_path")
-  fi
+  # absolute path to users.txt:
+  userstxt_path=$(get_absolute_path ${userstxt_path})
   # check if users.txt is a file and readable:
-  if [ ! -f "${userstxt_path}/users.txt" ] || [ ! -r "${userstxt_path}/users.txt" ]; then
-    echo "--"
-    echo "-- ERROR: ${userstxt_path}/users.txt is not a file or not readable."
-    error_exit
-  fi
+  check_readable_file "${userstxt_path}/users.txt" "file with usernames and passwords."
 
-  # if $backupfolder contains relative path, change to absolute path and remove trailing slash:
-  if [[ ! "${backupfolder}" = /* ]]; then
-    backupfolder=$(readlink -m "${script_dir}/${backupfolder}")
-  else
-    backupfolder=$(readlink -m "$backupfolder")
-  fi
+  # absolute path to backupfolder:
+  backupfolder=$(get_absolute_path ${backupfolder})
 
   # make sure the configured date format in $backupfile_date_extension is valid:
   if [ ! $(date +"${backupfile_date_extension}" 2>/dev/null) ]; then
@@ -175,12 +175,7 @@ function getvalue_from_configphp() {
 function read_config_php {
   # reads config.php and assigns different paramters we need to know
   # check whether Nextclouds config-file is readable:
-  if [ ! -r "$configphp" ]; then
-    echo "--"
-    echo "-- ERROR: Can't read the configuration file of your installation."
-    echo "-- I need to be able to read $configphp"
-    error_exit
-  fi
+  check_readable_file "${configphp}" "configuration file of your Own-/Nextcloud installation."
 
   # get version of Nextcloud to configure correct dav-endpoint:
   version_config_php=$(getvalue_from_configphp "version")
@@ -217,7 +212,7 @@ function read_config_php {
     extra_users=""
   fi
 
-# get nextcloud_url from config.php or from config file and error, if something is weird:
+  # get nextcloud_url from config.php or from config file and error, if something is weird:
   nextcloud_url_default="https://www.example.com"
   nextcloud_url_overwrite=$(getvalue_from_configphp "overwrite.cli.url")
   if [ "$nextcloud_url" != "$nextcloud_url_default" ] && [ "$nextcloud_url" != "$nextcloud_url_overwrite" ] && [ "$nextcloud_url_overwrite" != "" ]; then
@@ -330,7 +325,6 @@ function read_status_php {
     error_exit
     }
   fi
-
 }
 
 function get_database_details {
@@ -355,12 +349,7 @@ function get_database_details {
       sqlite3_database="${datadirectory}/owncloud.db"
       database="SQLite3"
       # check if sqlite3-database-file is readable:
-      if [ ! -r "${sqlite3_database}" ]; then
-        echo "--"
-        echo "-- ERROR: Can't copy ${productname}s SQLite3 database."
-        echo "-- I need to be able to read ${sqlite3_database}"
-        error_exit
-      fi
+      check_readable_file "${sqlite3_database}" "${productname}s SQLite3 database."
     ;;
     *)
       echo "--"
@@ -403,8 +392,7 @@ function create_backup_folder {
 }
 
 function get_calendars {
-
- # Get details of calendars from database
+  # Get details of calendars from database
   query_row_principaluri="select $row_principaluri from $table_calendars order by id"
   query_row_uri="select $row_uri from $table_calendars order by id"
   query_row_displayname="select $row_displayname from $table_calendars order by id"
@@ -448,7 +436,7 @@ function get_calendars {
   # Check whether database returned 0 entries (meaning there is not a single calendar):
   if [ ${#uri[@]} == 0  ]; then
     echo "-- INFO: Couldn't find a single calendar in your ${productname}!"
-    # exported=1, because we want to go on and look for addressbooks
+    # exported=1 though nothing exported, because we want to go on and look for addressbooks
     exported=1
   fi
 
@@ -465,7 +453,7 @@ function get_calendars {
         if [ $err -ne 0 ]; then
           curl_error
         fi
-        # check whether we truly received an ics file:
+        # check for ics-header in received file:
         if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}.ics" | grep "BEGIN:VCALENDAR") ]; then
           mv "${backupfolder_day}/${principal[$i]}-${filename}.ics" "${backupfolder_day}/${principal[$i]}-${filename}.ics-ERROR.txt"
           printf "\n--\n-- ERROR: the saved file is not a valid calendar-file. Something went wrong.\n"
@@ -531,7 +519,7 @@ function get_addressbooks {
     ;;
   esac
 
-  # no need for an exported counter, because already done in calendar section
+  # no need for an exported file counter, because already done in calendar section
 
   count=${#uri[@]}
   for (( i=0; i<$count; i++ ))
@@ -553,7 +541,7 @@ function get_addressbooks {
           break
         fi
 
-        # check whether we truly received an vcf file:
+        # check for vcf-header in received file:
         if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}.vcf" | grep "BEGIN:VCARD") ]; then
           mv "${backupfolder_day}/${principal[$i]}-${filename}.vcf" "${backupfolder_day}/${principal[$i]}-${filename}.vcf-ERROR.txt"
           printf "\n--\n-- ERROR: the saved file is not a valid vcard-file. Something went wrong.\n"
