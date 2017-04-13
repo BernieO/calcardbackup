@@ -15,28 +15,30 @@ See `hook.example` for details.
 
 ## Installation
 
-1. Clone the repository to your server (outside of webroot!) and enter the repo:<br>
-`git clone https://github.com/BernieO/calcardbackup`<br>
+1. Clone the repository to your server (outside of webroot!) and enter the repo:  
+`git clone https://github.com/BernieO/calcardbackup`  
 `cd calcardbackup`
 
-2. Copy example files:<br>
-`cp calcardbackup.conf.example calcardbackup.conf`<br>
-`cp users.txt.example users.txt`
+2. Copy example files:  
+`cp examples/calcardbackup.conf.example calcardbackup.conf`  
+`cp examples/users.txt.example users.txt`
 
 3. Change path to your Own-/Nextcloud installation in config file `calcardbackup.conf` with your favorite text editor.
 
-4. In `users.txt`, insert usernames and according passwords separated by a colon with one user per line (again with your favorite text editor) of all users to be backed up.
+4. In `users.txt`, insert usernames and according passwords separated by a colon with one user per line of all users to be backed up.
 
-5. Change ownership of repo to your webservers user (here `www-data`) and restrict access to `users.txt`:<br>
-`chown -R www-data:www-data .`<br>
+5. Change ownership of repo to your webservers user (here `www-data`) and restrict access to `users.txt`:  
+`chown -R www-data:www-data .`  
 `chmod 600 users.txt`
 
-6. Run script as user `www-data`:<br>
+6. Run script as user `www-data`:  
 `sudo -u www-data ./calcardbackup`
 
 7. Check output of script - it will tell, if anything is missing or has to be configured in `calcardbackup.conf`.
 
 8. Find your backup in directory `backups/`.
+
+9. Advanced: have a look at `examples/hook.example`, if you need to run own commands at certain stages of calcardbackup.
 
 ## Interested in more details?
 

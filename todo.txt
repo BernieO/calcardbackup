@@ -5,6 +5,8 @@ left to be done:
 
 
 done:
+- move example files to separate directory (13.04.2017)
+- redirect errors to stderr (13.04.2017)
 - add hook to create the possibility to run own commands at certain stages of calcardbackup (13.04.2017)
 - new functions get_absolute_path() and check_readable_file() for repeating tasks (12.04.2017) 
 - make default to not backup database (04.04.2017)
