@@ -162,6 +162,12 @@ function preparations {
     echo "-- NOTICE: Using default value instead: hook=\"no\""
     hook="no"
   fi
+  [ "${hook}" == "yes" ] && [ ! -f "${script_dir}/hook" ] && {
+    echo "-- NOTICE: You chose to use own commands in hook file. But 'hook' is not present in '${script_dir}'"
+    echo "-- NOTICE: Ignoring hook=\"yes\". Using default value \"no\" instead."
+    hook="no"
+  }
+
 }
 
 function getvalue_from_configphp() {
