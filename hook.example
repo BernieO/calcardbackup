@@ -1,0 +1,60 @@
+#!/bin/bash
+
+#######################################################
+#
+# example hook file for calcardbackup
+# ---------------------------------------
+#
+# If additional tasks at certain stages of calcardbackup have to be done:
+# - copy this file to the same directory as calcardbackup,
+#   rename it to 'hook' and add the commands you need (read explanations below)
+# - hook="yes" must be set in config file calcardbackup.conf
+#
+#######################################################
+
+
+function precompress() {
+  local path_backup_precompress="${1}"
+  # is run right before compressing the backup. May be useful for adding
+  # other files to the directory with backed up files before compressing it.
+  #
+  # Variables:
+  #  - $path_backup_precompress
+  #    contains absolute path to directory with backed up files (without trailing slash)
+  #    e.g.: "/usr/local/bin/calcardbackup/backups/calcardbackup-2017-04-13"
+  #
+  # add commands to run right before compressing the backup here:
+
+}
+
+function prefinish() {
+  local path_compressed_backup="${1}"
+  # is run just before successfully exiting calcardbackup. May be useful for
+  # copying the compressed backup file to another location (e.g. backup-server)
+  #
+  # Variables:
+  #  - $path_compressed_backup
+  #    contains absolute path to backup-file
+  #    e.g.: "/usr/local/bin/calcardbackup/backups/calcardbackup-2017-04-13.tar.gz"
+  #
+  # add commands tu run just before successful exit of calcardbackup here:
+
+}
+
+
+#######################################################
+# Don't touch anything below this line
+#######################################################
+
+
+handler="$1"
+shift
+
+case "$handler" in
+  precompress )
+    precompress "$@"
+  ;;
+  finish )
+    finish "$@"
+  ;;
+esac

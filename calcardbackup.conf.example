@@ -61,5 +61,9 @@ nextcloud_path="/usr/share/nginx/www/"
 # 9 = slower, smaller filesize
 #compression_level="6"
 
+# change to "yes" to run additional commands in certain situations
+# see hook.example for explanation and more details
+#hook="no"
+
 
 ########  end of config file for calcardbackup  ########

@@ -78,6 +78,7 @@ function preparations {
   delete_backups_older_than="0"
   compression_method="tar.gz"
   compression_level="6"
+  hook="no"
 
   # absolute path to config file:
   config_path=$(get_absolute_path ${config_path})
@@ -161,6 +162,13 @@ function preparations {
     echo "-- NOTICE: Parameter 'compression_level' is not a number between 1-9."
     echo "-- NOTICE: Using default value instead: compression_level=\"6\""
     compression_level="6"
+  fi
+
+  # check $run_hook for valid value:
+  if [[ ! ${hook} =~ ^(yes|no)$ ]]; then
+    echo "-- NOTICE: Parameter 'hook' is not valid (only \"yes\" or \"no\" allowed)."
+    echo "-- NOTICE: Using default value instead: hook=\"no\""
+    hook="no"
   fi
 }
 
@@ -574,6 +582,9 @@ function dump_database {
 }
 
 function pack_it {
+  # run hook?
+  [ "$hook" = "yes" ] && run_hook precompress "${backupfolder_day}"
+
   echo "+  Compressing backup as *.${compression_method} file with compression level ${compression_level}. Be patient - this may take a while."
   working_dir=$(pwd)
   cd "$backupfolder"
@@ -616,7 +627,15 @@ function delete_old_backups {
   fi
 }
 
+function run_hook() {
+  echo "+  Running hook"
+  ${script_dir}/hook "$@"
+}
+
 function finish {
+  # run hook?
+  [ "$hook" = "yes" ] && run_hook prefinish "${backupfolder}/calcardbackup${day}.${compression_method}"
+
   # print timestamp
   echo "+  $(date) --> END calcardbackup"
   echo "+"
