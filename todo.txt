@@ -2,6 +2,7 @@
 
 
 left to be done:
+- add hook in case an error occurs
 
 
 done:
