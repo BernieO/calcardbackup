@@ -2,8 +2,10 @@
 
 This Bash-script exports calendars and addressbooks of given users from Owncloud/Nextcloud to .ics and .vcf files and saves them compressed (.tar.gz or .zip) in a given folder.<br>
 Optionally the Owncloud/Nextcloud database can be backed up as well (default: no backup of database).  
-Additionally there is a config option to delete backups that are older than X days (default: no delete).  
-Last but not least there is the possibility to run own commands at certain stages of calcardbackup. This may be useful e.g. to add files to the backup before compressing or to copy the compressed backup to another location. See `hook.example` for details.
+Additionally there is a config option to delete backups that are older than X days (default: no delete).
+
+Last but not least there is the possibility to run own commands at certain stages of calcardbackup. This may be useful e.g. to add files to the backup before compressing or to copy the compressed backup to another location.  
+See `hook.example` for details.
 
 ## Requirements
 
