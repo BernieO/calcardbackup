@@ -240,7 +240,7 @@ read_status_php() {
   # check whether URL to Own-/Nextcloud is correct and store productname (Owncloud/Nextcloud):
   status_php=$(curl -s $trust "${nextcloud_url}/status.php")
   cerror=$?
-  [ "${cerror}" -ne 0 ] && curl_error
+  [ "${cerror}" -eq 0 ] || curl_error
 
   # check whether Own-/Nextcloud can be found at nextcloud_url with return of status.php
   # check regex with regex101.com (checked with versions mentioned below)
@@ -300,16 +300,16 @@ read_status_php() {
   fi
 
   # check for installed=true (and maintenance=false for versions >=8) in status.php
-  grep -E -q '"installed":"?true"?' <<< $status_php || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
+  grep -E -q '"installed":"?true"?' <<< ${status_php} || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
   if [ "$mainversion" -ge 8 ]; then
-    grep -E -q '"maintenance":"?false"?' <<< $status_php || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again"
+    grep -E -q '"maintenance":"?false"?' <<< ${status_php} || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again"
   fi
 }
 
 get_database_details() {
   # get database details:
   dbtype=$(getvalue_from_configphp "dbtype")
-  case "$dbtype" in
+  case "${dbtype}" in
     mysql)
       dbname=$(getvalue_from_configphp "dbname")
       dbhost=$(getvalue_from_configphp "dbhost")
@@ -346,22 +346,30 @@ read_users_txt() {
 
 create_backup_folder() {
   # create backup folder:
-  mkdir -p "$backupfolder"
+  mkdir -p "${backupfolder}"
   [ $? -eq 0 ] || error_exit "ERROR: Backupfolder could not be created."
 
   # check if backupfolder is writable
-  [ -w "$backupfolder" ] || error_exit "ERROR: Backupfolder is not writable."
+  [ -w "${backupfolder}" ] || error_exit "ERROR: Backupfolder is not writable."
 
   day=$(date +"${backupfile_date_extension}")
   backupfolder_day="${backupfolder}/calcardbackup${day}"
   mkdir -p "${backupfolder_day}"
 }
 
-get_calendars() {
-  # Get details of calendars from database
-  query_row_principaluri="select $row_principaluri from $table_calendars order by id"
-  query_row_uri="select $row_uri from $table_calendars order by id"
-  query_row_displayname="select $row_displayname from $table_calendars order by id"
+query_database() {
+
+  table=${1} # ${table_calendars} or ${table_addressbooks}
+
+  # unset arrays (to empty values from calendars):
+  unset principal
+  unset uri
+  unset displayname
+
+  # Get details of calendars/addressbooks from database
+  query_row_principaluri="select ${row_principaluri} from ${table} order by id"
+  query_row_uri="select ${row_uri} from ${table} order by id"
+  query_row_displayname="select ${row_displayname} from ${table} order by id"
   case "$dbtype" in
     mysql)
       while read calline
@@ -392,6 +400,12 @@ get_calendars() {
       done < <(sqlite3 "${sqlite3_database}" "${query_row_displayname}")
     ;;
   esac
+}
+
+get_calendars() {
+
+  # Get details of calendars from database
+  query_database "${table_calendars}"
 
   # Get calendars and save them in backup-folder:
   echo "+  Starting backup. Please be patient: Depending on the size of calendars or addressbooks this may take a while..."
@@ -415,10 +429,8 @@ get_calendars() {
         filename=${displayname[$i]// /_}
         printf "+  Saving calendar ${principal[$i]}-${filename}.ics..."
         curl -s $trust -o "${backupfolder_day}/${principal[$i]}-${filename}.ics" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${caldav}/calendars/${user[$index]}/${uri[$i]}?export"
-        err=$?
-        if [ $err -ne 0 ]; then
-          curl_error
-        fi
+        cerror=$?
+        [ "${cerror}" -eq 0 ] || curl_error
         # check for ics-header in received file:
         if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}.ics" | grep "BEGIN:VCALENDAR") ]; then
           mv "${backupfolder_day}/${principal[$i]}-${filename}.ics" "${backupfolder_day}/${principal[$i]}-${filename}.ics-ERROR.txt"
@@ -440,45 +452,8 @@ get_calendars() {
 
 get_addressbooks() {
 
-  # unset arrays, so we can start to fill them again with addressbooks details:
-  unset principal
-  unset uri
-  unset displayname
-
   # Get details of adressbooks from database
-  query_row_principaluri="select $row_principaluri from $table_addressbooks order by id"
-  query_row_uri="select $row_uri from $table_addressbooks order by id"
-  query_row_displayname="select $row_displayname from $table_addressbooks order by id"
-  case "$dbtype" in
-    mysql)
-      while read calline
-      do
-        principal+=("$calline")
-      done < <(mysql $mysql_options "${query_row_principaluri}" | sed 's/principals\/users\///')
-      while read calline
-      do
-        uri+=("$calline")
-      done < <(mysql $mysql_options "${query_row_uri}")
-      while read calline
-      do
-        displayname+=("$calline")
-      done < <(mysql $mysql_options "${query_row_displayname}")
-    ;;
-    sqlite3)
-      while read calline
-      do
-        principal+=("$calline")
-      done < <(sqlite3 "${sqlite3_database}" "${query_row_principaluri}" | sed 's/principals\/users\///')
-      while read calline
-      do
-        uri+=("$calline")
-      done < <(sqlite3 "${sqlite3_database}" "${query_row_uri}")
-      while read calline
-      do
-        displayname+=("$calline")
-      done < <(sqlite3 "${sqlite3_database}" "${query_row_displayname}")
-    ;;
-  esac
+  query_database "${table_addressbooks}"
 
   # no need for an exported file counter, because already done in calendar section
 
@@ -491,10 +466,8 @@ get_addressbooks() {
         filename=${displayname[$i]// /_}
         printf "+  Saving addressbook ${principal[$i]}-${filename}.vcf..."
         curl -s $trust -o "${backupfolder_day}/${principal[$i]}-${filename}.vcf" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${carddav}/addressbooks/${extra_users}${user[$index]}/${uri[$i]}?export"
-        err=$?
-        if [ ! $err -eq 0 ]; then
-          curl_error
-        fi
+        cerror=$?
+        [ "${cerror}" -eq 0 ] || curl_error
 
         # check if we received a file, since nextcloud doesn't export empty addressbooks:
         if [ ! -r "${backupfolder_day}/${principal[$i]}-${filename}.vcf" ]; then
@@ -589,7 +562,7 @@ finish() {
 
 curl_error() {
   if [ "${cerror}" -eq 6 ]; then
-    if [ "$nextcloud_url" == "$nextcloud_url_overwrite" ]; then
+    if [ "${nextcloud_url}" == "${nextcloud_url_overwrite}" ]; then
       problem="Either that host is temporarily unavailable or 'overwrite.cli.uri' in ${configphp} is wrong."
     else
       problem="Either that host is temporarily unavailable or nextcloud_url in '${config_path}/calcardbackup.conf' is wrong."
@@ -609,7 +582,7 @@ error_exit() {
   done
 
   # run hook?
-  [ "$hook" = "yes" ] && run_hook on_error "${hook_error_message}"
+  [ "${hook}" = "yes" ] && run_hook on_error "${hook_error_message}"
 
   echo "-- Exiting." >&2
   echo "--" >&2

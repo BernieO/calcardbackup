@@ -22,8 +22,9 @@ function precompress() {
   #  - $path_backup_precompress
   #    contains absolute path (no trailing slash) to directory containing backed up files
   #    e.g.: "/usr/local/bin/calcardbackup/backups/calcardbackup-2017-04-13"
+  #    if you want to add files to be compressed with the backup, place them in that folder.
   #
-  # add commands to run right before compressing the backup here:
+  # add commands to run right before compressing the backuped up files  here:
   echo "+  running hook \"precompress\":"
 
 }
