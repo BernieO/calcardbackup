@@ -2,10 +2,10 @@
 
 
 left to be done:
-- add hook in case an error occurs
 
 
 done:
+- add hook that gets executed when an error occurs (13.04.2017)
 - move example files to separate directory (13.04.2017)
 - redirect errors to stderr (13.04.2017)
 - add hook to create the possibility to run own commands at certain stages of calcardbackup (13.04.2017)

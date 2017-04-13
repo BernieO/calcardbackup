@@ -156,18 +156,22 @@ function preparations {
     compression_level="6"
   fi
 
-  # check $run_hook for valid value:
+  # check $hook for valid value:
   if [[ ! ${hook} =~ ^(yes|no)$ ]]; then
     echo "-- NOTICE: Parameter 'hook' is not valid (only \"yes\" or \"no\" allowed)."
     echo "-- NOTICE: Using default value instead: hook=\"no\""
     hook="no"
   fi
-  [ "${hook}" == "yes" ] && [ ! -f "${script_dir}/hook" ] && {
-    echo "-- NOTICE: You chose to use own commands in hook file. But 'hook' is not present in '${script_dir}'"
-    echo "-- NOTICE: Ignoring hook=\"yes\". Using default value \"no\" instead."
-    hook="no"
-  }
-
+  if [ "${hook}" == "yes" ]; then
+    if [ ! -f "${script_dir}/hook" ]; then
+      echo "-- NOTICE: You chose to run own commands in hook file. But file '${script_dir}/hook' does not exist."
+      default=1
+    elif [ ! -x "${script_dir}/hook" ]; then
+      echo "-- NOTICE: You chose to run own commands in hook file. But I don't have permission to run '${script_dir}/hook'"
+      default=1
+    fi
+    [ "${default}" == "1" ] && echo "-- NOTICE: Ignoring hook=\"yes\". Using default value \"no\" instead." && hook="no" && unset default
+  fi
 }
 
 function getvalue_from_configphp() {
@@ -586,7 +590,7 @@ function delete_old_backups {
 }
 
 function run_hook() {
-  echo "+  Running hook"
+  echo "+  Running hook \"${1}\":"
   ${script_dir}/hook "$@"
 }
 
@@ -623,7 +627,12 @@ function error_exit() {
   echo "--" >&2
   for message in "$@"; do
     echo "-- ${message}" >&2
+    hook_error_message="${hook_error_message}${message}\n"
   done
+
+  # run hook?
+  [ "$hook" = "yes" ] && run_hook on_error "${hook_error_message}"
+
   echo "-- Exiting." >&2
   echo "--" >&2
   echo "-------------  Errors occured. See messages above!  -------------" >&2

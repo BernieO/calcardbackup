@@ -4,8 +4,8 @@ This Bash-script exports calendars and addressbooks of given users from Owncloud
 Optionally the Owncloud/Nextcloud database can be backed up as well (default: no backup of database).  
 Additionally there is a config option to delete backups that are older than X days (default: no delete).
 
-Last but not least there is the possibility to run own commands at certain stages of calcardbackup. This may be useful e.g. to add files to the backup before compressing or to copy the compressed backup to another location.  
-See `hook.example` for details.
+Last but not least there it is possible to run own commands at certain stages of calcardbackup. This may be useful e.g. to add files to the backup before compressing or to copy the compressed backup to another location.  
+See `examples/hook.example` for details.
 
 ## Requirements
 
@@ -38,7 +38,7 @@ See `hook.example` for details.
 
 8. Find your backup in directory `backups/`.
 
-9. Advanced: have a look at `examples/hook.example`, if you need to run own commands at certain stages of calcardbackup.
+9. **Advanced**: if you need to run own commands at certain stages of calcardbackup, have a look at `examples/hook.example`.
 
 ## Interested in more details?
 
