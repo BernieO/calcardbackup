@@ -61,7 +61,7 @@ preparations() {
 
   # get path to scripts dir:
   actual_path=$(readlink -f "${BASH_SOURCE[0]}")
-  script_dir=$(dirname "$actual_path")
+  script_dir=$(dirname "${actual_path}")
 
   # assign default values:
   config_path=${config_path:-"./"}
@@ -89,8 +89,8 @@ preparations() {
   . "${config_path}/calcardbackup.conf"
 
   # remove trailing slashes from nextcloud_path and nextcloud_url:
-  nextcloud_path=$(readlink -m "$nextcloud_path")
-  nextcloud_url=$(echo "$nextcloud_url" | sed 's:/*$::')
+  nextcloud_path=$(readlink -m "${nextcloud_path}")
+  nextcloud_url=$(echo "${nextcloud_url}" | sed 's:/*$::')
   # location of Nextclouds config.php:
   configphp="${nextcloud_path}/config/config.php"
 
@@ -133,7 +133,7 @@ preparations() {
     delete_backups_older_than="0"
   fi
 
-  if [ "$compression_method" == "zip" ]; then
+  if [ "${compression_method}" == "zip" ]; then
     # check for package zip
     which zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
   elif [ "${compression_method}" != "tar.gz" ]; then
@@ -169,10 +169,10 @@ preparations() {
 
 getvalue_from_configphp() {
   # reads a line with a given paramter from config.php and echoes the parameters value:
-  value=$(grep "$1" "$configphp")
-  value=${value%\'*}
-  value=${value##*\'}
-  echo $value
+  value=$(grep "$1" "${configphp}")
+  value=${value%\'*} # throw away end including last '
+  value=${value##*\'} # throw away beginning including last '
+  echo ${value}
 }
 
 read_config_php() {
@@ -186,9 +186,9 @@ read_config_php() {
   mainversion=${version_config_php%%.*}
   minimumversion="5"
   davchangeversion="9"
-  if [ "$mainversion" -lt "$minimumversion" ]; then
-    error_exit "ERROR: This script only works with versions >= 5.0." "You are using Owncloud $version_config_php."
-  elif [ "$mainversion" -ge "$davchangeversion" ]; then
+  if [ "${mainversion}" -lt "${minimumversion}" ]; then
+    error_exit "ERROR: This script only works with versions >= 5.0." "You are using Owncloud ${version_config_php}."
+  elif [ "${mainversion}" -ge "${davchangeversion}" ]; then
     # Values for Nextcloud >= 9.0:
     caldav="dav"
     carddav="dav"
@@ -215,22 +215,22 @@ read_config_php() {
   # get nextcloud_url from config.php or from config file and error, if something is weird:
   nextcloud_url_default="https://www.example.com"
   nextcloud_url_overwrite=$(getvalue_from_configphp "overwrite.cli.url")
-  if [ "$nextcloud_url" != "$nextcloud_url_default" ] && [ "$nextcloud_url" != "$nextcloud_url_overwrite" ] && [ "$nextcloud_url_overwrite" != "" ]; then
+  if [ "${nextcloud_url}" != "${nextcloud_url_default}" ] && [ "${nextcloud_url}" != "${nextcloud_url_overwrite}" ] && [ "${nextcloud_url_overwrite}" != "" ]; then
     # use overwrite.cli.uri and print Warning, if nextcloud_url has been configured to something other than default or overwrite.cli.url
     # (last test in if statement above: make sure overwrite.cli.url is present and not empty):
     echo "--"
     echo "-- WARNING: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
     echo "-- ${nextcloud_url}/   ==>   configured as nextcloud_url in config file ${config_path}/calcardbackup.conf"
-    echo "-- ${nextcloud_url_overwrite}/   ==>   detected in $configphp"
+    echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
     echo "-- Using the latter one!"
     echo "--"
-    nextcloud_url=$nextcloud_url_overwrite
-  elif [ "$nextcloud_url" == "$nextcloud_url_default" ] && [ "$nextcloud_url_overwrite" == "" ]; then
+    nextcloud_url=${nextcloud_url_overwrite}
+  elif [ "${nextcloud_url}" == "${nextcloud_url_default}" ] && [ "${nextcloud_url_overwrite}" == "" ]; then
     # Error, if nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
     error_exit "ERROR: Can't retrieve url from ${configphp}" "In your case nextcloud_url needs to be configured in config file ${config_path}/calcardbackup.conf"
-  elif [ "$nextcloud_url_overwrite" != "" ]; then
+  elif [ "${nextcloud_url_overwrite}" != "" ]; then
     # if overwrite.cli.uri is found (and nextcloud_url is on default value): use it as nextcloud_url
-    nextcloud_url=$nextcloud_url_overwrite
+    nextcloud_url=${nextcloud_url_overwrite}
   fi
   # Print url which will be used:
   echo "+  Using URL ${nextcloud_url}"
@@ -238,7 +238,7 @@ read_config_php() {
 
 read_status_php() {
   # check whether URL to Own-/Nextcloud is correct and store productname (Owncloud/Nextcloud):
-  status_php=$(curl -s $trust "${nextcloud_url}/status.php")
+  status_php=$(curl -s ${trust} "${nextcloud_url}/status.php")
   cerror=$?
   [ "${cerror}" -eq 0 ] || curl_error
 
@@ -257,7 +257,7 @@ read_status_php() {
   # Nextcloud 9.0.57 {"installed":true,"maintenance":false,"version":"9.0.57.2","versionstring":"9.0.57","edition":""}
   # Nextcloud 10.0.4 {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"10.0.4","edition":""}
   # Nextcloud 11.0.2 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.2.7","versionstring":"11.0.2","edition":"","productname":"Nextcloud"}
-  grep -E -q '^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"(ownCloud|Nextcloud)")?\}$' <<< $status_php
+  grep -E -q '^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"(ownCloud|Nextcloud)")?\}$' <<< ${status_php}
   if [ $? != 0 ]; then
     error_exit "ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
   fi
@@ -274,10 +274,10 @@ read_status_php() {
   productname="ownCloud"
 
   # set productname to Nextcloud if status.php delivers it (this is the case for Nextcloud >= 11.0):
-  grep -E -q '"productname":"Nextcloud"' <<< $status_php && productname="Nextcloud"
+  grep -E -q '"productname":"Nextcloud"' <<< ${status_php} && productname="Nextcloud"
 
   # for mainversion 9 we need to find out whether product is ownCloud 9.x or Nextcloud 9.x or Nextcloud 10.x
-  if [ "${mainversion_status_php}" -eq "9" ]; then
+  if [ "${mainversion_status_php}" -eq 9 ]; then
 
     # Nextcloud 10 has different main version numbers in version and versionstring delivered by status.php:
     # get main version number from versionstring:
@@ -295,12 +295,13 @@ read_status_php() {
   echo "+  ${productname} ${versionstring_status_php} detected."
 
   # check whether version of config.php is the same than version of status.php
-  if [ "$version_status_php" != "$version_config_php" ]; then
+  if [ "${version_status_php}" != "${version_config_php}" ]; then
     error_exit "ERROR: different versions detected:" "${productname} ${version_status_php} found at ${nextcloud_url}" "${productname} ${version_config_php} found at ${nextcloud_path}" "check configured url and path in config file '${config_path}/calcardbackup.conf'"
   fi
 
-  # check for installed=true (and maintenance=false for versions >=8) in status.php
+  # check for installed=true in status.php
   grep -E -q '"installed":"?true"?' <<< ${status_php} || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
+  # check for maintenance=false for versions >= 8.0 in status.php
   if [ "$mainversion" -ge 8 ]; then
     grep -E -q '"maintenance":"?false"?' <<< ${status_php} || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again"
   fi
@@ -358,9 +359,9 @@ create_backup_folder() {
 }
 
 query_database() {
-
-  table=${1} # ${table_calendars} or ${table_addressbooks}
-
+  # gets neccessary rows from database
+  table="${1}" # ${table_calendars} or ${table_addressbooks}
+  item="${2}"
   # unset arrays (to empty values from calendars):
   unset principal
   unset uri
@@ -370,72 +371,86 @@ query_database() {
   query_row_principaluri="select ${row_principaluri} from ${table} order by id"
   query_row_uri="select ${row_uri} from ${table} order by id"
   query_row_displayname="select ${row_displayname} from ${table} order by id"
-  case "$dbtype" in
+  case "${dbtype}" in
     mysql)
-      while read calline
-      do
-        principal+=("$calline")
-      done < <(mysql $mysql_options "${query_row_principaluri}" | sed 's/principals\/users\///')
-      while read calline
-      do
-        uri+=("$calline")
-      done < <(mysql $mysql_options "${query_row_uri}")
-      while read calline
-      do
-        displayname+=("$calline")
-      done < <(mysql $mysql_options "${query_row_displayname}")
+      # check if table exists:
+      mysql ${mysql_options} "show tables like 'fantasy'" 1>/dev/null 2>&1
+      if [ "$?" != 0 ]; then
+        echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
+        echo "-- NOTICE: Looks like there are no ${item}s present."
+      else
+        while read calline
+        do
+          principal+=("${calline}")
+        done < <(mysql ${mysql_options} "${query_row_principaluri}" | sed 's/principals\/users\///')
+        while read calline
+        do
+          uri+=("${calline}")
+        done < <(mysql ${mysql_options} "${query_row_uri}")
+        while read calline
+        do
+          displayname+=("${calline}")
+        done < <(mysql ${mysql_options} "${query_row_displayname}")
+      fi
     ;;
     sqlite3)
-      while read calline
-      do
-        principal+=("$calline")
-      done < <(sqlite3 "${sqlite3_database}" "${query_row_principaluri}" | sed 's/principals\/users\///')
-      while read calline
-      do
-        uri+=("$calline")
-      done < <(sqlite3 "${sqlite3_database}" "${query_row_uri}")
-      while read calline
-      do
-        displayname+=("$calline")
-      done < <(sqlite3 "${sqlite3_database}" "${query_row_displayname}")
+      # check if table exists:
+      sqlite3 "${sqlite3_database}" "select ${row_uri} from ${table} where id=1" 1>/dev/null 2>&1
+      if [ "$?" != 0 ]; then
+        echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
+        echo "-- NOTICE: Looks like there are no ${item}s present."
+      else
+        while read calline
+        do
+          principal+=("${calline}")
+        done < <(sqlite3 "${sqlite3_database}" "${query_row_principaluri}" | sed 's/principals\/users\///')
+        while read calline
+        do
+          uri+=("${calline}")
+        done < <(sqlite3 "${sqlite3_database}" "${query_row_uri}")
+        while read calline
+        do
+          displayname+=("${calline}")
+        done < <(sqlite3 "${sqlite3_database}" "${query_row_displayname}")
+      fi
     ;;
   esac
 }
 
-get_calendars() {
+get_icsvcf_files() {
 
-  # Get details of calendars from database
-  query_database "${table_calendars}"
+  item="${1}" item_extension="${2}" item_header="${3}" calcarddav="${4}" ex_users="${5}"
 
-  # Get calendars and save them in backup-folder:
-  echo "+  Starting backup. Please be patient: Depending on the size of calendars or addressbooks this may take a while..."
-
-  # counter for exported calendars (if no calendar was exported there is no valid nextcloud user in users.txt):
-  exported=0
-
-  # Check whether database returned 0 entries (meaning there is not a single calendar):
+  # Check whether database returned 0 entries (meaning there is not a single item):
   if [ ${#uri[@]} == 0  ]; then
-    echo "-- INFO: Couldn't find a single calendar in your ${productname}!"
-    # exported=1 though nothing exported, because we want to go on and look for addressbooks
+    echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
+    # in this case exported=1 though nothing exported, because we want to go on and look for addressbooks
     exported=1
   fi
 
   count=${#uri[@]}
-  for (( i=0; i<$count; i++ ))
+  for (( i=0; i<${count}; i++ ))
   do
     for index in "${!users[@]}"
     do
       if [ "${principal[$i]}" == "${user[$index]}" ] && [ "${uri[$i]}" != "contact_birthdays" ]; then
         filename=${displayname[$i]// /_}
-        printf "+  Saving calendar ${principal[$i]}-${filename}.ics..."
-        curl -s $trust -o "${backupfolder_day}/${principal[$i]}-${filename}.ics" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${caldav}/calendars/${user[$index]}/${uri[$i]}?export"
+        printf "+  Saving ${item} ${principal[$i]}-${filename}${item_extension}..."
+        curl -s ${trust} -o "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]}/${uri[$i]}?export"
         cerror=$?
         [ "${cerror}" -eq 0 ] || curl_error
-        # check for ics-header in received file:
-        if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}.ics" | grep "BEGIN:VCALENDAR") ]; then
-          mv "${backupfolder_day}/${principal[$i]}-${filename}.ics" "${backupfolder_day}/${principal[$i]}-${filename}.ics-ERROR.txt"
+
+        # check if we received a file, since nextcloud doesn't export empty addressbooks:
+        if [ "${item}" == "addressbook" ] && [ ! -r "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" ]; then
+          printf "...not saved. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
+          break
+        fi
+
+        # check for ics-/vcf-header in received file:
+        if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" | grep "${item_header}") ]; then
+          mv "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
           printf "\n"
-          error_exit "ERROR: the saved file is not a valid calendar-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may also want to check the saved file for any hints what went wrong: ${backupfolder_day}/${principal[$i]}-${filename}.ics-ERROR.txt"
+          error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may also want to check the saved file for any hints what went wrong: ${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
         fi
         exported=$((exported + 1))
         printf "...success!\n"
@@ -443,55 +458,38 @@ get_calendars() {
       fi
     done
   done
+}
+
+get_calendars() {
+
+  # Get calendars and save them in backup-folder:
+  echo "+  Starting backup. Please be patient: this may take a while..."
+
+  # Get details of calendars from database
+  query_database "${table_calendars}" "calendar"
+
+  # counter for exported calendars (if no calendar was exported there is no valid nextcloud user in users.txt):
+  exported=0
+
+  get_icsvcf_files "calendar" ".ics" "BEGIN:VCALENDAR" "${caldav}" ""
 
   # there is no matching Nextcloud user, if no calendar has been exported.
-  if [ $exported == 0 ]; then
+  if [ ${exported} == 0 ]; then
     error_exit "ERROR: no match between given users in file 'users.txt' and registered ${productname} users!" "You need to check '${userstxt_path}/users.txt'!"
   fi
 }
 
 get_addressbooks() {
-
   # Get details of adressbooks from database
-  query_database "${table_addressbooks}"
-
+  query_database "${table_addressbooks}" "addressbook"
   # no need for an exported file counter, because already done in calendar section
-
-  count=${#uri[@]}
-  for (( i=0; i<$count; i++ ))
-  do
-    for index in "${!users[@]}"
-    do
-      if [ "${principal[$i]}" == "${user[$index]}" ]; then
-        filename=${displayname[$i]// /_}
-        printf "+  Saving addressbook ${principal[$i]}-${filename}.vcf..."
-        curl -s $trust -o "${backupfolder_day}/${principal[$i]}-${filename}.vcf" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${carddav}/addressbooks/${extra_users}${user[$index]}/${uri[$i]}?export"
-        cerror=$?
-        [ "${cerror}" -eq 0 ] || curl_error
-
-        # check if we received a file, since nextcloud doesn't export empty addressbooks:
-        if [ ! -r "${backupfolder_day}/${principal[$i]}-${filename}.vcf" ]; then
-          printf "...not saved. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
-          break
-        fi
-
-        # check for vcf-header in received file:
-        if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}.vcf" | grep "BEGIN:VCARD") ]; then
-          mv "${backupfolder_day}/${principal[$i]}-${filename}.vcf" "${backupfolder_day}/${principal[$i]}-${filename}.vcf-ERROR.txt"
-          printf "\n"
-          error_exit "ERROR: the saved file is not a valid vcard-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may also want to check the saved file for any hints what went wrong: ${backupfolder_day}/${principal[$i]}-${filename}.vcf-ERROR.txt"
-        fi
-        printf "...success!\n"
-        break
-      fi
-    done
-  done
+  get_icsvcf_files "addressbook" ".vcf" "BEGIN:VCARD" "${carddav}" "${extra_users}"
 }
 
 dump_database() {
-  if [ "$backup_database" == "yes" ]; then
+  if [ "${backup_database}" == "yes" ]; then
     printf "+  Backing up database..."
-    case "$dbtype" in
+    case "${dbtype}" in
       mysql)
         mysqldump --lock-tables --host=${dbhost} --user=${dbuser} --password=${dbpassword} --databases ${dbname} > "${backupfolder_day}/${productname}_mysql_backup.sql"
       ;;
@@ -507,11 +505,11 @@ dump_database() {
 
 pack_it() {
   # run hook?
-  [ "$hook" = "yes" ] && run_hook precompress "${backupfolder_day}"
+  [ "${hook}" = "yes" ] && run_hook precompress "${backupfolder_day}"
 
-  echo "+  Compressing backup as *.${compression_method} file with compression level ${compression_level}. Be patient - this may take a while."
+  echo "+  Compressing backup as *.${compression_method} file (compression level ${compression_level}). Be patient - this may take a while."
   working_dir=$(pwd)
-  cd "$backupfolder"
+  cd "${backupfolder}"
   if [ "${compression_method}" == "zip" ]; then
     # zip folder with backed up files:
     zip -r -q -${compression_level} "calcardbackup${day}.zip" "calcardbackup${day}"
@@ -521,20 +519,20 @@ pack_it() {
     tar -c "calcardbackup${day}" | gzip -f -${compression_level} > "calcardbackup${day}.tar.gz"
     [ $? -eq 0 ] || compress_error="1"
   fi
-  [ "$compress_error" == "1" ] && error_exit "ERROR: Compressing the files produced an error. See lines right above."
-  cd "$working_dir"
-  rm -r "$backupfolder_day"
+  [ "${compress_error}" == "1" ] && error_exit "ERROR: Compressing the files produced an error. See lines right above."
+  cd "${working_dir}"
+  rm -r "${backupfolder_day}"
   echo "+  Backup successfully compressed!"
   echo "+  Find your backup here: ${backupfolder}/calcardbackup${day}.${compression_method}"
 }
 
 delete_old_backups() {
-  if [ "$delete_backups_older_than" -ge 1 ]; then
-    deleted=$(find "${backupfolder}"/calcardbackup-* -type f -mtime +${delete_backups_older_than} -delete -exec echo "+   " {} \;)
+  if [ "${delete_backups_older_than}" -ge 1 ]; then
+    deleted=$(find "${backupfolder}"/calcardbackup-* -type f -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)
     if [ "$?" -ne 0 ]; then
       printf "\n"
       error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
-    elif [ "$deleted" != "" ]; then
+    elif [ "${deleted}" != "" ]; then
       echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
       echo "${deleted}"
     else
@@ -551,7 +549,7 @@ run_hook() {
 
 finish() {
   # run hook?
-  [ "$hook" = "yes" ] && run_hook prefinish "${backupfolder}/calcardbackup${day}.${compression_method}"
+  [ "${hook}" = "yes" ] && run_hook prefinish "${backupfolder}/calcardbackup${day}.${compression_method}"
 
   # print timestamp
   echo "+  $(date) --> END calcardbackup"
