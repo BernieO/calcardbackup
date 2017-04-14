@@ -359,15 +359,16 @@ create_backup_folder() {
 }
 
 query_database() {
-  # gets neccessary rows from database
+  # Get details of calendars/addressbooks from database
   table="${1}" # ${table_calendars} or ${table_addressbooks}
-  item="${2}"
-  # unset arrays (to empty values from calendars):
+  item="${2}" # "calendar" or "addressbook"
+  # unset arrays (to not include calendardata for addressbook export):
   unset principal
   unset uri
   unset displayname
 
-  # Get details of calendars/addressbooks from database
+  echo "+  Looking for ${item}s in your ${productname}:"
+
   query_row_principaluri="select ${row_principaluri} from ${table} order by id"
   query_row_uri="select ${row_uri} from ${table} order by id"
   query_row_displayname="select ${row_displayname} from ${table} order by id"
@@ -421,10 +422,13 @@ get_icsvcf_files() {
 
   item="${1}" item_extension="${2}" item_header="${3}" calcarddav="${4}" ex_users="${5}"
 
-  # Check whether database returned 0 entries (meaning there is not a single item):
+  # counter for exported items (if no calendar/addressbook was exported, there is no valid nextcloud user in users.txt):
+  exported=0
+
+  # Check whether database returned 0 entries (meaning there is not a single calendar/addressbook):
   if [ ${#uri[@]} == 0  ]; then
     echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
-    # in this case exported=1 though nothing exported, because we want to go on and look for addressbooks
+    # in this case: exported=1 though nothing exported, because different from no user match (see end of this function)
     exported=1
   fi
 
@@ -440,8 +444,8 @@ get_icsvcf_files() {
         cerror=$?
         [ "${cerror}" -eq 0 ] || curl_error
 
-        # check if we received a file, since nextcloud doesn't export empty addressbooks:
-        if [ "${item}" == "addressbook" ] && [ ! -r "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" ]; then
+        # an empty addressbook can't be exported, so we need to check whether we received a file:
+        if [ "${item}" == "addressbook" ] && [ ! -f "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" ]; then
           printf "...not saved. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
           break
         fi
@@ -458,31 +462,23 @@ get_icsvcf_files() {
       fi
     done
   done
-}
 
-get_calendars() {
-
-  # Get calendars and save them in backup-folder:
-  echo "+  Starting backup. Please be patient: this may take a while..."
-
-  # Get details of calendars from database
-  query_database "${table_calendars}" "calendar"
-
-  # counter for exported calendars (if no calendar was exported there is no valid nextcloud user in users.txt):
-  exported=0
-
-  get_icsvcf_files "calendar" ".ics" "BEGIN:VCALENDAR" "${caldav}" ""
-
-  # there is no matching Nextcloud user, if no calendar has been exported.
+  # there is no matching Nextcloud user, if there are calendars/addressbooks in database table but nothing has been exported:
   if [ ${exported} == 0 ]; then
-    error_exit "ERROR: no match between given users in file 'users.txt' and registered ${productname} users!" "You need to check '${userstxt_path}/users.txt'!"
+    echo "-- NOTICE: Found ${item}s in database, but none of them belongs to one of the users given in 'users.txt'."
+    echo "-- NOTICE: You may want to check '${userstxt_path}/users.txt' for valid ${productname} users!"
   fi
 }
 
+get_calendars() {
+  # Get calendars and save them in backup-folder:
+  query_database "${table_calendars}" "calendar"
+  get_icsvcf_files "calendar" ".ics" "BEGIN:VCALENDAR" "${caldav}" ""
+}
+
 get_addressbooks() {
-  # Get details of adressbooks from database
+  # Get addressbooks and save them in backup-folder:
   query_database "${table_addressbooks}" "addressbook"
-  # no need for an exported file counter, because already done in calendar section
   get_icsvcf_files "addressbook" ".vcf" "BEGIN:VCARD" "${carddav}" "${extra_users}"
 }
 
@@ -506,6 +502,10 @@ dump_database() {
 pack_it() {
   # run hook?
   [ "${hook}" = "yes" ] && run_hook precompress "${backupfolder_day}"
+
+  # print notice and quit, if there are no files in backup-directory:
+  backupfolder_content=$(ls -A "${backupfolder_day}")
+  [ -z "${backupfolder_content}" ] && echo "-- NOTICE: No files in backup directory. Nothing more to do." && finish
 
   echo "+  Compressing backup as *.${compression_method} file (compression level ${compression_level}). Be patient - this may take a while."
   working_dir=$(pwd)
@@ -556,6 +556,7 @@ finish() {
   echo "+"
   echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   echo
+  exit 0
 }
 
 curl_error() {
@@ -601,5 +602,3 @@ dump_database
 pack_it
 delete_old_backups
 finish
-
-exit 0

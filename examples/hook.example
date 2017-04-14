@@ -25,7 +25,7 @@ function precompress() {
   #    if you want to add files to be compressed with the backup, place them in that folder.
   #
   # add commands to run right before compressing the backuped up files  here:
-  echo "+  running hook \"precompress\":"
+  # echo "+  running hook \"precompress\":"
 
 }
 
@@ -40,7 +40,7 @@ function prefinish() {
   #    e.g.: "/usr/local/bin/calcardbackup/backups/calcardbackup-2017-04-13.tar.gz"
   #
   # add commands to run just before successful exit of calcardbackup here:
-  echo "+  running hook \"prefinish\":"
+  # echo "+  running hook \"prefinish\":"
 
 }
 
@@ -55,7 +55,7 @@ function on_error() {
   #    e.g.: "ERROR: an error occured!\nFix it and run script again."
   #
   # add commands to run just if an error occurs just before exit of calcardbackup here:
-  echo "-- running hook \"on_error\":"
+  # echo "-- running hook \"on_error\":"
 
 }
 
