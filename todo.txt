@@ -2,6 +2,7 @@
 
 
 left to be done:
+- function to check for existing table
 - add option to encrypt compressed backup file with gpg (symmetric key)
 
 
