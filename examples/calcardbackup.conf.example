@@ -57,7 +57,8 @@ nextcloud_path="/usr/share/nginx/www/"
 # - "tar.gz": - default
 #             - no extra package needs to be installed
 # - "tar.xz": - package 'xz-utils' needs to be installed
-#             - best compression ratio, but takes its time
+#             - best compression ratio, but needs time and
+#               lots of memory at higher compression levels
 # - "zip":    - package 'zip' needs to be installed
 #             - is probably most portable
 #compression_method="tar.gz"
