@@ -399,8 +399,8 @@ query_database() {
     ;;
     sqlite3)
       # check if table exists:
-      sqlite3 "${sqlite3_database}" "select ${row_uri} from ${table} where id=1" 1>/dev/null 2>&1
-      if [ "$?" != 0 ]; then
+      check_table=$(sqlite3 "${sqlite3_database}" "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")
+      if [ "${check_table}" == "" ]; then
         echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
         echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
       else
