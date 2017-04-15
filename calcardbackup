@@ -136,8 +136,11 @@ preparations() {
   if [ "${compression_method}" == "zip" ]; then
     # check for package zip
     which zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
+  elif [ "${compression_method}" == "tar.xz" ]; then
+    # check for package xz-utils
+    which xz > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'tar.xz' instead of 'tar.gz'." "Therefore package 'xz-utils' is needed. Install with 'apt-get install xz-utils' and run script again"
   elif [ "${compression_method}" != "tar.gz" ]; then
-    echo "-- NOTICE: Parameter 'compression_method' is not valid (only \"zip\" or \"tar.gz\" allowed)."
+    echo "-- NOTICE: Parameter 'compression_method' is not valid (only \"tar.gz\", \"tar.xz\" or \"zip\" allowed)."
     echo "-- NOTICE: Using default value instead: compression_method=\"tar.gz\""
     compression_method="tar.gz"
   fi
@@ -515,8 +518,12 @@ pack_it() {
     zip -r -q -${compression_level} "calcardbackup${day}.zip" "calcardbackup${day}"
     [ $? -eq 0 ] || compress_error="1"
   else
-    # use tar.gz to compress backed up files (piped to gzip to be able to use compression_level):
-    tar -c "calcardbackup${day}" | gzip -f -${compression_level} > "calcardbackup${day}.tar.gz"
+    # use tar.gz / tar.xz to compress backup dir (not using tar compress filter (-z/-J), to be able to use compression_level):
+    tar -cf "calcardbackup${day}.tar" "calcardbackup${day}"
+    [ $? -eq 0 ] || compress_error="1"
+    compressor=${compression_method#*.}
+    [ "${compressor}" == "gz" ] && compressor="gzip"
+    "${compressor}" -f -${compression_level} "calcardbackup${day}.tar"
     [ $? -eq 0 ] || compress_error="1"
   fi
   [ "${compress_error}" == "1" ] && error_exit "ERROR: Compressing the files produced an error. See lines right above."
@@ -545,6 +552,8 @@ delete_old_backups() {
 
 run_hook() {
   ${script_dir}/hook "$@"
+  hook_error="$?"
+  [ "${hook_error}" == 0 ] || echo "-- NOTICE: hook \"${1}\" exited with error code ${hook_error}."
 }
 
 finish() {

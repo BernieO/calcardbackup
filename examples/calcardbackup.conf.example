@@ -44,7 +44,7 @@ nextcloud_path="/usr/share/nginx/www/"
 # to change, have a look at format options under "man date"
 #backupfile_date_extension="-%Y-%m-%d"
 
-# Choose "yes" if you want to backup nextcloud-database as well:
+# choose "yes" if you want to backup nextcloud-database as well:
 #backup_database="no"
 
 # though tested - use at own risk(!):
@@ -52,8 +52,14 @@ nextcloud_path="/usr/share/nginx/www/"
 # the default value of "0" means never delete backups
 #delete_backups_older_than="0"
 
-# change to "zip" instead of "tar.gz" to compress backup with zip
-# (package zip needs to be installed)
+# in which format should the backup be compressed?
+# choose compression method between:
+# - "tar.gz": - default
+#             - no extra package needs to be installed
+# - "tar.xz": - package 'xz-utils' needs to be installed
+#             - best compression ratio, but takes its time
+# - "zip":    - package 'zip' needs to be installed
+#             - is probably most portable
 #compression_method="tar.gz"
 
 # choose compression level between 1 and 9

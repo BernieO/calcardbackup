@@ -2,10 +2,12 @@
 
 
 left to be done:
-- include short notice, if hook returns an error
 
 
 done:
+- improve error handling for compressing backed up files (15.04.2017)
+- add option to use tar.xz as compression method due to its very good compression rate (15.04.2017)
+- include short notice, if hook returns an error (15.04.2017)
 - check for empty tables (no calendars/addressbooks) and for empty backup directory before compression (14.04.2017)
 - cleanup code, improve comments and move doubled code to functions (14.04.2017)
 - add hook that gets executed when an error occurs (13.04.2017)
