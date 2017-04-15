@@ -378,10 +378,10 @@ query_database() {
   case "${dbtype}" in
     mysql)
       # check if table exists:
-      mysql ${mysql_options} "show tables like 'fantasy'" 1>/dev/null 2>&1
-      if [ "$?" != 0 ]; then
+      check_table=$(mysql ${mysql_options} "show tables like '${table}'")
+      if [ "${check_table}" == "" ]; then
         echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
-        echo "-- NOTICE: Looks like there are no ${item}s present."
+        echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
       else
         while read calline
         do
@@ -402,7 +402,7 @@ query_database() {
       sqlite3 "${sqlite3_database}" "select ${row_uri} from ${table} where id=1" 1>/dev/null 2>&1
       if [ "$?" != 0 ]; then
         echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
-        echo "-- NOTICE: Looks like there are no ${item}s present."
+        echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
       else
         while read calline
         do
