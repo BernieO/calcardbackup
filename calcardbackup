@@ -192,15 +192,13 @@ read_config_php() {
   if [ "${mainversion}" -lt "${minimumversion}" ]; then
     error_exit "ERROR: This script only works with versions >= 5.0." "You are using Owncloud ${version_config_php}."
   elif [ "${mainversion}" -ge "${davchangeversion}" ]; then
-    # Values for Nextcloud >= 9.0:
+    # Values for Own-/Nextcloud >= 9.0:
     caldav="dav"
     carddav="dav"
     table_calendars="oc_calendars"
     table_addressbooks="oc_addressbooks"
     row_principaluri="principaluri"
-    row_uri="uri"
-    row_displayname="displayname"
-    # correction of export-link of addressbooks for Nextcloud >= 9.0:
+    # correction of export-link of addressbooks for Own-/Nextcloud >= 9.0:
     extra_users="users/"
   else
     # Values for Owncloud < 9.0:
@@ -209,11 +207,12 @@ read_config_php() {
     table_calendars="oc_clndr_calendars"
     table_addressbooks="oc_contacts_addressbooks"
     row_principaluri="userid"
-    row_uri="uri"
-    row_displayname="displayname"
     # must be empty for Owncloud < 9.0:
     extra_users=""
   fi
+  # those values are the same for Owncloud < 9.0 und Own-/Nextcloud >= 9.0
+  row_uri="uri"
+  row_displayname="displayname"
 
   # get nextcloud_url from config.php or from config file and error, if something is weird:
   nextcloud_url_default="https://www.example.com"
@@ -319,7 +318,7 @@ get_database_details() {
       dbhost=$(getvalue_from_configphp "dbhost")
       dbuser=$(getvalue_from_configphp "dbuser")
       dbpassword=$(getvalue_from_configphp "dbpassword")
-      mysql_options="-h ${dbhost} -u${dbuser} -p${dbpassword} ${dbname} -se"
+      dboptions="-h${dbhost} -u${dbuser} -p${dbpassword} ${dbname} -se"
       database="MySQL/MariaDB"
     ;;
     sqlite3)
@@ -327,8 +326,9 @@ get_database_details() {
       which sqlite3 > /dev/null || error_exit "ERROR: ${productname} database is sqlite3. Therefore this script requires package 'sqlite3'." "Install with 'apt-get install sqlite3' and run script again"
       datadirectory=$(getvalue_from_configphp "datadirectory")
       sqlite3_database="${datadirectory}/owncloud.db"
+      dboptions="${sqlite3_database}"
       database="SQLite3"
-      # check if sqlite3-database-file is readable:
+     # check if sqlite3-database-file is readable:
       check_readable_file "${sqlite3_database}" "${productname}s SQLite3 database."
     ;;
     *)
@@ -375,50 +375,45 @@ query_database() {
   query_row_principaluri="select ${row_principaluri} from ${table} order by id"
   query_row_uri="select ${row_uri} from ${table} order by id"
   query_row_displayname="select ${row_displayname} from ${table} order by id"
-  case "${dbtype}" in
-    mysql)
-      # check if table exists:
-      check_table=$(mysql ${mysql_options} "show tables like '${table}'")
-      if [ "${check_table}" == "" ]; then
-        echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
-        echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
-      else
+
+  # check if table exists:
+  [ "${dbtype}" == "mysql" ] && check_table=$(mysql ${dboptions} "show tables like '${table}'")
+  [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 "${dboptions}" "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")
+  if [ "${check_table}" == "" ]; then
+    echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
+    echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
+  else
+    case "${dbtype}" in
+      mysql)
         while read calline
         do
           principal+=("${calline}")
-        done < <(mysql ${mysql_options} "${query_row_principaluri}" | sed 's/principals\/users\///')
+        done < <(mysql ${dboptions} "${query_row_principaluri}" | sed 's/principals\/users\///')
         while read calline
         do
           uri+=("${calline}")
-        done < <(mysql ${mysql_options} "${query_row_uri}")
+        done < <(mysql ${dboptions} "${query_row_uri}")
         while read calline
         do
           displayname+=("${calline}")
-        done < <(mysql ${mysql_options} "${query_row_displayname}")
-      fi
-    ;;
-    sqlite3)
-      # check if table exists:
-      check_table=$(sqlite3 "${sqlite3_database}" "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")
-      if [ "${check_table}" == "" ]; then
-        echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
-        echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
-      else
+        done < <(mysql ${dboptions} "${query_row_displayname}")
+      ;;
+      sqlite3) # has to be extra, because pathname to database could contain weird chars and needs to be in ""
         while read calline
         do
           principal+=("${calline}")
-        done < <(sqlite3 "${sqlite3_database}" "${query_row_principaluri}" | sed 's/principals\/users\///')
+        done < <(sqlite3 "${dboptions}" "${query_row_principaluri}" | sed 's/principals\/users\///')
         while read calline
         do
           uri+=("${calline}")
-        done < <(sqlite3 "${sqlite3_database}" "${query_row_uri}")
+        done < <(sqlite3 "${dboptions}" "${query_row_uri}")
         while read calline
         do
           displayname+=("${calline}")
-        done < <(sqlite3 "${sqlite3_database}" "${query_row_displayname}")
-      fi
-    ;;
-  esac
+        done < <(sqlite3 "${dboptions}" "${query_row_displayname}")
+      ;;
+    esac
+  fi
 }
 
 get_icsvcf_files() {
