@@ -41,10 +41,8 @@ get_absolute_path() {
 }
 
 check_readable_file() {
-  # checks if path is file and readable. $2 is verbal explanation of of file for error message.
-  if [ ! -f "${1}" ] || [ ! -r "${1}" ]; then
-    error_exit "ERROR: Can't read ${2}" "I need to be able to read ${1}"
-  fi
+  # checks if path is file and readable. $1 is path to file, $2 is short verbal explanation of file for error message.
+  [ ! -f "${1}" ] || [ ! -r "${1}" ] && error_exit "ERROR: Can't read ${2}" "I need to be able to read ${1}"
 }
 
 preparations() {
@@ -192,9 +190,9 @@ read_config_php() {
   mainversion=${version_config_php%%.*}
   minimumversion="5"
   davchangeversion="9"
-  if [ "${mainversion}" -lt "${minimumversion}" ]; then
-    error_exit "ERROR: This script only works with versions >= 5.0." "You are using Owncloud ${version_config_php}."
-  elif [ "${mainversion}" -ge "${davchangeversion}" ]; then
+  # error and exit, if mainversion < 5.0:
+  [ "${mainversion}" -lt "${minimumversion}" ] && error_exit "ERROR: This script only works with versions >= 5.0." "You are using Owncloud ${version_config_php}."
+  if [ "${mainversion}" -ge "${davchangeversion}" ]; then
     # Values for Own-/Nextcloud >= 9.0:
     caldav="dav"
     carddav="dav"
@@ -263,9 +261,7 @@ read_status_php() {
   # Nextcloud 10.0.4 {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"10.0.4","edition":""}
   # Nextcloud 11.0.2 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.2.7","versionstring":"11.0.2","edition":"","productname":"Nextcloud"}
   grep -E -q '^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"(ownCloud|Nextcloud)")?\}$' <<< ${status_php}
-  if [ $? != 0 ]; then
-    error_exit "ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
-  fi
+  [ $? != 0 ] && error_exit "ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
 
   # get version from status.php:
   version_status_php=${status_php#*version\":\"}
@@ -287,22 +283,16 @@ read_status_php() {
     # Nextcloud 10 has different main version numbers in version and versionstring delivered by status.php:
     # get main version number from versionstring:
     mainversionstring_status_php=${versionstring_status_php%%.*}
-
-    # Nextcloud 9 has last number of greater or equal than 50 in versionstring (first tagged version on github was 9.0.50):
+    # Nextcloud 9 has last number greater or equal than 50 in versionstring (first tagged version on github was 9.0.50):
     # get last number of versionstring:
     lastversionstring_status_php=${versionstring_status_php##*.}
-
-    if [ "${mainversion_status_php}" -lt "${mainversionstring_status_php}" ] || [ "${lastversionstring_status_php}" -ge 50 ]; then
-      productname="Nextcloud"
-    fi
+    [ "${mainversion_status_php}" -lt "${mainversionstring_status_php}" ] || [ "${lastversionstring_status_php}" -ge 50 ] && productname="Nextcloud"
   fi
 
   echo "+  ${productname} ${versionstring_status_php} detected."
 
   # check whether version of config.php is the same than version of status.php
-  if [ "${version_status_php}" != "${version_config_php}" ]; then
-    error_exit "ERROR: different versions detected:" "${productname} ${version_status_php} found at ${nextcloud_url}" "${productname} ${version_config_php} found at ${nextcloud_path}" "check configured url and path in config file '${config_path}/calcardbackup.conf'"
-  fi
+  [ "${version_status_php}" != "${version_config_php}" ] && error_exit "ERROR: different versions detected:" "${productname} ${version_status_php} found at ${nextcloud_url}" "${productname} ${version_config_php} found at ${nextcloud_path}" "check configured url and path in config file '${config_path}/calcardbackup.conf'"
 
   # check for installed=true in status.php
   grep -E -q '"installed":"?true"?' <<< ${status_php} || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
@@ -344,8 +334,7 @@ get_database_details() {
 read_users_txt() {
   # Reads file users.txt:
   readarray -t users < "${userstxt_path}/users.txt"
-  for i in "${!users[@]}"
-  do
+  for i in "${!users[@]}"; do
     user[$i]=${users[$i]%%:*}
     pass[$i]=${users[$i]#*:}
   done
@@ -366,8 +355,8 @@ create_backup_folder() {
 
 query_database() {
   # Get details of calendars/addressbooks from database
-  table="${1}" # ${table_calendars} or ${table_addressbooks}
-  item="${2}" # "calendar" or "addressbook"
+  table="${1}"  # ${table_calendars} or ${table_addressbooks}
+  item="${2}"   # "calendar" or "addressbook"
   # unset arrays (to not include calendardata for addressbook export):
   unset principal
   unset uri
@@ -416,10 +405,8 @@ get_icsvcf_files() {
   fi
 
   count=${#uri[@]}
-  for (( i=0; i<${count}; i++ ))
-  do
-    for index in "${!users[@]}"
-    do
+  for (( i=0; i<${count}; i++ )); do
+    for index in "${!users[@]}"; do
       if [ "${principal[$i]}" == "${user[$index]}" ] && [ "${uri[$i]}" != "contact_birthdays" ]; then
         filename=${displayname[$i]// /_}
         printf "+  Saving ${item} ${principal[$i]}-${filename}${item_extension}..."
@@ -437,7 +424,7 @@ get_icsvcf_files() {
         if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" | grep "${item_header}") ]; then
           mv "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
           printf "\n"
-          error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may also want to check the saved file for any hints what went wrong: ${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
+          error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
         fi
         exported=$((exported + 1))
         printf "...success!\n"
@@ -516,7 +503,6 @@ delete_old_backups() {
   if [ "${delete_backups_older_than}" -ge 1 ]; then
     deleted=$(find "${backupfolder}"/calcardbackup-* -type f -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)
     if [ "$?" -ne 0 ]; then
-      printf "\n"
       error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
     elif [ "${deleted}" != "" ]; then
       echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
