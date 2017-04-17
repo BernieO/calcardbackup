@@ -59,6 +59,9 @@ preparations() {
   which sed > /dev/null || error_exit "ERROR: Package 'sed' is needed for running this script." "Install with 'apt-get install sed' and run script again"
   which grep > /dev/null || error_exit "ERROR: Package 'grep' is needed for running this script." "Install with 'apt-get install grep' and run script again"
 
+  # store current directory, because we have to change dir later and need to come back to where we were (because of unknown hook commands):
+  working_dir=$(pwd)
+
   # get path to scripts dir:
   actual_path=$(readlink -f "${BASH_SOURCE[0]}")
   script_dir=$(dirname "${actual_path}")
@@ -324,9 +327,9 @@ get_database_details() {
     sqlite3)
       # check if command-line-interface of sqlite3 is installed:
       which sqlite3 > /dev/null || error_exit "ERROR: ${productname} database is sqlite3. Therefore this script requires package 'sqlite3'." "Install with 'apt-get install sqlite3' and run script again"
-      datadirectory=$(getvalue_from_configphp "datadirectory")
+      datadirectory=$(getvalue_from_configphp "datadirectory") # has to be absolute path for Own-/Nextcloud, so no need to get absolute path
       sqlite3_database="${datadirectory}/owncloud.db"
-      dboptions="${sqlite3_database}"
+      dboptions="owncloud.db" # we cd to ${datadirectory} later for database queries
       database="SQLite3"
      # check if sqlite3-database-file is readable:
       check_readable_file "${sqlite3_database}" "${productname}s SQLite3 database."
@@ -376,44 +379,26 @@ query_database() {
   query_row_uri="select ${row_uri} from ${table} order by id"
   query_row_displayname="select ${row_displayname} from ${table} order by id"
 
+  # cd needed for SQLite3, because ${datadirectory} could contain spaces --> sqlite3 would then need "${dboptions}", but mysql needs ${dboptions}:
+  cd "${datadirectory}"
   # check if table exists:
   [ "${dbtype}" == "mysql" ] && check_table=$(mysql ${dboptions} "show tables like '${table}'")
-  [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 "${dboptions}" "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")
+  [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 ${dboptions} "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")
   if [ "${check_table}" == "" ]; then
     echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
     echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
   else
-    case "${dbtype}" in
-      mysql)
-        while read calline
-        do
-          principal+=("${calline}")
-        done < <(mysql ${dboptions} "${query_row_principaluri}" | sed 's/principals\/users\///')
-        while read calline
-        do
-          uri+=("${calline}")
-        done < <(mysql ${dboptions} "${query_row_uri}")
-        while read calline
-        do
-          displayname+=("${calline}")
-        done < <(mysql ${dboptions} "${query_row_displayname}")
-      ;;
-      sqlite3) # has to be extra, because pathname to database could contain weird chars and needs to be in ""
-        while read calline
-        do
-          principal+=("${calline}")
-        done < <(sqlite3 "${dboptions}" "${query_row_principaluri}" | sed 's/principals\/users\///')
-        while read calline
-        do
-          uri+=("${calline}")
-        done < <(sqlite3 "${dboptions}" "${query_row_uri}")
-        while read calline
-        do
-          displayname+=("${calline}")
-        done < <(sqlite3 "${dboptions}" "${query_row_displayname}")
-      ;;
-    esac
+    while read calline; do
+      principal+=("${calline}")
+    done < <("${dbtype}" ${dboptions} "${query_row_principaluri}" | sed 's/principals\/users\///')
+    while read calline; do
+      uri+=("${calline}")
+    done < <("${dbtype}" ${dboptions} "${query_row_uri}")
+    while read calline; do
+      displayname+=("${calline}")
+    done < <("${dbtype}" ${dboptions} "${query_row_displayname}")
   fi
+  cd "${working_dir}" # switch back to original directory (needed, because we don't know what will happen in hook file)
 }
 
 get_icsvcf_files() {
@@ -485,7 +470,7 @@ dump_database() {
     printf "+  Backing up database..."
     case "${dbtype}" in
       mysql)
-        mysqldump --lock-tables --host=${dbhost} --user=${dbuser} --password=${dbpassword} --databases ${dbname} > "${backupfolder_day}/${productname}_mysql_backup.sql"
+        mysqldump --lock-tables -h${dbhost} -u${dbuser} -p${dbpassword} ${dbname} > "${backupfolder_day}/${productname}_mysql_backup.sql"
       ;;
       sqlite3)
         cp -a "${sqlite3_database}" "${backupfolder_day}/"
@@ -506,7 +491,6 @@ pack_it() {
   [ -z "${backupfolder_content}" ] && echo "-- NOTICE: No files in backup directory. Nothing more to do." && finish
 
   echo "+  Compressing backup as *.${compression_method} file (compression level ${compression_level}). Be patient - this may take a while."
-  working_dir=$(pwd)
   cd "${backupfolder}"
   if [ "${compression_method}" == "zip" ]; then
     # zip folder with backed up files:
@@ -522,7 +506,7 @@ pack_it() {
     [ $? -eq 0 ] || compress_error="1"
   fi
   [ "${compress_error}" == "1" ] && error_exit "ERROR: Compressing the files produced an error. See lines right above."
-  cd "${working_dir}"
+  cd "${working_dir}" # switch back to original directory (needed, because we don't know what will happen in hook file)
   rm -r "${backupfolder_day}"
   echo "+  Backup successfully compressed!"
   echo "+  Find your backup here: ${backupfolder}/calcardbackup${day}.${compression_method}"
