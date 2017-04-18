@@ -466,20 +466,10 @@ get_addressbooks() {
 }
 
 dump_database() {
-  if [ "${backup_database}" == "yes" ]; then
-    printf "+  Backing up database..."
-    case "${dbtype}" in
-      mysql)
-        mysqldump --lock-tables -h${dbhost} -u${dbuser} -p${dbpassword} ${dbname} > "${backupfolder_day}/${productname}_mysql_backup.sql"
-      ;;
-      sqlite3)
-        cp -a "${sqlite3_database}" "${backupfolder_day}/"
-      ;;
-    esac
-    printf "...success!\n"
-  else
-    echo "+  Not backing up ${productname} database."
-  fi
+  printf "+  Backing up database..."
+  [ "${dbtype}" == "mysql" ] && mysqldump --lock-tables -h${dbhost} -u${dbuser} -p${dbpassword} ${dbname} > "${backupfolder_day}/${productname}_mysql_backup.sql"
+  [ "${dbtype}" == "sqlite3" ] && cp -a "${sqlite3_database}" "${backupfolder_day}/"
+  printf "...success!\n"
 }
 
 pack_it() {
@@ -524,18 +514,14 @@ gpg_encrypt_backup() {
 }
 
 delete_old_backups() {
-  if [ "${delete_backups_older_than}" -ge 1 ]; then
-    deleted=$(find "${backupfolder}"/calcardbackup-* -type f -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)
-    if [ "$?" -ne 0 ]; then
-      error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
-    elif [ "${deleted}" != "" ]; then
-      echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
-      echo "${deleted}"
-    else
-      echo "+  No backups older than ${delete_backups_older_than} days found to delete."
-    fi
+  deleted=$(find "${backupfolder}"/calcardbackup-* -type f -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)
+  if [ "$?" -ne 0 ]; then
+    error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
+  elif [ "${deleted}" != "" ]; then
+    echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
+    echo "${deleted}"
   else
-    echo "+  Not deleting any older backups as configured."
+    echo "+  No backups older than ${delete_backups_older_than} days found to delete."
   fi
 }
 
@@ -596,8 +582,8 @@ read_users_txt
 create_backup_folder
 get_calendars
 get_addressbooks
-dump_database
+[ "${backup_database}" == "yes" ] && dump_database
 pack_it
 [ "${encrypt_backup}" == "yes" ] && gpg_encrypt_backup
-delete_old_backups
+[ "${delete_backups_older_than}" -gt 0 ] && delete_old_backups
 finish
