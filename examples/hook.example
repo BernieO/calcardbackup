@@ -31,13 +31,17 @@ function precompress() {
 
 function prefinish() {
   local path_compressed_backup="${1}"
+  local path_encrypted_backup="${2}"
   # is run just before successfully exiting calcardbackup. May be useful for
-  # copying the compressed backup file to another location (e.g. backup-server)
+  # copying the backup file to another location (e.g. backup-server)
   #
   # Variables:
   #  - $path_compressed_backup
-  #    contains absolute path of backup-file
+  #    contains absolute path of backup file
   #    e.g.: "/usr/local/bin/calcardbackup/backups/calcardbackup-2017-04-13.tar.gz"
+  #  - $path_encrypted_backup (only set, if backup got encrypted!)
+  #    contains absolute path of encrypted backup file
+  #    e.g.: "/usr/local/bin/calcardbackup/backups/calcardbackup-2017-04-13.tar.gz.gpg"
   #
   # add commands to run just before successful exit of calcardbackup here:
   # echo "+  running hook \"prefinish\":"

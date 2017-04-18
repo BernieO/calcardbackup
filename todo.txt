@@ -2,10 +2,10 @@
 
 
 left to be done:
-- add option to encrypt compressed backup file with gpg (symmetric key)??
 
 
 done:
+- add option to encrypt compressed backup file with GnuPG (symmetric key) (18.04.2017)
 - adjust database queries to be able to use same code for SQLite3 and MySQL/MariaDB (17.04.2017)
 - improved check for existing table (reduced lines of code) (16.04.2017)
 - improve error handling for compressing backed up files (15.04.2017)

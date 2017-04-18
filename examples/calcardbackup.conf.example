@@ -68,6 +68,13 @@ nextcloud_path="/usr/share/nginx/www/"
 # 9 = slower, smaller filesize
 #compression_level="6"
 
+# change to "yes" to encrypt backup with GnuPG
+# backup will be encrypted symmetric AES256 with given passphrase
+# If you wnat to use that:
+# pay attention to the comments about encryption in README.md!
+#encrypt_backup="no"
+#gpg_passphrase="1234"
+
 # change to "yes" to run additional commands at certain stages
 # see hook.example for explanation and more details
 #hook="no"

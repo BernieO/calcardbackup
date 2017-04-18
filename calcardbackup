@@ -76,6 +76,8 @@ preparations() {
   delete_backups_older_than="0"
   compression_method="tar.gz"
   compression_level="6"
+  encrypt_backup="no"
+  passphrase="1234"
   hook="no"
 
   # absolute path to config file:
@@ -153,13 +155,24 @@ preparations() {
     compression_level="6"
   fi
 
+  # check $encrypt_backup for valid value:
+  if [[ ! ${encrypt_backup} =~ ^(yes|no)$ ]]; then
+    echo "-- WARNING: Parameter 'encrypt_backup' is not valid (only \"yes\" or \"no\" allowed)."
+    echo "-- WARNING: Using default value instead: encrypt_backup=\"no\""
+    encrypt_backup="no"
+  elif [ "${encrypt_backup}" == "yes" ]; then
+    # check for gpg:
+    which gpg > /dev/null || error_exit "ERROR: You chose to encrypt your backup." "Therefore package 'gnupg' is needed. Install with 'apt-get install gnupg' and run script again"
+    # error and exit, if backup shall be encrypted, but passphrase is on example value (1234) or empty:
+    [[ ${gpg_passphrase} =~ ^(1234|)$ ]] && error_exit "ERROR: You chose to enrypt your backup, but paramter 'gpg_passphrase' is still on insecure example value." "Enter passphrase in configuration file and run sript again."
+  fi
+
   # check $hook for valid value:
   if [[ ! ${hook} =~ ^(yes|no)$ ]]; then
     echo "-- NOTICE: Parameter 'hook' is not valid (only \"yes\" or \"no\" allowed)."
     echo "-- NOTICE: Using default value instead: hook=\"no\""
     hook="no"
-  fi
-  if [ "${hook}" == "yes" ]; then
+  elif [ "${hook}" == "yes" ]; then
     if [ ! -f "${script_dir}/hook" ]; then
       echo "-- NOTICE: You chose to run own commands in hook file. But file '${script_dir}/hook' does not exist."
       default_hook=1
@@ -495,8 +508,19 @@ pack_it() {
   [ "${compress_error}" == "1" ] && error_exit "ERROR: Compressing the files produced an error. See lines right above."
   cd "${working_dir}" # switch back to original directory (needed, because we don't know what will happen in hook file)
   rm -r "${backupfolder_day}"
+  path_compressed_backup="${backupfolder}/calcardbackup${day}.${compression_method}"
   echo "+  Backup successfully compressed!"
-  echo "+  Find your backup here: ${backupfolder}/calcardbackup${day}.${compression_method}"
+  echo "+  Find your backup here: ${path_compressed_backup}"
+}
+
+gpg_encrypt_backup() {
+  # encrypts compressed backup
+  path_encrypted_backup="${path_compressed_backup}.gpg"
+  gpg --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_compressed_backup}"
+  # command to decrypt (maybe implemented in the future: gpg --passphrase-file <(echo "${gpg_passphrase}") --output decrypted_output_file -d encrypted_file
+  [ "$?" == 0 ] || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
+  echo "+  Backup successfully encrypted!"
+  echo "+  Find your encrypted backup here: ${path_encrypted_backup}"
 }
 
 delete_old_backups() {
@@ -523,7 +547,7 @@ run_hook() {
 
 finish() {
   # run hook?
-  [ "${hook}" = "yes" ] && run_hook prefinish "${backupfolder}/calcardbackup${day}.${compression_method}"
+  [ "${hook}" = "yes" ] && run_hook prefinish "${path_compressed_backup}" "${path_encrypted_backup}"
 
   # print timestamp
   echo "+  $(date) --> END calcardbackup"
@@ -574,5 +598,6 @@ get_calendars
 get_addressbooks
 dump_database
 pack_it
+[ "${encrypt_backup}" == "yes" ] && gpg_encrypt_backup
 delete_old_backups
 finish
