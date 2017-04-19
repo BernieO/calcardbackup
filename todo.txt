@@ -2,6 +2,7 @@
 
 
 left to be done:
+- use options instead of hook file
 
 
 done:

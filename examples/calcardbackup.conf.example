@@ -75,9 +75,5 @@ nextcloud_path="/usr/share/nginx/www/"
 #encrypt_backup="no"
 #gpg_passphrase="1234"
 
-# change to "yes" to run additional commands at certain stages
-# see hook.example for explanation and more details
-#hook="no"
-
 
 ########  end of config file for calcardbackup  ########

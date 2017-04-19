@@ -18,7 +18,14 @@
 #
 #######################################################
 
-
+#
+# BRANCH options: use options instead of hook file
+# -q   quiet mode: display nothing but error messages
+# -f   implies -q and writes depending on configuration
+#      following path to stdout:
+#        - absolute path of compressed backup file
+#        - absolute path of directory containing files
+#
 
 #######################################################
 #######################################################
@@ -78,7 +85,6 @@ preparations() {
   compression_level="6"
   encrypt_backup="no"
   passphrase="1234"
-  hook="no"
 
   # absolute path to config file:
   config_path=$(get_absolute_path "${config_path}")
@@ -165,22 +171,6 @@ preparations() {
     which gpg > /dev/null || error_exit "ERROR: You chose to encrypt your backup." "Therefore package 'gnupg' is needed. Install with 'apt-get install gnupg' and run script again"
     # error and exit, if backup shall be encrypted, but passphrase is on example value (1234) or empty:
     [[ ${gpg_passphrase} =~ ^(1234|)$ ]] && error_exit "ERROR: You chose to enrypt your backup, but paramter 'gpg_passphrase' is still on insecure example value." "Enter passphrase in configuration file and run sript again."
-  fi
-
-  # check $hook for valid value:
-  if [[ ! ${hook} =~ ^(yes|no)$ ]]; then
-    echo "-- NOTICE: Parameter 'hook' is not valid (only \"yes\" or \"no\" allowed)."
-    echo "-- NOTICE: Using default value instead: hook=\"no\""
-    hook="no"
-  elif [ "${hook}" == "yes" ]; then
-    if [ ! -f "${script_dir}/hook" ]; then
-      echo "-- NOTICE: You chose to run own commands in hook file. But file '${script_dir}/hook' does not exist."
-      default_hook=1
-    elif [ ! -x "${script_dir}/hook" ]; then
-      echo "-- NOTICE: You chose to run own commands in hook file. But I don't have permission to run '${script_dir}/hook'"
-      default_hook=1
-    fi
-    [ "${default_hook}" == "1" ] && echo "-- NOTICE: Ignoring hook=\"yes\". Using default value \"no\" instead." && hook="no"
   fi
 }
 
@@ -473,9 +463,6 @@ dump_database() {
 }
 
 pack_it() {
-  # run hook?
-  [ "${hook}" = "yes" ] && run_hook precompress "${backupfolder_day}"
-
   # print notice and quit, if there are no files in backup-directory:
   backupfolder_content=$(ls -A "${backupfolder_day}")
   [ -z "${backupfolder_content}" ] && echo "-- NOTICE: No files in backup directory. Nothing more to do." && finish
@@ -525,16 +512,7 @@ delete_old_backups() {
   fi
 }
 
-run_hook() {
-  ${script_dir}/hook "$@"
-  hook_error="$?"
-  [ "${hook_error}" == 0 ] || echo "-- NOTICE: hook \"${1}\" exited with error code ${hook_error}."
-}
-
 finish() {
-  # run hook?
-  [ "${hook}" = "yes" ] && run_hook prefinish "${path_compressed_backup}" "${path_encrypted_backup}"
-
   # print timestamp
   echo "+  $(date) --> END calcardbackup"
   echo "+"
@@ -559,19 +537,16 @@ curl_error() {
 
 error_exit() {
   echo "--" >&2
+  # if an error message is needed:
   for message in "$@"; do
     echo "-- ${message}" >&2
-    hook_error_message="${hook_error_message}${message}\n"
   done
-
-  # run hook?
-  [ "${hook}" = "yes" ] && run_hook on_error "${hook_error_message}"
 
   echo "-- Exiting." >&2
   echo "--" >&2
   echo "-------------  Errors occured. See messages above!  -------------" >&2
   echo >&2
-  exit 1
+  exit 64 # 1 is reserved.
 }
 
 preparations
