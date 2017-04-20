@@ -20,11 +20,11 @@
 
 #
 # BRANCH options: use options instead of hook file
-# -q   quiet mode: display nothing but error messages
-# -f   implies -q and writes depending on configuration
-#      following path to stdout:
+# -s   silent mode: display nothing but error messages
+# -f   implies -s;
+#      write (depending on configuration) following path to stdout:
 #        - absolute path of compressed backup file
-#        - absolute path of directory containing files
+#        - absolute path of directory containing uncompressed files
 #
 
 #######################################################
@@ -501,7 +501,9 @@ gpg_encrypt_backup() {
 }
 
 delete_old_backups() {
-  deleted=$(find "${backupfolder}"/calcardbackup-* -type f -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)
+  # use base10 and decrement ${delete_backups_older_than}, because find treats "-mtime 0" as "older than 24 hours"
+  delete_backups_older_than=$(( 10#$delete_backups_older_than - 1 ))
+  deleted=$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)
   if [ "$?" -ne 0 ]; then
     error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
   elif [ "${deleted}" != "" ]; then
