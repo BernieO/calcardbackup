@@ -18,14 +18,19 @@
 #
 #######################################################
 
+
 #
-# BRANCH options: use options instead of hook file
-# -s   silent mode: display nothing but error messages
-# -f   implies -s;
-#      write (depending on configuration) following path to stdout:
+# THIS IS BRANCH "options":
+#      uses options instead of hook file
+#
+# -b --batch: batch mode
+#      Print nothing to stdout, except for path to backup.
+#      Depending on configuration this is:
 #        - absolute path of compressed backup file
+#      or (ucompressed backup: still to be implemented!!):
 #        - absolute path of directory containing uncompressed files
 #
+
 
 #######################################################
 #######################################################
@@ -37,6 +42,12 @@
 #######################################################
 
 
+
+_output() {
+  [ "$mode" == "batch" ] && "$@" >> /dev/null
+  [ "$mode" == "loud" ] && "$@"
+}
+
 get_absolute_path() {
   # change relative to absolute path; remove trailing slash:
   if [[ ! "${1}" = /* ]]; then
@@ -44,7 +55,7 @@ get_absolute_path() {
   else
     absolute_path=$(readlink -m "${1}")
   fi
-  echo ${absolute_path}
+  echo "${absolute_path}"
 }
 
 check_readable_file() {
@@ -54,10 +65,10 @@ check_readable_file() {
 
 preparations() {
   # print timestamp
-  printf "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
-  echo "+"
-  echo "+  $(date) --> START calcardbackup"
-  echo "+  Checking dependencies and preparing..."
+  _output printf "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+  _output echo "+"
+  _output echo "+  $(date) --> START calcardbackup"
+  _output echo "+  Checking dependencies and preparing..."
 
   # check for packages curl, sed, grep
   which curl > /dev/null || error_exit "ERROR: Package 'curl' is needed for running this script." "Install with 'apt-get install curl' and run script again"
@@ -104,9 +115,9 @@ preparations() {
   configphp="${nextcloud_path}/config/config.php"
 
   # check trustful_certificate for valid value:
-  if [[ ! ${trustful_certificate} =~ (yes|no) ]]; then
-    echo "-- NOTICE: Parameter 'trustful_certificate' is not valid (allowed is only \"yes\" or \"no\")."
-    echo "-- NOTICE: Using default value instead: trustful_certificate=\"yes\""
+  if [[ ! ${trustful_certificate} =~ ^(yes|no)$ ]]; then
+    _output echo "-- NOTICE: Parameter 'trustful_certificate' is not valid (allowed is only \"yes\" or \"no\")."
+    _output echo "-- NOTICE: Using default value instead: trustful_certificate=\"yes\""
     trustful_certificate="yes"
   fi
   # assign insecure-option for curl, depending on certificates trustfullness:
@@ -123,22 +134,22 @@ preparations() {
 
   # make sure the configured date format in $backupfile_date_extension is valid:
   if [ ! $(date +"${backupfile_date_extension}" 2>/dev/null) ]; then
-    echo "-- NOTICE: Parameter 'backupfile_date_extension' has no valid format (check 'man date' for valid formats)."
-    echo "-- NOTICE: Using default value instead: backupfile_date_extension=\"-%Y-%m-%d\""
+    _output echo "-- NOTICE: Parameter 'backupfile_date_extension' has no valid format (check 'man date' for valid formats)."
+    _output echo "-- NOTICE: Using default value instead: backupfile_date_extension=\"-%Y-%m-%d\""
     backupfile_date_extension="-%Y-%m-%d"
   fi
 
   # check $backup_database for valid value:
   if [[ ! ${backup_database} =~ ^(yes|no)$ ]]; then
-    echo "-- NOTICE: Parameter 'backup_database' is not valid (only \"yes\" or \"no\" allowed)."
-    echo "-- NOTICE: Using default value instead: backup_database=\"no\""
+    _output echo "-- NOTICE: Parameter 'backup_database' is not valid (only \"yes\" or \"no\" allowed)."
+    _output echo "-- NOTICE: Using default value instead: backup_database=\"no\""
     backup_database="no"
   fi
 
   # make sure delete_backups_older_than is a positive integer and set it to 0 if not:
   if [[ ! ${delete_backups_older_than} =~ ^[0-9]+$ ]]; then
-    echo "-- NOTICE: Parameter 'delete_backups_older_than' is not a positive number."
-    echo "-- NOTICE: Using default value instead (not deleting anything): delete_backups_older_than=\"0\""
+    _output echo "-- NOTICE: Parameter 'delete_backups_older_than' is not a positive number."
+    _output echo "-- NOTICE: Using default value instead (not deleting anything): delete_backups_older_than=\"0\""
     delete_backups_older_than="0"
   fi
 
@@ -149,22 +160,22 @@ preparations() {
     # check for package xz-utils
     which xz > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'tar.xz' instead of 'tar.gz'." "Therefore package 'xz-utils' is needed. Install with 'apt-get install xz-utils' and run script again"
   elif [ "${compression_method}" != "tar.gz" ]; then
-    echo "-- NOTICE: Parameter 'compression_method' is not valid (only \"tar.gz\", \"tar.xz\" or \"zip\" allowed)."
-    echo "-- NOTICE: Using default value instead: compression_method=\"tar.gz\""
+    _output echo "-- NOTICE: Parameter 'compression_method' is not valid (only \"tar.gz\", \"tar.xz\" or \"zip\" allowed)."
+    _output echo "-- NOTICE: Using default value instead: compression_method=\"tar.gz\""
     compression_method="tar.gz"
   fi
 
   # make sure compression_level has a valid value (1-9)
   if [[ ! ${compression_level} =~ ^[1-9]$ ]]; then
-    echo "-- NOTICE: Parameter 'compression_level' is not a number between 1-9."
-    echo "-- NOTICE: Using default value instead: compression_level=\"6\""
+    _output echo "-- NOTICE: Parameter 'compression_level' is not a number between 1-9."
+    _output echo "-- NOTICE: Using default value instead: compression_level=\"6\""
     compression_level="6"
   fi
 
   # check $encrypt_backup for valid value:
   if [[ ! ${encrypt_backup} =~ ^(yes|no)$ ]]; then
-    echo "-- WARNING: Parameter 'encrypt_backup' is not valid (only \"yes\" or \"no\" allowed)."
-    echo "-- WARNING: Using default value instead: encrypt_backup=\"no\""
+    _output echo "-- WARNING: Parameter 'encrypt_backup' is not valid (only \"yes\" or \"no\" allowed)."
+    _output echo "-- WARNING: Using default value instead: encrypt_backup=\"no\""
     encrypt_backup="no"
   elif [ "${encrypt_backup}" == "yes" ]; then
     # check for gpg:
@@ -176,10 +187,10 @@ preparations() {
 
 getvalue_from_configphp() {
   # reads a line with a given paramter from config.php and echoes the parameters value:
-  value=$(grep "$1" "${configphp}")
+  value=$(grep "${1}" "${configphp}")
   value=${value%\'*} # throw away end including last '
   value=${value##*\'} # throw away beginning including last '
-  echo ${value}
+  echo "${value}"
 }
 
 read_config_php() {
@@ -224,12 +235,12 @@ read_config_php() {
   if [ "${nextcloud_url}" != "${nextcloud_url_default}" ] && [ "${nextcloud_url}" != "${nextcloud_url_overwrite}" ] && [ "${nextcloud_url_overwrite}" != "" ]; then
     # use overwrite.cli.uri and print Warning, if nextcloud_url has been configured to something other than default or overwrite.cli.url
     # (last test in if statement above: make sure overwrite.cli.url is present and not empty):
-    echo "--"
-    echo "-- WARNING: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
-    echo "-- ${nextcloud_url}/   ==>   configured as nextcloud_url in config file ${config_path}/calcardbackup.conf"
-    echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
-    echo "-- Using the latter one!"
-    echo "--"
+    _output echo "--"
+    _output echo "-- WARNING: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
+    _output echo "-- ${nextcloud_url}/   ==>   configured as nextcloud_url in config file ${config_path}/calcardbackup.conf"
+    _output echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
+    _output echo "-- Using the latter one!"
+    _output echo "--"
     nextcloud_url=${nextcloud_url_overwrite}
   elif [ "${nextcloud_url}" == "${nextcloud_url_default}" ] && [ "${nextcloud_url_overwrite}" == "" ]; then
     # Error, if nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
@@ -239,7 +250,7 @@ read_config_php() {
     nextcloud_url=${nextcloud_url_overwrite}
   fi
   # Print url which will be used:
-  echo "+  Using URL ${nextcloud_url}"
+  _output echo "+  Using URL ${nextcloud_url}"
 }
 
 read_status_php() {
@@ -292,7 +303,7 @@ read_status_php() {
     [ "${mainversion_status_php}" -lt "${mainversionstring_status_php}" ] || [ "${lastversionstring_status_php}" -ge 50 ] && productname="Nextcloud"
   fi
 
-  echo "+  ${productname} ${versionstring_status_php} detected."
+  _output echo "+  ${productname} ${versionstring_status_php} detected."
 
   # check whether version of config.php is the same than version of status.php
   [ "${version_status_php}" != "${version_config_php}" ] && error_exit "ERROR: different versions detected:" "${productname} ${version_status_php} found at ${nextcloud_url}" "${productname} ${version_config_php} found at ${nextcloud_path}" "check configured url and path in config file '${config_path}/calcardbackup.conf'"
@@ -331,7 +342,7 @@ get_database_details() {
       error_exit "ERROR: Unsupported Database type: ${dbtype}" "Only MySQL/MariaDB and SQLite3 are supported."
     ;;
   esac
-  echo "+  Database of chosen ${productname} installation is ${database}."
+  _output echo "+  Database of chosen ${productname} installation is ${database}."
 }
 
 read_users_txt() {
@@ -346,7 +357,7 @@ read_users_txt() {
 create_backup_folder() {
   # create backup folder:
   mkdir -p "${backupfolder}"
-  [ $? -eq 0 ] || error_exit "ERROR: Backupfolder could not be created."
+  [ "$?" -eq 0 ] || error_exit "ERROR: Backupfolder could not be created."
 
   # check if backupfolder is writable
   [ -w "${backupfolder}" ] || error_exit "ERROR: Backupfolder is not writable."
@@ -365,7 +376,7 @@ query_database() {
   unset uri
   unset displayname
 
-  echo "+  Looking for ${item}s in your ${productname}:"
+  _output echo "+  Looking for ${item}s in your ${productname}:"
 
   query_row_principaluri="select ${row_principaluri} from ${table} order by id"
   query_row_uri="select ${row_uri} from ${table} order by id"
@@ -377,8 +388,8 @@ query_database() {
   [ "${dbtype}" == "mysql" ] && check_table=$(mysql ${dboptions} "show tables like '${table}'")
   [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 ${dboptions} "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")
   if [ "${check_table}" == "" ]; then
-    echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
-    echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
+    _output echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
+    _output echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
   else
     while read calline; do
       principal+=("${calline}")
@@ -402,7 +413,7 @@ get_icsvcf_files() {
 
   # Check whether database returned 0 entries (meaning there is not a single calendar/addressbook):
   if [ ${#uri[@]} == 0  ]; then
-    echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
+    _output echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
     # in this case: exported=1 though nothing exported, because different from no user match (see end of this function)
     exported=1
   fi
@@ -412,25 +423,25 @@ get_icsvcf_files() {
     for index in "${!users[@]}"; do
       if [ "${principal[$i]}" == "${user[$index]}" ] && [ "${uri[$i]}" != "contact_birthdays" ]; then
         filename=${displayname[$i]// /_}
-        printf "+  Saving ${item} ${principal[$i]}-${filename}${item_extension}..."
+        _output printf "+  Saving ${item} ${principal[$i]}-${filename}${item_extension}..."
         curl -s ${trust} -o "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]}/${uri[$i]}?export"
         cerror=$?
         [ "${cerror}" -eq 0 ] || curl_error
 
         # an empty addressbook can't be exported, so we need to check whether we received a file:
         if [ "${item}" == "addressbook" ] && [ ! -f "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" ]; then
-          printf "...not saved. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
+          _output printf "...not saved. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
           break
         fi
 
         # check for ics-/vcf-header in received file:
         if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" | grep "${item_header}") ]; then
           mv "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
-          printf "\n"
+          _output printf "\n"
           error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
         fi
         exported=$((exported + 1))
-        printf "...success!\n"
+        _output printf "...success!\n"
         break
       fi
     done
@@ -438,8 +449,8 @@ get_icsvcf_files() {
 
   # there is no matching Nextcloud user, if there are calendars/addressbooks in database table but nothing has been exported:
   if [ ${exported} == 0 ]; then
-    echo "-- NOTICE: Found ${item}s in database, but none of them belongs to one of the users given in 'users.txt'."
-    echo "-- NOTICE: You may want to check '${userstxt_path}/users.txt' for valid ${productname} users!"
+    _output echo "-- NOTICE: Found ${item}s in database, but none of them belongs to one of the users given in 'users.txt'."
+    _output echo "-- NOTICE: You may want to check '${userstxt_path}/users.txt' for valid ${productname} users!"
   fi
 }
 
@@ -456,18 +467,18 @@ get_addressbooks() {
 }
 
 dump_database() {
-  printf "+  Backing up database..."
+  _output printf "+  Backing up database..."
   [ "${dbtype}" == "mysql" ] && mysqldump --lock-tables -h${dbhost} -u${dbuser} -p${dbpassword} ${dbname} > "${backupfolder_day}/${productname}_mysql_backup.sql"
   [ "${dbtype}" == "sqlite3" ] && cp -a "${sqlite3_database}" "${backupfolder_day}/"
-  printf "...success!\n"
+  _output printf "...success!\n"
 }
 
 pack_it() {
   # print notice and quit, if there are no files in backup-directory:
   backupfolder_content=$(ls -A "${backupfolder_day}")
-  [ -z "${backupfolder_content}" ] && echo "-- NOTICE: No files in backup directory. Nothing more to do." && finish
+  [ -z "${backupfolder_content}" ] && _output echo "-- NOTICE: No files in backup directory. Nothing more to do." && finish
 
-  echo "+  Compressing backup as *.${compression_method} file (compression level ${compression_level}). Be patient - this may take a while."
+  _output echo "+  Compressing backup as *.${compression_method} file (compression level ${compression_level}). Be patient - this may take a while."
   cd "${backupfolder}"
   if [ "${compression_method}" == "zip" ]; then
     # zip folder with backed up files:
@@ -486,8 +497,9 @@ pack_it() {
   cd "${working_dir}" # switch back to original directory (needed, because we don't know what will happen in hook file)
   rm -r "${backupfolder_day}"
   path_compressed_backup="${backupfolder}/calcardbackup${day}.${compression_method}"
-  echo "+  Backup successfully compressed!"
-  echo "+  Find your backup here: ${path_compressed_backup}"
+  _output echo "+  Backup successfully compressed!"
+  _output echo "+  Find your backup here: ${path_compressed_backup}"
+  [ "${mode}" == "batch" ] && batch_path="${path_compressed_backup}"
 }
 
 gpg_encrypt_backup() {
@@ -496,30 +508,32 @@ gpg_encrypt_backup() {
   gpg --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_compressed_backup}"
   # command to decrypt (maybe implemented in the future: gpg --passphrase-file <(echo "${gpg_passphrase}") --output decrypted_output_file -d encrypted_file
   [ "$?" == 0 ] || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
-  echo "+  Backup successfully encrypted!"
-  echo "+  Find your encrypted backup here: ${path_encrypted_backup}"
+  _output echo "+  Backup successfully encrypted!"
+  _output echo "+  Find your encrypted backup here: ${path_encrypted_backup}"
+  [ "${mode}" == "batch" ] && batch_path="${path_encrypted_backup}"
 }
 
 delete_old_backups() {
-  # use base10 and decrement ${delete_backups_older_than}, because find treats "-mtime 0" as "older than 24 hours"
-  delete_backups_older_than=$(( 10#$delete_backups_older_than - 1 ))
+  # use base10 and decrement ${delete_backups_older_than}, because find treats "-mtime 0" as "older than 24 hours":
+#  deleted=$(find "${backupfolder}"/calcardbackup* -daystart -mtime +$(( 10#$delete_backups_older_than - 1  )) -delete -exec echo "+     - " {} \;)
   deleted=$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)
   if [ "$?" -ne 0 ]; then
     error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
   elif [ "${deleted}" != "" ]; then
-    echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
-    echo "${deleted}"
+    _output echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
+    _output echo "${deleted}"
   else
-    echo "+  No backups older than ${delete_backups_older_than} days found to delete."
+    _output echo "+  No backups older than ${delete_backups_older_than} days found to delete."
   fi
 }
 
 finish() {
   # print timestamp
-  echo "+  $(date) --> END calcardbackup"
-  echo "+"
-  echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-  echo
+  _output echo "+  $(date) --> END calcardbackup"
+  _output echo "+"
+  _output echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  _output echo
+  [ "${mode}" == "batch" ] && echo "${batch_path}"
   exit 0
 }
 
@@ -538,18 +552,31 @@ curl_error() {
 }
 
 error_exit() {
-  echo "--" >&2
+  echo "-- calcardbackup: ERROR --" >&2
   # if an error message is needed:
   for message in "$@"; do
     echo "-- ${message}" >&2
   done
-
-  echo "-- Exiting." >&2
-  echo "--" >&2
-  echo "-------------  Errors occured. See messages above!  -------------" >&2
-  echo >&2
+  echo "-- calcardbackup: Exiting." >&2
   exit 64 # 1 is reserved.
 }
+
+# default values:
+mode="loud"
+
+while [ "${1}" != "" ]
+do
+  case "${1}" in
+    -b | --batch )
+      mode="batch"
+      shift
+    ;;
+    * )
+      echo "-  WARNING! Unrecognized option: ${1}"
+      shift
+    ;;
+  esac
+done
 
 preparations
 read_config_php
