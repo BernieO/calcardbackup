@@ -28,8 +28,8 @@ Additionally there is a config option to delete backups that are older than X da
 `chown -R www-data:www-data .`  
 `chmod 600 users.txt calcardbackup.conf`
 
-6. Run script as user `www-data`:  
-`sudo -u www-data ./calcardbackup`
+6. Run script as user `www-data` with option "--configfile" and path to config file:  
+`sudo -u www-data ./calcardbackup --configfile "calcardbackup.conf"`
 
 7. Check output of script - it will tell, if anything is missing or has to be configured in `calcardbackup.conf`.
 
@@ -41,6 +41,16 @@ If you want to use the included encryption possibility, be aware that:
 - the passphrase is stored in a file. Other users with access to the server might be able to see the password.
 - `calcardbackup` is designed to run without user interaction, so there can't be a rock solid encryption. The offered one should be sufficiont in most cases though.
 - if you need better encryption, don't let `calcardbackup` encrypt the file. Instead use `hook prefinish` to encrypt the backup with your own settings.
+
+## Options
+```
+-b | --batch
+       batch-mode: no output except for path to backup file
+-c | --configfile [path/to/configfile]
+       use configfile for configuration, ignores all other options except for -b
+       path/to/configfile must be relative to scripts directory or absolute
+       mandatory until other cli-options are included
+```
 
 ## Interested in more details?
 

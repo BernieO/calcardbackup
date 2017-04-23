@@ -14,7 +14,7 @@
 #
 # main configuration needs to be in ./calcardbackup.conf (see calcardbackup.conf.example)
 # if calcardbackup.conf needs to be outside this scripts directory change following path:
-#config_path="./"
+#config_file="./calcardbackup.conf"
 #
 #######################################################
 
@@ -63,6 +63,39 @@ check_readable_file() {
   [ ! -f "${1}" ] || [ ! -r "${1}" ] && error_exit "ERROR: Can't read ${2}" "I need to be able to read ${1}"
 }
 
+load_default_values() {
+  # assign default values:
+  config_file=${config_file:-"./calcardbackup.conf"}
+  use_config_file="no"
+  mode="loud"
+  nextcloud_path="/usr/share/nginx/www"
+  nextcloud_url="https://www.example.com"
+  trustful_certificate="yes"
+  userstxt_path="./"
+  backupfolder="backups"
+  backupfile_date_extension="-%Y-%m-%d"
+  backup_database="no"
+  delete_backups_older_than="0"
+  compression_method="tar.gz"
+  compression_level="6"
+  encrypt_backup="no"
+  passphrase="1234"
+}
+
+read_config_file() {
+  # absolute path to config file:
+  config_file=$(get_absolute_path "${config_file}")
+  _output echo "+  Using configuration file ${config_file}"
+
+  # check if config file is a file and readable:
+  check_readable_file "${config_file}" "calcardbackups config file."
+  # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
+  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]+"[[:space:]]*)(#.*)?$' "${config_file}"
+  [ "$?" -eq 0 ] && error_exit "ERROR: invalid config file! only variable-declarations, comments and empty lines allowed." "Edit configuration file and run sript again."
+  # config file is readable and has correct syntax. So let's include it now:
+  . "${config_file}"
+}
+
 preparations() {
   # print timestamp
   _output printf "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
@@ -82,31 +115,7 @@ preparations() {
   actual_path=$(readlink -f "${BASH_SOURCE[0]}")
   script_dir=$(dirname "${actual_path}")
 
-  # assign default values:
-  config_path=${config_path:-"./"}
-  nextcloud_path="/usr/share/nginx/www"
-  nextcloud_url="https://www.example.com"
-  trustful_certificate="yes"
-  userstxt_path="./"
-  backupfolder="backups"
-  backupfile_date_extension="-%Y-%m-%d"
-  backup_database="no"
-  delete_backups_older_than="0"
-  compression_method="tar.gz"
-  compression_level="6"
-  encrypt_backup="no"
-  passphrase="1234"
-
-  # absolute path to config file:
-  config_path=$(get_absolute_path "${config_path}")
-
-  # check if config file is a file and readable:
-  check_readable_file "${config_path}/calcardbackup.conf" "calcardbackups config file."
-  # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
-  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]+"[[:space:]]*)(#.*)?$' "${config_path}/calcardbackup.conf"
-  [ "$?" -eq 0 ] && error_exit "ERROR: invalid config file! only variable-declarations, comments and empty lines allowed." "Edit configuration file and run sript again."
-  # config file is readable and has correct syntax. So let's include it now:
-  . "${config_path}/calcardbackup.conf"
+  [ "${use_config_file}" == "yes" ] && read_config_file
 
   # remove trailing slashes from nextcloud_path and nextcloud_url:
   nextcloud_path=$(readlink -m "${nextcloud_path}")
@@ -237,14 +246,14 @@ read_config_php() {
     # (last test in if statement above: make sure overwrite.cli.url is present and not empty):
     _output echo "--"
     _output echo "-- WARNING: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
-    _output echo "-- ${nextcloud_url}/   ==>   configured as nextcloud_url in config file ${config_path}/calcardbackup.conf"
+    _output echo "-- ${nextcloud_url}/   ==>   configured as nextcloud_url in config file ${config_file}"
     _output echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
     _output echo "-- Using the latter one!"
     _output echo "--"
     nextcloud_url=${nextcloud_url_overwrite}
   elif [ "${nextcloud_url}" == "${nextcloud_url_default}" ] && [ "${nextcloud_url_overwrite}" == "" ]; then
     # Error, if nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
-    error_exit "ERROR: Can't retrieve url from ${configphp}" "In your case nextcloud_url needs to be configured in config file ${config_path}/calcardbackup.conf"
+    error_exit "ERROR: Can't retrieve url from ${configphp}" "In your case nextcloud_url needs to be configured in config file ${config_file}"
   elif [ "${nextcloud_url_overwrite}" != "" ]; then
     # if overwrite.cli.uri is found (and nextcloud_url is on default value): use it as nextcloud_url
     nextcloud_url=${nextcloud_url_overwrite}
@@ -306,7 +315,7 @@ read_status_php() {
   _output echo "+  ${productname} ${versionstring_status_php} detected."
 
   # check whether version of config.php is the same than version of status.php
-  [ "${version_status_php}" != "${version_config_php}" ] && error_exit "ERROR: different versions detected:" "${productname} ${version_status_php} found at ${nextcloud_url}" "${productname} ${version_config_php} found at ${nextcloud_path}" "check configured url and path in config file '${config_path}/calcardbackup.conf'"
+  [ "${version_status_php}" != "${version_config_php}" ] && error_exit "ERROR: different versions detected:" "${productname} ${version_status_php} found at ${nextcloud_url}" "${productname} ${version_config_php} found at ${nextcloud_path}" "check configured url and path in config file '${config_file}'"
 
   # check for installed=true in status.php
   grep -E -q '"installed":"?true"?' <<< ${status_php} || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
@@ -514,8 +523,7 @@ gpg_encrypt_backup() {
 }
 
 delete_old_backups() {
-  # use base10 and decrement ${delete_backups_older_than}, because find treats "-mtime 0" as "older than 24 hours":
-#  deleted=$(find "${backupfolder}"/calcardbackup* -daystart -mtime +$(( 10#$delete_backups_older_than - 1  )) -delete -exec echo "+     - " {} \;)
+  # deletes backups older than ${delete_backups_older_than} days:
   deleted=$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)
   if [ "$?" -ne 0 ]; then
     error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
@@ -542,11 +550,11 @@ curl_error() {
     if [ "${nextcloud_url}" == "${nextcloud_url_overwrite}" ]; then
       problem="Either that host is temporarily unavailable or 'overwrite.cli.uri' in ${configphp} is wrong."
     else
-      problem="Either that host is temporarily unavailable or nextcloud_url in '${config_path}/calcardbackup.conf' is wrong."
+      problem="Either that host is temporarily unavailable or nextcloud_url in '${config_file}' is wrong."
     fi
     error_exit "ERROR: Curl error 6: could not resolve host ${nextcloud_url}." "${problem}"
   elif [ "${cerror}" -eq 60 ]; then
-    error_exit "ERROR: Curl error 60: cannot authenticate peer certificate with known CA certificates." "You need to configure trustful_certificate=\"no\" in config file '${config_path}/calcardbackup.conf'"
+    error_exit "ERROR: Curl error 60: cannot authenticate peer certificate with known CA certificates." "You need to configure trustful_certificate=\"no\" in config file '${config_file}'"
   fi
   error_exit "ERROR: Curl cannot get the requested file. This can have various reasons." "For clarification lookup Curl Error number ${cerror}"
 }
@@ -562,7 +570,7 @@ error_exit() {
 }
 
 # default values:
-mode="loud"
+load_default_values
 
 while [ "${1}" != "" ]
 do
@@ -570,6 +578,11 @@ do
     -b | --batch )
       mode="batch"
       shift
+    ;;
+    -c | --configfile )
+      use_config_file="yes"
+      config_file="${2}"
+      shift 2
     ;;
     * )
       echo "-  WARNING! Unrecognized option: ${1}"
