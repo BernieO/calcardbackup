@@ -32,17 +32,17 @@ nextcloud_path="/usr/share/nginx/www/"
 #trustful_certificate="yes"
 
 # path to file users.txt (see README.md)
-# relative to scripts directory or absolute path
+# relative to this config files directory or absolute path
 #userstxt_path="./"
 
 # path to folder where backed up files will be saved.
-# relative to scripts directory or absolute path:
+# relative to this config files directory or absolute path:
 #backupfolder="backups/"
 
 # date extension for backup files. Default is "-%Y-%m-%d" resulting
 # in backup files named e.g. "calcardbackup-2017-03-23.tar.gz"
 # to change, have a look at format options under "man date"
-#backupfile_date_extension="-%Y-%m-%d"
+#date_extension="-%Y-%m-%d"
 
 # choose "yes" if you want to backup nextcloud-database as well:
 #backup_database="no"
@@ -50,23 +50,15 @@ nextcloud_path="/usr/share/nginx/www/"
 # though tested - use at own risk(!):
 # delete backups after how many days?
 # the default value of "0" means never delete backups
-#delete_backups_older_than="0"
+#remove="0"
 
-# in which format should the backup be compressed?
-# choose compression method between:
-# - "tar.gz": - default
-#             - no extra package needs to be installed
-# - "tar.xz": - package 'xz-utils' needs to be installed
-#             - best compression ratio, but needs time and
-#               lots of memory at higher compression levels
-# - "zip":    - package 'zip' needs to be installed
-#             - is probably most portable
-#compression_method="tar.gz"
+# change to "no" to not compress backup files
+# find your files then in "backupfolder/calcardbackup-2017-03-23"
+#compress="yes"
 
-# choose compression level between 1 and 9
-# 1 = faster, bigger filesize
-# 9 = slower, smaller filesize
-#compression_level="6"
+# change to "yes" to compress backup as zip (instead of tar.gz)
+# package "zip" needs to be installed.
+#zip="no"
 
 # change to "yes" to encrypt backup with GnuPG
 # backup will be encrypted symmetric AES256 with given passphrase
