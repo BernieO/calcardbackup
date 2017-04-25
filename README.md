@@ -33,17 +33,17 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 
 ## Details
 
-There are two ways to run the script:
+The script can be run in two different modes:
 
 **lazy (legacy) mode**  
-In lazy mode no options or arguments are passed to the script. Instead config file `calcardbackup.conf` and file with logins `users.txt` in scripts directory will be used. See `examples` for examples. Option `-b|--batch` is the only option that may be used in lazy mode. See `examples/calcardbackup.conf.example` for how to configure.  
+In lazy mode no options or arguments are passed to the script. Instead config file `calcardbackup.conf` and file with logins `users.txt` in scripts directory will be used. See `examples/calcardbackup.conf.example` for how to configure. Option `-b|--batch` is the only option that may be used in lazy mode.   
 
 **command line mode**  
-In command line mode several options may be passed to the script. The path to your ownCloud/Nextcloud instance is mandatory to be given as very first argument unless option `-c|--configfile` is used. Find detailed description of options below.  
+In command line mode several options may be passed to the script. The path to your ownCloud/Nextcloud instance is mandatory to be given as very first argument unless option `-c|--configfile` is used. Find detailed description of available options below.  
 
 ## Options for command line mode:
 ```
-Usage: .\calcardbackup [URL] [option [argument]] [option [argument]] [option [argument]] ...
+Usage: ./calcardbackup [URL] [option [argument]] [option [argument]] [option [argument]] ...
 
 -a | --address URL
        Pass URL of Owncloud Installation to script.
@@ -76,7 +76,7 @@ Usage: .\calcardbackup [URL] [option [argument]] [option [argument]] [option [ar
 -r | --remove N
        Remove backups older than N days from backup folder.
 -s | --selfsigned
-       Use, if certificate is selfsigned or for other reasons not trustful to curl.
+       Needs to be given, if certificate is selfsigned or for other reasons not trustful to curl.
 -u | --usersfile FILE
        Find usernames and passwords in FILE. One user with according password separated
        by a colon per line. See examples/users.txt.examples
@@ -92,10 +92,10 @@ Usage: .\calcardbackup [URL] [option [argument]] [option [argument]] [option [ar
 If you want to use the included encryption possibility, be aware that:
 - the files are encrypted by Gnupg, AES256 with the passphrase given in a separate file
 - the passphrase is stored in a file. Other users with access to the server might be able to see the password.
-- `calcardbackup` is designed to run without user interaction, so there can't be a rock solid encryption. The offered one should be sufficiont in most cases though.
-- if you need rock solid encryption, don't let `calcardbackup` encrypt the file. Instead encrypt the backup youself.
+- `calcardbackup` is designed to run without user interaction, so there can't be a rock solid encryption. The offered one should be sufficient in most cases though.
+- if you need rock solid encryption, don't let `calcardbackup` encrypt the backup. Instead encrypt it youself.
 
 ## Interested in more details?
 
-Find more details here (sorry, currently only in german):  
+Find a little more background information here (sorry, only in german):  
 [Blog article about calcardbackup](https://bob.gatsmas.de/articles/calcardbackup-kalender-und-adressbuchbackup-von-owncloud-nextcloud)
