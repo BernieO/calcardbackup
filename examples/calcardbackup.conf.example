@@ -3,63 +3,86 @@
 # example config file for calcardbackup
 # ---------------------------------------
 #
+# If you don't want to pass several options to calcardbackup:
+#
+# Either copy this file to wherever you want and use option -c|--configfile
+# to pass options to calcardbackup
+#
+# Or use lazy mode:
 # copy this file to the same directory as calcardbackup,
-# rename it to calcardbackup.conf and
-# change values according to your setup.
+# rename it to calcardbackup.conf
+# 
+# In any case change values according to your setup.
 #
 # nextcloud_url has to be configured below.
 # Rest of the values can stay unchanged.
 # Running the script will give hints, of something has to be changed.
 #
-# Don't forget to create file 'users.txt' in scripts dir filled with
+# Don't forget to create file with
 # usernames and according passwords with one user per line and
-# separated by a colon. See files 'README.md' and 'users.txt.example'
+# separated by a colon. Pass path to that file with option -u|usersfile
+# to calcardbackup or use lazy mode and place users.txt in
+# same directory as script
+#
+# See files 'README.md' and 'users.txt.example'
+#
+# all paths in this config file need to be relative to this files location or absolute!
 #
 #######################################################
 
 
-# absolute path to Own-/Nextcloud-Installation:
+# path to Own-/Nextcloud-Installation:
 nextcloud_path="/usr/share/nginx/www/"
 
+# option -a|--address:
 # The script tries to automatically detect the URL of Own-/Nextcloud,
 # which should work in most cases for versions >= 7.0
 # For versions < 7.0 this is mandatory!
 # URL of Own-/Nextcloud Login-page:
 #nextcloud_url="https://www.example.com/"
 
+# option -s|--selfsigned
 # Is certificate trustful?
 # If you have a self signed certificate you might have to change this to "no"
 #trustful_certificate="yes"
 
-# path to file users.txt (see README.md)
+# option -u|--usersfile
+# path to file with usernames and passwords (see README.md)
 # relative to this config files directory or absolute path
 #userstxt_path="./"
 
+# option -o|--output
 # path to folder where backed up files will be saved.
 # relative to this config files directory or absolute path:
 #backupfolder="backups/"
 
+# option -d|--date
 # date extension for backup files. Default is "-%Y-%m-%d" resulting
 # in backup files named e.g. "calcardbackup-2017-03-23.tar.gz"
 # to change, have a look at format options under "man date"
 #date_extension="-%Y-%m-%d"
 
+# option -q|--database
 # choose "yes" if you want to backup nextcloud-database as well:
 #backup_database="no"
 
+# option -r|--remove
 # though tested - use at own risk(!):
 # delete backups after how many days?
 # the default value of "0" means never delete backups
 #remove="0"
 
+# option -x|--uncompressed
 # change to "no" to not compress backup files
 # find your files then in "backupfolder/calcardbackup-2017-03-23"
 #compress="yes"
 
+# option -z|--zip
 # change to "yes" to compress backup as zip (instead of tar.gz)
 # package "zip" needs to be installed.
 #zip="no"
 
+# option -e|--encrypt
 # change to "yes" to encrypt backup with GnuPG
 # backup will be encrypted symmetric AES256 with given passphrase
 # If you wnat to use that:

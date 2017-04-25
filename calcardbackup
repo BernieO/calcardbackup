@@ -42,11 +42,12 @@ _output() {
 }
 
 get_absolute_path() {
-  # change relative to script_dirs path to absolute path; remove trailing slash:
-  if [[ ! "${1}" = /* ]]; then
-    absolute_path=$(readlink -m "${script_dir}/${1}")
+  if [[ ! "${2}" = /* ]]; then
+    # change path of ${2} (file) relative to ${1} (dir) to absolute path; remove trailing slashes:
+    absolute_path=$(readlink -m "${1}/${2}")
   else
-    absolute_path=$(readlink -m "${1}")
+    # already absolute path: then only remove trailing slashes:
+    absolute_path=$(readlink -m "${2}")
   fi
   echo "${absolute_path}"
 }
@@ -67,12 +68,11 @@ set_required_paths() {
 
 load_default_values() {
   # assign default values:
-  use_config_file="no"
   nextcloud_path="/usr/share/nginx/www"
   nextcloud_url="https://www.example.com"
   trustful_certificate="yes"
-  users_file="${script_dir}/users.txt"
-  backupfolder="backups"
+  users_file="users.txt"
+  backupfolder="backups/"
   date_extension="-%Y-%m-%d"
   backup_database="no"
   remove="0" # formerly known as 'delete_backups_older_than'
@@ -87,7 +87,7 @@ read_config_file() {
   config_file=$(readlink -m "${config_file}")
   config_file_dir=$(dirname "${config_file}")
   _output echo "+  Using configuration file ${config_file}, ignoring all other command line options."
-  load_default_values # to ignore all other except for -b
+  load_default_values # if more options have been passed to command: ignore all options except for -b
 
   # check if config file is a file and readable:
   check_readable_file "${config_file}" "calcardbackups config file."
@@ -96,6 +96,10 @@ read_config_file() {
   [ "$?" -eq 0 ] && error_exit "ERROR: invalid config file! only variable-declarations, comments and empty lines allowed." "Edit configuration file and run sript again."
   # config file is readable and has correct syntax. So let's include it now:
   . "${config_file}"
+  # change paths (relative to config files directory) to absolute paths, remove trailing slashes
+  nextcloud_path=$(get_absolute_path "${config_file_dir}" "${nextcloud_path}")
+  users_file=$(get_absolute_path "${config_file_dir}" "${users_file}")
+  backupfolder=$(get_absolute_path "${config_file_dir}" "${backupfolder}")
 }
 
 preparations() {
@@ -110,10 +114,14 @@ preparations() {
   which sed > /dev/null || error_exit "ERROR: Package 'sed' is needed for running this script." "Install with 'apt-get install sed' and run script again"
   which grep > /dev/null || error_exit "ERROR: Package 'grep' is needed for running this script." "Install with 'apt-get install grep' and run script again"
 
+  if [ "${lazy_mode}" == "yes" ]; then
+    use_config_file="yes"
+    config_file="${script_dir}/calcardbackup.conf"
+  fi
   # if -c or --configfile: read given config file
   [ "${use_config_file}" == "yes" ] && read_config_file
   # error, if no path to Own-/Nextcloud and no configfile was given:
-  [ "${use_config_file}" == "no" ] && [ "${path_given}" == "no" ] && error_exit "ERROR: calcardbackup needs absolute path to Own-/Nextcloud as very first argument!"
+  [ "${use_config_file}" == "no" ] && [ "${path_given}" == "no" ] && error_exit "ERROR: calcardbackup needs absolute path to Own-/Nextcloud as first argument!"
 
   # remove trailing slashes from nextcloud_path and nextcloud_url:
   nextcloud_path=$(readlink -m "${nextcloud_path}")
@@ -131,13 +139,10 @@ preparations() {
   [ "${trustful_certificate}" == "yes" ] && trust=""
   [ "${trustful_certificate}" == "no" ] && trust="--insecure"
 
-  # absolute path to users.txt:
-#  users_file=$(get_absolute_path "${users_file}")
   # check if users.txt is a file and readable:
   check_readable_file "${users_file}" "file with usernames and passwords."
 
   # absolute path to backupfolder:
-#  backupfolder=$(get_absolute_path "${backupfolder}")
   backupfolder=$(realpath "${backupfolder}")
 
   # make sure the configured date format in $date_extension is valid:
@@ -577,7 +582,12 @@ load_default_values
 mode="loud"
 path_given="no"
 use_config_file="no"
+lazy_mode="no"
 
+# lazy mode: read config file from script_dir, if run with no or only option -b/--batch
+[ "${#}" == 0 ] || [[ "${#}" == 1 && "${1}" =~ -b|--batch ]] && lazy_mode="yes"
+
+# get nextcloud path if first argument starts with /
 if [[ "${1}" = /* ]]; then
   nextcloud_path="${1}"
   path_given="yes"
@@ -609,14 +619,6 @@ do
       else
         check_argument "${1:-}"
       fi
-
-#      if [ "${date_extension}" == "" ]; then
-#        _output echo "+  no date format given for option -d. Using default \"-%Y-%m-%d\""
-#        shift
-#      else
-#        shift 2
-#      fi
-
     ;;
     -e | --encrypt )
       shift

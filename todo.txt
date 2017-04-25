@@ -2,10 +2,13 @@
 
 
 left to be done:
-- use options instead of hook file
+- improve error messages (depending on using options or configfile)
+- improve manual
+- cleanup code
 
 
 done:
+- pass options to script instead of configfile. Keep configfile as an option (25.04.2017)
 - add option to encrypt compressed backup file with GnuPG (symmetric key) (18.04.2017)
 - adjust database queries to be able to use same code for SQLite3 and MySQL/MariaDB (17.04.2017)
 - improved check for existing table (reduced lines of code) (16.04.2017)
