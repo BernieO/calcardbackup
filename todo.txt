@@ -2,12 +2,13 @@
 
 
 left to be done:
-- improve error messages (depending on using options or configfile)
-- improve manual
 - cleanup code
 
 
 done:
+- improve README.md (25.04.2017)
+- improve examples/calcardbackup.conf.example (25.04.2017)
+- improve error messages (depending on whether run with options or with configfile) (25.04.2017)
 - pass options to script instead of configfile. Keep configfile as an option (25.04.2017)
 - add option to encrypt compressed backup file with GnuPG (symmetric key) (18.04.2017)
 - adjust database queries to be able to use same code for SQLite3 and MySQL/MariaDB (17.04.2017)

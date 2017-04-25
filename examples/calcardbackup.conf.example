@@ -9,15 +9,11 @@
 # Either copy this file to wherever you want and use option -c|--configfile
 # to pass options in this file to calcardbackup.
 #
-# Or use lazy mode:
-# copy this file to the same directory as calcardbackup and
-# rename it to calcardbackup.conf
-# 
 # Only nextcloud_path is mandatory to be configured below.
 # Rest of the values may stay unchanged on their default values.
 # Running the script will give hints, if something has to be changed.
 #
-# All paths in this config file need to be relative to this files location or absolute!
+# All paths in this config file need to be relative to this files location or absolute paths!
 #
 # Don't forget to create file with usernames and according passwords
 # with one user per line and separated by a colon.
@@ -29,58 +25,59 @@
 
 
 # path to ownCloud/Nextcloud installation
-# this is mandatory (also for command line unless option -c|--configfile is given):
+# this is mandatory:
 nextcloud_path="/usr/share/nginx/www/"
 
-# option -a|--address:
 # The script tries to automatically detect the URL of ownCloud/Nextcloud,
 # which should work in most cases for versions >= 7.0
 # For versions < 7.0 this is mandatory!
+# correlates to option -a|--address
 # URL of Own-/Nextcloud Login-page:
 #nextcloud_url="https://www.example.com/"
 
-# option -s|--selfsigned
 # Will cURL trust the servers certificate?
 # If you have a self signed certificate you might have to change this to "no"
+# correlates to option -s|--selfsigned
 #trustful_certificate="yes"
 
-# option -u|--usersfile
 # path to file with usernames and passwords (see README.md)
+# correlates to option -u|--usersfile
 #users_file="users.txt"
 
-# option -o|--output
 # path to folder where backed up files will be saved.
+# correlates to option -o|--output
 #backupfolder="backups/"
 
-# option -d|--date
 # date extension for backup files. Default is "-%Y-%m-%d" resulting
 # in backup files named e.g. "calcardbackup-2017-03-23.tar.gz"
 # to change, have a look at format options under "man date"
+# correlates to option -d|--date
 #date_extension="-%Y-%m-%d"
 
-# option -q|--database
 # choose "yes" if you want to backup nextcloud-database as well:
+# correlates to option -q|--database
 #backup_database="no"
 
-# option -r|--remove
 # though tested - use at own risk(!):
 # delete backups after how many days?
 # the default value of "0" means never delete backups
+# correlates to option -r|--remove
 #delete_backups_older_than="0"
 
-# option -x|--uncompressed
 # change to "no" to not compress backup files
 # find your files then in "backupfolder/calcardbackup-2017-03-23"
+# correlates to option -x|--uncompressed
 #compress="yes"
 
-# option -z|--zip
 # change to "zip" to compress backup as zip (instead of tar.gz)
 # package "zip" needs to be installed.
+# correlates to option -z|--zip
 #compression_method="tar.gz"
 
-# option -e|--encrypt
 # change to "yes" to encrypt backup with GnuPG
 # backup will be encrypted symmetric AES256 with given passphrase
+# apart from that the passphrase has to be given below
+# this correlates to option -e|--encrypt
 # If you want to use that:
 # pay attention to the comments about encryption in README.md!
 #encrypt_backup="no"

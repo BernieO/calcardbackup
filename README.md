@@ -26,37 +26,34 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 (if you are using a self-signed certificate, you might have to use `-s` as well):  
 `sudo -u www-data ./calcardbackup "/usr/share/nginx/nextcloud"`
 
-6. Check output of script - it will tell, if it needs any other option.
+6. Check output of script - it will tell, if it needs any other options.
 
 7. Find your backup in directory `backups/`.
 
-## Details
+## Advanced
 
-The script can be run in two different modes:
+Several options are available for advanced use. The path to your ownCloud/Nextcloud instance is mandatory to be given as very first argument unless option `-c|--configfile` is used. Find detailed description of available options below.  
+If no options at all or only `-b|--batch` is passed to the script, it attempts to use files `calcardbackup.conf` and `users.txt` in scripts directory as configuration file and login information.  
 
-**lazy (legacy) mode**  
-In lazy mode no options or arguments are passed to the script. Instead config file `calcardbackup.conf` and file with logins `users.txt` in scripts directory will be used. See `examples/calcardbackup.conf.example` for how to configure. Option `-b|--batch` is the only option that may be used in lazy mode.   
-
-**command line mode**  
-In command line mode several options may be passed to the script. The path to your ownCloud/Nextcloud instance is mandatory to be given as very first argument unless option `-c|--configfile` is used. Find detailed description of available options below.  
-
-## Options for command line mode:
+## Options
 ```
 Usage: ./calcardbackup [URL] [option [argument]] [option [argument]] [option [argument]] ...
+
+Arguments in big letters to options are mandatory.
+Paths (FILE / DIRECTORY) can be absolute paths or relative paths to working directory.
 
 -a | --address URL
        Pass URL of Owncloud Installation to script.
        Only required for Owncloud < 7.0
 -b | --batch
        Batch mode: print nothing to stdout, except for path to backup.
-       Depending on configuration this is:
+       Depending on configuration this will be:
          - absolute path of compressed backup file
-       or if rund with option -x|--uncompressed (see below)
+       or if run with option -x|--uncompressed (see below)
          - absolute path of directory containing uncompressed files
 -c | --configfile FILE
-       Read configuration from FILE.
+       Read configuration from FILE. See examples/calcardbackup.conf.example
        All other options except for -b|--batch are ignored.
-       FILE can be absolute or relative path to working directory.
 -d | --date FORMAT
        Use FORMAT as extension for backup folder and compressed backup.
        FORMAT needs to be a format descriptor of command date().
@@ -78,8 +75,8 @@ Usage: ./calcardbackup [URL] [option [argument]] [option [argument]] [option [ar
        Needs to be given, if certificate is selfsigned or for other reasons not trustful to curl.
 -u | --usersfile FILE
        Find usernames and passwords in FILE. One user with according password separated
-       by a colon per line. See examples/users.txt.examples
-       If this option is not given, calcardbackup will look for file users.txt in scripts
+       by a colon per line. See examples/users.txt.example
+       If this option is not given, calcardbackup will attempt to use file 'users.txt' in scripts
        directory
 -x | --uncompressed
        don't compress backup folder
