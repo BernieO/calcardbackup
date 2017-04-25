@@ -4,7 +4,7 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 
 ## Requirements
 
-- local installation of Own-/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
+- local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
 - Packages `grep`, `sed`, `curl` and according database packages (`mysql-server`/`mariadb-server` or `sqlite3`)
 
 ## Quick Installation Guide
@@ -16,7 +16,7 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 2. Copy example file `users.txt`:  
 `cp examples/users.txt.example users.txt`
 
-3. In `users.txt`, insert usernames and according passwords separated by a colon with one user per line of all users to be backed up. Be aware that other people with access to the server might be able to read the stored passwords.  
+3. In `users.txt`, insert ownCloud/Nextcloud usernames and according passwords separated by a colon with one user per line of all users to be backed up. Be aware that other people with access to the server might be able to read the stored passwords.  
 
 4. Change ownership of repo to your webservers user (here `www-data`) and restrict access to `users.txt`:  
 `chown -R www-data:www-data .`  
@@ -40,7 +40,7 @@ If no options at all or only `-b|--batch` is passed to the script, it attempts t
 Usage: ./calcardbackup [URL] [option [argument]] [option [argument]] [option [argument]] ...
 
 Arguments in big letters to options are mandatory.
-Paths (FILE / DIRECTORY) can be absolute paths or relative paths to working directory.
+Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directory.
 
 -a | --address URL
        Pass URL of Owncloud Installation to script.
@@ -84,7 +84,7 @@ Paths (FILE / DIRECTORY) can be absolute paths or relative paths to working dire
        use zip to compress backup folder instead of creating a gzipped tarball (tar.gz)
 ```
 
-## Considerations About Encryption
+## Considerations about encryption
 If you want to use the included encryption possibility, be aware that:
 - the files are encrypted by Gnupg, AES256 with the passphrase given in a separate file
 - the passphrase is stored in a file. Other users with access to the server might be able to see the password.
