@@ -1,12 +1,11 @@
 # calcardbackup
 
-This Bash script exports calendars and addressbooks of given users from ownCloud/Nextcloud to .ics and .vcf files and saves them as compressed file.  
+This Bash script exports calendars and addressbooks of given users from ownCloud/Nextcloud to .ics and .vcf files and saves them as compressed file. Additional options are available.  
 
 ## Requirements
 
 - local installation of Own-/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
 - Packages `grep`, `sed`, `curl` and according database packages (`mysql-server`/`mariadb-server` or `sqlite3`)
-- if backups shall be zipped (instead of default gzipped tarball): package `zip`
 
 ## Quick Installation Guide
 
