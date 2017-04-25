@@ -3,57 +3,53 @@
 # example config file for calcardbackup
 # ---------------------------------------
 #
-# If you don't want to pass several options to calcardbackup:
+# This file is only needed, if you don't want to pass options
+# on the command line to calcardbackup.
 #
 # Either copy this file to wherever you want and use option -c|--configfile
-# to pass options to calcardbackup
+# to pass options in this file to calcardbackup.
 #
 # Or use lazy mode:
-# copy this file to the same directory as calcardbackup,
+# copy this file to the same directory as calcardbackup and
 # rename it to calcardbackup.conf
 # 
-# In any case change values according to your setup.
+# Only nextcloud_path is mandatory to be configured below.
+# Rest of the values may stay unchanged on their default values.
+# Running the script will give hints, if something has to be changed.
 #
-# nextcloud_url has to be configured below.
-# Rest of the values can stay unchanged.
-# Running the script will give hints, of something has to be changed.
+# All paths in this config file need to be relative to this files location or absolute!
 #
-# Don't forget to create file with
-# usernames and according passwords with one user per line and
-# separated by a colon. Pass path to that file with option -u|usersfile
-# to calcardbackup or use lazy mode and place users.txt in
-# same directory as script
-#
+# Don't forget to create file with usernames and according passwords
+# with one user per line and separated by a colon.
 # See files 'README.md' and 'users.txt.example'
 #
-# all paths in this config file need to be relative to this files location or absolute!
+# For clarification the according command line options are given in comments.
 #
 #######################################################
 
 
-# path to Own-/Nextcloud-Installation:
+# path to ownCloud/Nextcloud installation
+# this is mandatory (also for command line unless option -c|--configfile is given):
 nextcloud_path="/usr/share/nginx/www/"
 
 # option -a|--address:
-# The script tries to automatically detect the URL of Own-/Nextcloud,
+# The script tries to automatically detect the URL of ownCloud/Nextcloud,
 # which should work in most cases for versions >= 7.0
 # For versions < 7.0 this is mandatory!
 # URL of Own-/Nextcloud Login-page:
 #nextcloud_url="https://www.example.com/"
 
 # option -s|--selfsigned
-# Is certificate trustful?
+# Will cURL trust the servers certificate?
 # If you have a self signed certificate you might have to change this to "no"
 #trustful_certificate="yes"
 
 # option -u|--usersfile
 # path to file with usernames and passwords (see README.md)
-# relative to this config files directory or absolute path
-#userstxt_path="./"
+#users_file="users.txt"
 
 # option -o|--output
 # path to folder where backed up files will be saved.
-# relative to this config files directory or absolute path:
 #backupfolder="backups/"
 
 # option -d|--date
@@ -70,7 +66,7 @@ nextcloud_path="/usr/share/nginx/www/"
 # though tested - use at own risk(!):
 # delete backups after how many days?
 # the default value of "0" means never delete backups
-#remove="0"
+#delete_backups_older_than="0"
 
 # option -x|--uncompressed
 # change to "no" to not compress backup files
@@ -78,14 +74,14 @@ nextcloud_path="/usr/share/nginx/www/"
 #compress="yes"
 
 # option -z|--zip
-# change to "yes" to compress backup as zip (instead of tar.gz)
+# change to "zip" to compress backup as zip (instead of tar.gz)
 # package "zip" needs to be installed.
-#zip="no"
+#compression_method="tar.gz"
 
 # option -e|--encrypt
 # change to "yes" to encrypt backup with GnuPG
 # backup will be encrypted symmetric AES256 with given passphrase
-# If you wnat to use that:
+# If you want to use that:
 # pay attention to the comments about encryption in README.md!
 #encrypt_backup="no"
 #gpg_passphrase="1234"

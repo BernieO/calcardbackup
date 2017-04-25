@@ -9,21 +9,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#
-# THIS IS BRANCH "options":
-#      uses options instead of hook file
-#
-# -b/--batch
-#      Batch mode. Print nothing to stdout, except for path to backup.
-#      Depending on configuration this is:
-#        - absolute path of compressed backup file
-#      or (ucompressed backup: still to be implemented!!):
-#        - absolute path of directory containing uncompressed files
-# -c/--configfile "path/to/configfile"
-#      Read configuration from configfile.
-#      if this is given all other options except for -b are ignored
-#
-
 
 #######################################################
 #######################################################
@@ -43,10 +28,10 @@ _output() {
 
 get_absolute_path() {
   if [[ ! "${2}" = /* ]]; then
-    # change path of ${2} (file) relative to ${1} (dir) to absolute path; remove trailing slashes:
+    # change path of ${2} (file) relative to ${1} (dir) to absolute path and remove trailing slashes:
     absolute_path=$(readlink -m "${1}/${2}")
   else
-    # already absolute path: then only remove trailing slashes:
+    # if ${2} contains already absolute path, then only remove trailing slashes:
     absolute_path=$(readlink -m "${2}")
   fi
   echo "${absolute_path}"
@@ -60,7 +45,6 @@ check_readable_file() {
 set_required_paths() {
   # store current directory, because we have to change dir later and need to come back to where we were (because of unknown hook commands):
   working_dir=$(pwd)
-
   # get path to scripts dir:
   script_dir=$(readlink -m "${BASH_SOURCE[0]}")
   script_dir=$(dirname "${script_dir}")
@@ -75,9 +59,9 @@ load_default_values() {
   backupfolder="backups/"
   date_extension="-%Y-%m-%d"
   backup_database="no"
-  remove="0" # formerly known as 'delete_backups_older_than'
+  delete_backups_older_than="0"
   compress="yes"
-  zip="no"
+  compression_method="tar.gz"
   encrypt_backup="no"
   passphrase="1234"
 }
@@ -114,22 +98,23 @@ preparations() {
   which sed > /dev/null || error_exit "ERROR: Package 'sed' is needed for running this script." "Install with 'apt-get install sed' and run script again"
   which grep > /dev/null || error_exit "ERROR: Package 'grep' is needed for running this script." "Install with 'apt-get install grep' and run script again"
 
+  # lazy mode: use calcardbackup.conf in scripts directory as config file:
   if [ "${lazy_mode}" == "yes" ]; then
     use_config_file="yes"
     config_file="${script_dir}/calcardbackup.conf"
   fi
-  # if -c or --configfile: read given config file
+  # option -c|--configfile or lazy mode: read given config file
   [ "${use_config_file}" == "yes" ] && read_config_file
-  # error, if no path to Own-/Nextcloud and no configfile was given:
+  # error, if no path to ownCloud/Nextcloud and no configfile was given:
   [ "${use_config_file}" == "no" ] && [ "${path_given}" == "no" ] && error_exit "ERROR: calcardbackup needs absolute path to Own-/Nextcloud as first argument!"
 
-  # remove trailing slashes from nextcloud_path and nextcloud_url:
+  # remove trailing slashes from $nextcloud_path and $nextcloud_url:
   nextcloud_path=$(readlink -m "${nextcloud_path}")
   nextcloud_url=$(echo "${nextcloud_url}" | sed 's:/*$::')
-  # location of Nextclouds config.php:
+  # location of ownClouds/Nextclouds config.php:
   configphp="${nextcloud_path}/config/config.php"
 
-  # check trustful_certificate for valid value:
+  # if using -c|--configfile or lazy mode: check $trustful_certificate for valid value:
   if [[ ! ${trustful_certificate} =~ ^(yes|no)$ ]]; then
     _output echo "-- NOTICE: Parameter 'trustful_certificate' is not valid (allowed is only \"yes\" or \"no\")."
     _output echo "-- NOTICE: Using default value instead: trustful_certificate=\"yes\""
@@ -142,58 +127,63 @@ preparations() {
   # check if users.txt is a file and readable:
   check_readable_file "${users_file}" "file with usernames and passwords."
 
-  # absolute path to backupfolder:
-  backupfolder=$(realpath "${backupfolder}")
+  # absolute path to backupfolder (writeable test follows later):
+  backupfolder=$(readlink -m "${backupfolder}")
 
   # make sure the configured date format in $date_extension is valid:
   if [ ! $(date +"${date_extension}" 2>/dev/null) ]; then
-    _output echo "-- NOTICE: Parameter 'date_extension' has no valid format (check 'man date' for valid formats)."
+    [ "${use_config_file}" == "no" ] && _output echo "-- NOTICE: Argument to option '-d|--date' has no valid format (check 'man date' for valid formats)."
+    [ "${use_config_file}" == "yes" ] && _output echo "-- NOTICE: Parameter 'date_extension' has no valid format (check 'man date' for valid formats)."
     _output echo "-- NOTICE: Using default value instead: \"-%Y-%m-%d\""
     date_extension="-%Y-%m-%d"
   fi
 
-  # check $backup_database for valid value:
+  # if using -c|--configfile or lazy mode: check $backup_database for valid value:
   if [[ ! ${backup_database} =~ ^(yes|no)$ ]]; then
     _output echo "-- NOTICE: Parameter 'backup_database' is not valid (only \"yes\" or \"no\" allowed)."
     _output echo "-- NOTICE: Using default value instead: backup_database=\"no\""
     backup_database="no"
   fi
 
-  # make sure 'remove' is a positive integer and set it to 0 if not:
-  if [[ ! ${remove} =~ ^[0-9]+$ ]]; then
-    _output echo "-- NOTICE: Parameter '-r/--remove' is not a positive number."
-    _output echo "-- NOTICE: Using default value instead (not deleting anything)."
-    remove="0"
+  # make sure $delete_backups_older_than is a positive integer and set it to 0 if not:
+  if [[ ! ${delete_backups_older_than} =~ ^[0-9]+$ ]]; then
+    [ "${use_config_file}" == "no" ] && _output echo "-- NOTICE: Argument to option '-r/--remove' is not a positive number."
+    [ "${use_config_file}" == "yes" ] && _output echo "-- NOTICE: Parameter 'delete_backups_older_than' is not a positive number."
+    _output echo "-- NOTICE: Using default value of 0 instead (not deleting anything)."
+    delete_backups_older_than="0"
   fi
 
-  if [ "${zip}" == "yes" ]; then
+  if [ "${compression_method}" == "zip" ]; then
     # check for package zip
     which zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
-    compression_method="zip"
   else
     compression_method="tar.gz"
   fi
 
   # check $encrypt_backup for valid value:
   if [[ ! ${encrypt_backup} =~ ^(yes|no)$ ]]; then
+    # can only happen, if misconfigured in config-file
     _output echo "-- WARNING: Parameter 'encrypt_backup' is not valid (only \"yes\" or \"no\" allowed)."
     _output echo "-- WARNING: Using default value instead: encrypt_backup=\"no\""
     encrypt_backup="no"
   elif [ "${encrypt_backup}" == "yes" ]; then
+    # check for gpg:
+    which gpg > /dev/null || error_exit "ERROR: You chose to encrypt your backup." "Therefore package 'gnupg' is needed. Install with 'apt-get install gnupg' and run script again"
     if [ "${compress}" == "no" ]; then
       _output echo "-- WARNING: Can't encrypt uncompressed backup."
       _output echo "-- WARNING: Changing from uncompress to compress backup"
       compress="yes"
     fi
-    # check for gpg:
-    which gpg > /dev/null || error_exit "ERROR: You chose to encrypt your backup." "Therefore package 'gnupg' is needed. Install with 'apt-get install gnupg' and run script again"
     if [ "${use_config_file}" == "no" ]; then
       # get passphrase from on commandline given file:
       check_readable_file "${passphrase_file}" "file with passphrase."
       gpg_passphrase=$(head -n1 "${passphrase_file}")
     fi
     # error and exit, if backup shall be encrypted, but passphrase is on example value (1234) or empty:
-    [[ ${gpg_passphrase} =~ ^(1234|)$ ]] && error_exit "ERROR: You chose to enrypt your backup, but paramter 'gpg_passphrase' is still on insecure example value." "Enter passphrase in configuration file and run sript again."
+    if [[ ${gpg_passphrase} =~ ^(1234|)$ ]]; then
+      [ "${use_config_file}" == "no" ] && error_exit "ERROR: Passphrase is on insecure example value (1234)." "Change passphrase in file with passphrase and run sript again."
+      [ "${use_config_file}" == "yes" ] && error_exit "ERROR: Passphrase is on insecure example value." "Change 'gpg_passphrase' in configuration file and run sript again."
+    fi
   fi
 }
 
@@ -376,7 +366,7 @@ create_backup_folder() {
 
   day=$(date +"${date_extension}")
   backupfolder_day="${backupfolder}/calcardbackup${day}"
-  batch_path="${backupfolder_day}"
+  path_to_backup="${backupfolder_day}" # depending on config changes later to path to compressed or encrypted backup
   mkdir -p "${backupfolder_day}"
 }
 
@@ -493,7 +483,7 @@ pack_it() {
 
   _output echo "+  Compressing backup as *.${compression_method} file. Be patient - this may take a while."
   cd "${backupfolder}"
-  if [ "${zip}" == "yes" ]; then
+  if [ "${compression_method}" == "zip" ]; then
     # zip folder with backed up files:
     zip -r -q "calcardbackup${day}.zip" "calcardbackup${day}"
     [ $? -eq 0 ] || compress_error="1"
@@ -505,35 +495,36 @@ pack_it() {
   [ "${compress_error}" == "1" ] && error_exit "ERROR: Compressing the files produced an error. See lines right above."
   cd "${working_dir}" # switch back to original directory
   rm -r "${backupfolder_day}"
-  path_compressed_backup="${backupfolder}/calcardbackup${day}.${compression_method}"
+  path_to_backup="${backupfolder}/calcardbackup${day}.${compression_method}"
   _output echo "+  Backup successfully compressed!"
-  _output echo "+  Find your backup here: ${path_compressed_backup}"
-  [ "${mode}" == "batch" ] && batch_path="${path_compressed_backup}"
+  [ "${encrypt_backup}" == "no" ] && _output echo "+  Find your backup here: ${path_to_backup}"
 }
 
 gpg_encrypt_backup() {
   # encrypts compressed backup
-  path_encrypted_backup="${path_compressed_backup}.gpg"
-  gpg --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_compressed_backup}"
+  path_encrypted_backup="${path_to_backup}.gpg"
+  gpg --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_to_backup}"
   # command to decrypt (maybe implemented in the future: gpg --passphrase-file <(echo "${gpg_passphrase}") --output decrypted_output_file -d encrypted_file
   [ "$?" == 0 ] || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
-  # empty passphrase:
+  # delete passphrase from memory:
   gpg_passphrase=""
+  # delete compressed backup
+  rm "${path_to_backup}"
+  path_to_backup="${path_encrypted_backup}"
   _output echo "+  Backup successfully encrypted!"
-  _output echo "+  Find your encrypted backup here: ${path_encrypted_backup}"
-  [ "${mode}" == "batch" ] && batch_path="${path_encrypted_backup}"
+  _output echo "+  Find your encrypted backup here: ${path_to_backup}"
 }
 
 delete_old_backups() {
-  # deletes backups older than ${remove} days:
-  deleted=$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${remove} -delete -exec echo "+     - " {} \;)
+  # deletes backups older than ${delete_backups_older_than} days:
+  deleted=$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)
   if [ "$?" -ne 0 ]; then
-    error_exit "ERROR: deleting backups older than ${remove} days produced above error."
+    error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
   elif [ "${deleted}" != "" ]; then
-    _output echo "+  Those backups older than ${remove} days have been deleted:"
+    _output echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
     _output echo "${deleted}"
   else
-    _output echo "+  No backups older than ${remove} days found to delete."
+    _output echo "+  No backups older than ${delete_backups_older_than} days found to delete."
   fi
 }
 
@@ -543,7 +534,7 @@ finish() {
   _output echo "+"
   _output echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   _output echo
-  [ "${mode}" == "batch" ] && echo "${batch_path}"
+  [ "${mode}" == "batch" ] && echo "${path_to_backup}"
   exit 0
 }
 
@@ -637,7 +628,7 @@ do
     -r | --remove )
       shift
       check_argument "${1:-}"
-      remove="${1}"
+      delete_backups_older_than="${1}"
     ;;
     -s | --selfsigned )
       trustful_certificate="no"
@@ -651,10 +642,10 @@ do
       compress="no"
     ;;
     -z | --zip )
-      zip="yes"
+      compression_method="zip"
     ;;
     * )
-      echo "-  WARNING! Unrecognized option: ${1}"
+      _output echo "-  WARNING! Unrecognized option: ${1}"
     ;;
   esac
   shift
@@ -669,7 +660,7 @@ create_backup_folder
 get_calendars
 get_addressbooks
 [ "${backup_database}" == "yes" ] && dump_database
-[ "${compress}" == "yes" ] && pack_it || _output echo "+  Find your uncompressed backup in folder ${backupfolder_day}/"
+[ "${compress}" == "no" ] && _output echo "+  Find your uncompressed backup in folder ${backupfolder_day}/" || pack_it
 [ "${encrypt_backup}" == "yes" ] && gpg_encrypt_backup
-[ "${remove}" -gt 0 ] && delete_old_backups
+[ "${delete_backups_older_than}" -gt 0 ] && delete_old_backups
 finish
