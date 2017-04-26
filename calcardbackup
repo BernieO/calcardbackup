@@ -124,6 +124,14 @@ preparations() {
   [ "${trustful_certificate}" == "yes" ] && trust=""
   [ "${trustful_certificate}" == "no" ] && trust="--insecure"
 
+  if [ "${use_config_file}" == "no" ] && [ "${users_file}" == "users.txt" ]; then
+    while : ; do
+      # is there a readable file users.txt in working dir?
+      [ -f "${users_file}" ] && break
+      # if not: look for users.txt in $script_dir:
+      users_file="${script_dir}/${users_file}" && break
+    done
+  fi
   # check if users.txt is a file and readable:
   check_readable_file "${users_file}" "file with usernames and passwords."
 
@@ -432,13 +440,16 @@ get_icsvcf_files() {
         [ "${cerror}" -eq 0 ] || curl_error
 
         # an empty addressbook can't be exported, so we need to check whether we received a file:
+        file_received="yes" # let us say for now a file has been downloaded and change it below if no addressbook has been exported.
         if [ "${item}" == "addressbook" ] && [ ! -f "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" ]; then
           _output printf "...not saved. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
+          file_received="no" # set to 1 because we have not received a file and thus do not want to check whether it is a valid ics-/vcf-file
+          exported=$((exported + 1)) # increase $exported, because we don't want to print notice that nothing has been found
           break
         fi
 
         # check for ics-/vcf-header in received file:
-        if [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" | grep "${item_header}") ]; then
+        if [ "${file_received}" == "yes" ] && [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" | grep "${item_header}") ]; then
           mv "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
           _output printf "\n"
           error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
