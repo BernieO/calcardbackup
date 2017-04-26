@@ -76,8 +76,8 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 -u | --usersfile FILE
        Find usernames and passwords in FILE. One user with according password separated
        by a colon per line. See examples/users.txt.example
-       If this option is not given, calcardbackup will attempt to use file 'users.txt' in scripts
-       directory
+       If this option is not given, calcardbackup will attempt to use file 'users.txt' in working
+       directory or scripts directory (in this order).
 -x | --uncompressed
        don't compress backup folder
 -z | --zip
