@@ -33,7 +33,7 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 ## Advanced
 
 If started with no options at all or only `-b|--batch`, the script attempts to use files `calcardbackup.conf` and `users.txt` in the script's directory as configuration file and login information. All options can be specified in `calcardbackup.conf` or as command line arguments.
-If no `calcardbackup.conf` is given, the path to your ownCloud/Nextcloud instance must be the very first argument. Find detailed description of all available options below.
+If no config file via option `-c|--config` is given, the path to your ownCloud/Nextcloud instance must be the very first argument. Find detailed description of all available options below.
 
 ## Options
 ```
@@ -52,31 +52,30 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        or if run with option -x|--uncompressed (see below)
          - absolute path of directory containing uncompressed files
 -c | --configfile FILE
-       Read configuration from FILE. See examples/calcardbackup.conf.example
+       Read configuration from FILE. See 'examples/calcardbackup.conf.example'
        All other options except for -b|--batch will be ignored!
 -d | --date FORMAT
        Use FORMAT as file name extension for backup directory or compressed backup file.
        FORMAT needs to be a format descriptor of the command date().
        The default is -%Y-%m-%d and will result in a directory or file
-        named: "calcardbackup-2017-23-02" or "calcardbackup-2017-23-02.tar.gz"
-       Check "man date" for more info about different formats.
+       named: "calcardbackup-2017-03-23" or "calcardbackup-2017-03-23.tar.gz"
+       Check "man date" for more info about different formats and syntax.
 -e | --encrypt FILE
        Encrypt backup file with AES256 (gnupg). First line of FILE will be used as passphrase
 -o | --output DIRECTORY
        Use directory DIRECTORY to store backups.
        If not given, folder "backups" in working directory is created and used.
 -q | --database
-       Backup database as well. In most cases, this is not a good idea.
-       You don't need this, if you are unsure.
+       Backup database as well. You probably don't need this, if you are unsure.
 -r | --remove N
-       Remove backups older than N days from backup folder.
+       Remove backups older than N days from backup folder (N needs to be a positive integer).
 -s | --selfsigned
-       Needs to be given if certificate is selfsigned or for any other reasons not trustful to curl.
+       Needs to be given if certificate is selfsigned or for any other reason not trustful to curl.
 -u | --usersfile FILE
        Give location of FILE, which contains users to be backed up. One user per line, with corresponding
-       password separated by a colon. See examples/users.txt.example
-       If this option is not given, calcardbackup will search for 'users.txt' in working
-       directory or scripts directory (in this order).
+       password separated by a colon. See 'examples/users.txt.example'
+       If this option is not given, calcardbackup will search for a file named
+       'users.txt' in scripts directory.
 -x | --uncompressed
        don't compress backup folder
 -z | --zip
@@ -90,7 +89,7 @@ If you want to use the included encryption possibility, be aware that:
 - `calcardbackup` is designed to run without user interaction, so there can't be a rock solid encryption. I consider the offered one as sufficient in most cases though.
 - if you need rock solid encryption, don't let `calcardbackup` encrypt the backup. Instead, encrypt it yourself.
 
-## Interested in more details?
+## Want to read some of that in german?
 
-Find a little more background information here (sorry, only in german):  
+There is a little article about this also in german available:  
 [Blog article about calcardbackup](https://bob.gatsmas.de/articles/calcardbackup-kalender-und-adressbuchbackup-von-owncloud-nextcloud)
