@@ -124,13 +124,9 @@ preparations() {
   [ "${trustful_certificate}" == "yes" ] && trust=""
   [ "${trustful_certificate}" == "no" ] && trust="--insecure"
 
-  if [ "${use_config_file}" == "no" ] && [ "${users_file}" == "users.txt" ]; then
-    while : ; do
-      # is there a readable file users.txt in working dir?
-      [ -f "${users_file}" ] && break
-      # if not: look for users.txt in $script_dir:
-      users_file="${script_dir}/${users_file}" && break
-    done
+  # look for 'users.txt' in script's dir, if no config file and users_file not given:
+  if [ "${use_config_file}" == "no" ] && [ "${users_file_given}" == "no" ]; then
+      users_file="${script_dir}/${users_file}"
   fi
   # check if users.txt is a file and readable:
   check_readable_file "${users_file}" "file with usernames and passwords."
@@ -583,6 +579,7 @@ set_required_paths
 load_default_values
 mode="loud"
 path_given="no"
+users_file_given="no"
 use_config_file="no"
 lazy_mode="no"
 
@@ -648,6 +645,7 @@ do
       shift
       check_argument "${1:-}"
       users_file="${1}"
+      users_file_given="yes"
     ;;
     -x | --uncompressed )
       compress="no"
