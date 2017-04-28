@@ -22,8 +22,7 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 `chown -R www-data:www-data .`  
 `chmod 600 users.txt`
 
-5. Run the script as user `www-data` and give as first argument the path to your ownCloud/Nextcloud instance (here `/usr/share/nginx/nextcloud`  
-(if you are using a self-signed certificate, you might have to use `-s` as well):  
+5. Run the script as user `www-data` and give as first argument the path to your ownCloud/Nextcloud instance (here `/usr/share/nginx/nextcloud`). If you are using a self-signed certificate, you might have to use option `-s` as well:  
 `sudo -u www-data ./calcardbackup "/usr/share/nginx/nextcloud"`
 
 6. Check output of script - it will tell, if it needs any other options.
@@ -32,8 +31,8 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 
 ## Advanced
 
-If started with no options at all or only `-b|--batch`, the script attempts to use files `calcardbackup.conf` and `users.txt` in the script's directory as configuration file and login information. All options can be specified in `calcardbackup.conf` or as command line arguments.
-If no config file via option `-c|--config` is given, the path to your ownCloud/Nextcloud instance must be the very first argument. Find detailed description of all available options below.
+All options can be specified in a configuration file or as command line arguments. If started with no options at all or only `-b|--batch`, the script attempts to use files `calcardbackup.conf` and `users.txt` in the script's directory as configuration file and login information.
+If no configuration file via option `-c|--config` is given, the path to your ownCloud/Nextcloud instance must be the very first argument. Find detailed description of all available options below.
 
 ## Options
 ```
@@ -58,13 +57,13 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Use FORMAT as file name extension for backup directory or compressed backup file.
        FORMAT needs to be a format descriptor of the command date().
        The default is -%Y-%m-%d and will result in a directory or file
-       named: "calcardbackup-2017-03-23" or "calcardbackup-2017-03-23.tar.gz"
+       named: 'calcardbackup-2017-03-23' or 'calcardbackup-2017-03-23.tar.gz'
        Check "man date" for more info about different formats and syntax.
 -e | --encrypt FILE
        Encrypt backup file with AES256 (gnupg). First line of FILE will be used as passphrase
 -o | --output DIRECTORY
        Use directory DIRECTORY to store backups.
-       If not given, folder "backups" in working directory is created and used.
+       If not given, folder 'backups' in working directory is created and used.
 -q | --database
        Backup database as well. You probably don't need this, if you are unsure.
 -r | --remove N
@@ -75,7 +74,7 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Give location of FILE, which contains users to be backed up. One user per line, with corresponding
        password separated by a colon. See 'examples/users.txt.example'
        If this option is not given, calcardbackup will search for a file named
-       'users.txt' in scripts directory.
+       'users.txt' in script's directory.
 -x | --uncompressed
        don't compress backup folder
 -z | --zip
