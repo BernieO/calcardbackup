@@ -52,11 +52,8 @@ set_required_paths() {
 
 load_default_values() {
   # assign default values:
-  nextcloud_path="/usr/share/nginx/www"
-  nextcloud_url="https://www.example.com"
+  nextcloud_url="https://www.my_nextcloud.net"
   trustful_certificate="yes"
-  users_file="users.txt"
-  backupfolder="backups/"
   date_extension="-%Y-%m-%d"
   backup_database="no"
   delete_backups_older_than="0"
@@ -81,9 +78,10 @@ read_config_file() {
   # config file is readable and has correct syntax. So let's include it now:
   . "${config_file}"
   # change paths (relative to config files directory) to absolute paths, remove trailing slashes
+  [ -z ${nextcloud_path:-} ] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud to be configured." "Check value of variable 'nextcloud_path' in ${config_file}"
   nextcloud_path=$(get_absolute_path "${config_file_dir}" "${nextcloud_path}")
-  users_file=$(get_absolute_path "${config_file_dir}" "${users_file}")
-  backupfolder=$(get_absolute_path "${config_file_dir}" "${backupfolder}")
+  [ -z ${users_file:-} ] || users_file=$(get_absolute_path "${config_file_dir}" "${users_file}")
+  [ -z ${backupfolder:-} ] || backupfolder=$(get_absolute_path "${config_file_dir}" "${backupfolder}")
 }
 
 preparations() {
@@ -99,14 +97,16 @@ preparations() {
   which grep > /dev/null || error_exit "ERROR: Package 'grep' is needed for running this script." "Install with 'apt-get install grep' and run script again"
 
   # lazy mode: use calcardbackup.conf in scripts directory as config file:
-  if [ "${lazy_mode}" == "yes" ]; then
-    use_config_file="yes"
-    config_file="${script_dir}/calcardbackup.conf"
-  fi
-  # option -c|--configfile or lazy mode: read given config file
-  [ "${use_config_file}" == "yes" ] && read_config_file
+#  if [ "${lazy_mode}" == "yes" ]; then
+#    use_config_file="yes"
+#    config_file="${script_dir}/calcardbackup.conf"
+#  fi
+  # option -c|--configfile or nothing at all or only -b is given: read config file
+#  [ "${use_config_file}" == "yes" ] && read_config_file
+  [ ! -z ${config_file:-} ] && read_config_file
   # error, if no path to ownCloud/Nextcloud and no configfile was given:
-  [ "${use_config_file}" == "no" ] && [ "${path_given}" == "no" ] && error_exit "ERROR: calcardbackup needs absolute path to Own-/Nextcloud as first argument!"
+#  [ "${use_config_file}" == "no" ] && [ "${path_given}" == "no" ] && error_exit "ERROR: calcardbackup needs absolute path to Own-/Nextcloud as first argument!"
+  [ -z ${config_file:-} ] && [ -z ${nextcloud_path:-} ] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
 
   # remove trailing slashes from $nextcloud_path and $nextcloud_url:
   nextcloud_path=$(readlink -m "${nextcloud_path}")
@@ -124,20 +124,20 @@ preparations() {
   [ "${trustful_certificate}" == "yes" ] && trust=""
   [ "${trustful_certificate}" == "no" ] && trust="--insecure"
 
-  # look for 'users.txt' in script's dir, if no config file and users_file not given:
-  if [ "${use_config_file}" == "no" ] && [ "${users_file_given}" == "no" ]; then
-      users_file="${script_dir}/${users_file}"
-  fi
+  # if $users_file is empty or not not set it to '${script_dir}/users.txt' in script's dir
+  [ -z ${users_file:-} ] && users_file="${script_dir}/users.txt"
   # check if users.txt is a file and readable:
   check_readable_file "${users_file}" "file with usernames and passwords."
 
+  # if $backupfolder is empty or not set: set it to 'backups/' in script's dir
+  [ -z ${backupfolder:-} ] && backupfolder="${script_dir}/backups/"
   # absolute path to backupfolder (writeable test follows later):
   backupfolder=$(readlink -m "${backupfolder}")
 
   # make sure the configured date format in $date_extension is valid:
   if [ ! $(date +"${date_extension}" 2>/dev/null) ]; then
-    [ "${use_config_file}" == "no" ] && _output echo "-- NOTICE: Argument to option '-d|--date' has no valid format (check 'man date' for valid formats)."
-    [ "${use_config_file}" == "yes" ] && _output echo "-- NOTICE: Parameter 'date_extension' has no valid format (check 'man date' for valid formats)."
+    [ -z ${config_file:-} ] && _output echo "-- NOTICE: Argument to option '-d|--date' has no valid format (check 'man date' for valid formats)."
+    [ -n ${config_file:-} ] && _output echo "-- NOTICE: Parameter 'date_extension' has no valid format (check 'man date' for valid formats)."
     _output echo "-- NOTICE: Using default value instead: \"-%Y-%m-%d\""
     date_extension="-%Y-%m-%d"
   fi
@@ -151,8 +151,8 @@ preparations() {
 
   # make sure $delete_backups_older_than is a positive integer and set it to 0 if not:
   if [[ ! ${delete_backups_older_than} =~ ^[0-9]+$ ]]; then
-    [ "${use_config_file}" == "no" ] && _output echo "-- NOTICE: Argument to option '-r/--remove' is not a positive number."
-    [ "${use_config_file}" == "yes" ] && _output echo "-- NOTICE: Parameter 'delete_backups_older_than' is not a positive number."
+    [ -z ${config_file:-} ] && _output echo "-- NOTICE: Argument to option '-r/--remove' is not a positive number."
+    [ -n ${config_file:-} ] && _output echo "-- NOTICE: Parameter 'delete_backups_older_than' is not a positive number."
     _output echo "-- NOTICE: Using default value of 0 instead (not deleting anything)."
     delete_backups_older_than="0"
   fi
@@ -178,15 +178,15 @@ preparations() {
       _output echo "-- WARNING: Changing from uncompress to compress backup"
       compress="yes"
     fi
-    if [ "${use_config_file}" == "no" ]; then
+    if [ -z ${config_file:-} ]; then
       # get passphrase from on commandline given file:
       check_readable_file "${passphrase_file}" "file with passphrase."
       gpg_passphrase=$(head -n1 "${passphrase_file}")
     fi
     # error and exit, if backup shall be encrypted, but passphrase is on example value (1234) or empty:
     if [[ ${gpg_passphrase} =~ ^(1234|)$ ]]; then
-      [ "${use_config_file}" == "no" ] && error_exit "ERROR: Passphrase is on insecure example value (1234)." "Change passphrase in file with passphrase and run sript again."
-      [ "${use_config_file}" == "yes" ] && error_exit "ERROR: Passphrase is on insecure example value." "Change 'gpg_passphrase' in configuration file and run sript again."
+      [ -z ${config_file:-} ] && error_exit "ERROR: Passphrase is on insecure example value (1234)." "Change passphrase in file with passphrase and run sript again."
+      [ -n ${config_file:-} ] && error_exit "ERROR: Passphrase is on insecure example value (1234)." "Change 'gpg_passphrase' in configuration file and run sript again."
     fi
   fi
 }
@@ -236,7 +236,7 @@ read_config_php() {
   row_displayname="displayname"
 
   # get nextcloud_url from config.php or from config file and error, if something is weird:
-  nextcloud_url_default="https://www.example.com"
+  nextcloud_url_default="https://www.my_nextcloud.net"
   nextcloud_url_overwrite=$(getvalue_from_configphp "overwrite.cli.url")
   if [ "${nextcloud_url}" != "${nextcloud_url_default}" ] && [ "${nextcloud_url}" != "${nextcloud_url_overwrite}" ] && [ "${nextcloud_url_overwrite}" != "" ]; then
     # use overwrite.cli.uri and print Warning, if nextcloud_url has been configured to something other than default or overwrite.cli.url
@@ -318,7 +318,8 @@ read_status_php() {
   grep -E -q '"installed":"?true"?' <<< ${status_php} || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
   # check for maintenance=false for versions >= 8.0 in status.php
   if [ "$mainversion" -ge 8 ]; then
-    grep -E -q '"maintenance":"?false"?' <<< ${status_php} || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again"
+    grep -E -q '"maintenance":"?false"?' <<< ${status_php} || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${
+nextcloud_path}/occ maintenance:mode --off\" and run script again"
   fi
 }
 
@@ -578,18 +579,13 @@ check_argument() {
 set_required_paths
 load_default_values
 mode="loud"
-path_given="no"
-users_file_given="no"
-use_config_file="no"
-lazy_mode="no"
 
-# lazy mode: read config file from script_dir, if run with no or only option -b/--batch
-[ "${#}" == 0 ] || [[ "${#}" == 1 && "${1}" =~ -b|--batch ]] && lazy_mode="yes"
+# read config file from script_dir, if run with no or only option -b/--batch
+[ "${#}" == 0 ] || [[ "${#}" == 1 && "${1}" =~ -b|--batch ]] && config_file="${script_dir}/calcardbackup.conf"
 
 # get nextcloud path if first argument starts with /
-if [[ "${1}" = /* ]]; then
+if [[ "${1}" != -* ]]; then
   nextcloud_path="${1}"
-  path_given="yes"
   shift
 fi
 
@@ -608,7 +604,6 @@ do
     -c | --configfile )
       shift
       check_argument "${1:-}"
-      use_config_file="yes"
       config_file="${1}"
     ;;
     -d | --date )
@@ -645,7 +640,6 @@ do
       shift
       check_argument "${1:-}"
       users_file="${1}"
-      users_file_given="yes"
     ;;
     -x | --uncompressed )
       compress="no"
