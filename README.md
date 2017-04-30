@@ -65,7 +65,7 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Print a short help text 
 -o | --output DIRECTORY
        Use directory DIRECTORY to store backups.
-       If not given, folder 'backups' in script's directory is created and used.
+       If this option is not given, folder 'backups/' in script's directory is created and used.
 -r | --remove N
        Remove backups older than N days from backup folder (N needs to be a positive integer).
 -s | --selfsigned
