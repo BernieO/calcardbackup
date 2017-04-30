@@ -80,7 +80,7 @@ read_config_file() {
   [ -z ${nextcloud_path:-} ] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud to be configured." "Check value of variable 'nextcloud_path' in ${config_file}"
   nextcloud_path=$(get_absolute_path "${config_file_dir}" "${nextcloud_path}")
   [ -z ${users_file:-} ] || users_file=$(get_absolute_path "${config_file_dir}" "${users_file}")
-  [ -z ${backupfolder:-} ] || backupfolder=$(get_absolute_path "${config_file_dir}" "${backupfolder}")
+  [ -z ${backupfolder:-} ] || backupfolder=$(get_absolute_path "${config_file_dir}" "${backupfolder}")
 }
 
 preparations() {
