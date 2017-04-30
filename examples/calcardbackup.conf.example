@@ -41,14 +41,15 @@ nextcloud_url="https://www.my_nextcloud.net/"
 trustful_certificate="yes"
 
 
-# path to file with usernames and passwords (see 'README.md' and 'users.txt.example)
-# only needed if 'users.txt' is not in script's directory.
+# path to file with usernames and passwords (see 'README.md' and 'users.txt.example')
+# if unset or empty, file 'users.txt' in script's directory will be used.
 # correlates to option -u|--usersfile
 
 users_file="users.txt"
 
 
 # path to folder where backed up files will be saved.
+# if unset or empty, folder 'backups/' in script's directory will be created and used.
 # correlates to option -o|--output
 
 backupfolder="backups/"
@@ -65,7 +66,7 @@ date_extension="-%Y-%m-%d"
 # choose "yes" if you want to backup nextcloud-database as well
 # correlates to option -q|--database
 
-#backup_database="no"
+backup_database="no"
 
 
 # though tested - use at own risk(!):
