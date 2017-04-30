@@ -58,9 +58,11 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        FORMAT needs to be a format descriptor of the command date().
        The default is -%Y-%m-%d and will result in a directory or file
        named: 'calcardbackup-2017-03-23' or 'calcardbackup-2017-03-23.tar.gz'
-       Check "man date" for more info about different formats and syntax.
+       Check 'man date' for more info about different formats and syntax.
 -e | --encrypt FILE
        Encrypt backup file with AES256 (gnupg). First line of FILE will be used as passphrase
+-h | --help
+       Print a short help text 
 -o | --output DIRECTORY
        Use directory DIRECTORY to store backups.
        If not given, folder 'backups' in script's directory is created and used.

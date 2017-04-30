@@ -22,8 +22,8 @@
 
 
 _output() {
-  [ "$mode" == "batch" ] && "$@" >> /dev/null
-  [ "$mode" == "loud" ] && "$@"
+  [ "${mode:-}" == "batch" ] && "$@" >> /dev/null
+  [ -z ${mode:-} ] && "$@"
 }
 
 get_absolute_path() {
@@ -95,16 +95,9 @@ preparations() {
   which sed > /dev/null || error_exit "ERROR: Package 'sed' is needed for running this script." "Install with 'apt-get install sed' and run script again"
   which grep > /dev/null || error_exit "ERROR: Package 'grep' is needed for running this script." "Install with 'apt-get install grep' and run script again"
 
-  # lazy mode: use calcardbackup.conf in scripts directory as config file:
-#  if [ "${lazy_mode}" == "yes" ]; then
-#    use_config_file="yes"
-#    config_file="${script_dir}/calcardbackup.conf"
-#  fi
   # option -c|--configfile or nothing at all or only -b is given: read config file
-#  [ "${use_config_file}" == "yes" ] && read_config_file
   [ ! -z ${config_file:-} ] && read_config_file
   # error, if no path to ownCloud/Nextcloud and no configfile was given:
-#  [ "${use_config_file}" == "no" ] && [ "${path_given}" == "no" ] && error_exit "ERROR: calcardbackup needs absolute path to Own-/Nextcloud as first argument!"
   [ -z ${config_file:-} ] && [ -z ${nextcloud_path:-} ] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
 
   # remove trailing slashes from $nextcloud_path and $nextcloud_url:
@@ -113,7 +106,7 @@ preparations() {
   # location of ownClouds/Nextclouds config.php:
   configphp="${nextcloud_path}/config/config.php"
 
-  # if using -c|--configfile or lazy mode: check $trustful_certificate for valid value:
+  # if using configfile: check $trustful_certificate for valid value:
   if [[ ! ${trustful_certificate} =~ ^(yes|no)$ ]]; then
     _output echo "-- NOTICE: Parameter 'trustful_certificate' is not valid (allowed is only \"yes\" or \"no\")."
     _output echo "-- NOTICE: Using default value instead: trustful_certificate=\"yes\""
@@ -310,8 +303,7 @@ read_status_php() {
   grep -E -q '"installed":"?true"?' <<< ${status_php} || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
   # check for maintenance=false for versions >= 8.0 in status.php
   if [ "$mainversion" -ge 8 ]; then
-    grep -E -q '"maintenance":"?false"?' <<< ${status_php} || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${
-nextcloud_path}/occ maintenance:mode --off\" and run script again"
+    grep -E -q '"maintenance":"?false"?' <<< ${status_php} || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again"
   fi
 }
 
@@ -555,6 +547,11 @@ error_exit() {
   exit 64 # 1 is reserved.
 }
 
+print_help() {
+  echo "Usage: ./calcardbackup [URL] [option [argument]] [option [argument]] [option [argument]] ..."
+  echo "Find more details in attached file 'README.md' or visit 'https://github.com/BernieO/calcardbackup'"
+}
+
 check_argument() {
   [ -z "${1:-}" ] && error_exit "Option '${option}' requires an additional argument."
   [ "${1:0:1}" == "-" ] && error_exit "Invalid argument for option '${option}'"
@@ -563,12 +560,11 @@ check_argument() {
 # default values:
 set_required_paths
 load_default_values
-mode="loud"
 
 # read config file from script_dir, if run with no or only option -b/--batch
 [ "${#}" == 0 ] || [[ "${#}" == 1 && "${1}" =~ -b|--batch ]] && config_file="${script_dir}/calcardbackup.conf"
 
-# get nextcloud path if first argument starts with /
+# get nextcloud path if first argument doesn't start with a hyphen
 if [[ "${1}" != -* ]]; then
   nextcloud_path="${1}"
   shift
@@ -604,6 +600,10 @@ do
       check_argument "${1:-}"
       encrypt_backup="yes"
       passphrase_file="${1}"
+    ;;
+    -h | --help )
+      print_help
+      exit 0
     ;;
     -o | --output )
       shift
