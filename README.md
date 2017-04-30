@@ -63,9 +63,7 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Encrypt backup file with AES256 (gnupg). First line of FILE will be used as passphrase
 -o | --output DIRECTORY
        Use directory DIRECTORY to store backups.
-       If not given, folder 'backups' in working directory is created and used.
--q | --database
-       Backup database as well. You probably don't need this, if you are unsure.
+       If not given, folder 'backups' in script's directory is created and used.
 -r | --remove N
        Remove backups older than N days from backup folder (N needs to be a positive integer).
 -s | --selfsigned

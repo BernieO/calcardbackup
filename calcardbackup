@@ -55,7 +55,6 @@ load_default_values() {
   nextcloud_url="https://www.my_nextcloud.net"
   trustful_certificate="yes"
   date_extension="-%Y-%m-%d"
-  backup_database="no"
   delete_backups_older_than="0"
   compress="yes"
   compression_method="tar.gz"
@@ -140,13 +139,6 @@ preparations() {
     [ -n ${config_file:-} ] && _output echo "-- NOTICE: Parameter 'date_extension' has no valid format (check 'man date' for valid formats)."
     _output echo "-- NOTICE: Using default value instead: \"-%Y-%m-%d\""
     date_extension="-%Y-%m-%d"
-  fi
-
-  # if using -c|--configfile or lazy mode: check $backup_database for valid value:
-  if [[ ! ${backup_database} =~ ^(yes|no)$ ]]; then
-    _output echo "-- NOTICE: Parameter 'backup_database' is not valid (only \"yes\" or \"no\" allowed)."
-    _output echo "-- NOTICE: Using default value instead: backup_database=\"no\""
-    backup_database="no"
   fi
 
   # make sure $delete_backups_older_than is a positive integer and set it to 0 if not:
@@ -477,13 +469,6 @@ get_addressbooks() {
   get_icsvcf_files "addressbook" ".vcf" "BEGIN:VCARD" "${carddav}" "${extra_users}"
 }
 
-dump_database() {
-  _output printf "+  Backing up database..."
-  [ "${dbtype}" == "mysql" ] && mysqldump --lock-tables -h${dbhost} -u${dbuser} -p${dbpassword} ${dbname} > "${backupfolder_day}/${productname}_mysql_backup.sql"
-  [ "${dbtype}" == "sqlite3" ] && cp -a "${sqlite3_database}" "${backupfolder_day}/"
-  _output printf "...success!\n"
-}
-
 pack_it() {
   # print notice and quit, if there are no files in backup-directory:
   backupfolder_content=$(ls -A "${backupfolder_day}")
@@ -625,9 +610,6 @@ do
       check_argument "${1:-}"
       backupfolder="${1}"
     ;;
-    -q | --database )
-      backup_database="yes"
-    ;;
     -r | --remove )
       shift
       check_argument "${1:-}"
@@ -662,7 +644,6 @@ read_users_txt
 create_backup_folder
 get_calendars
 get_addressbooks
-[ "${backup_database}" == "yes" ] && dump_database
 [ "${compress}" == "no" ] && _output echo "+  Find your uncompressed backup in folder ${backupfolder_day}/" || pack_it
 [ "${encrypt_backup}" == "yes" ] && gpg_encrypt_backup
 [ "${delete_backups_older_than}" -gt 0 ] && delete_old_backups
