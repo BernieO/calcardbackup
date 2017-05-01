@@ -179,8 +179,15 @@ preparations() {
 getvalue_from_configphp() {
   # reads a line with a given paramter from config.php and echoes the parameters value:
   value=$(grep "${1}" "${configphp}")
-  value=${value%\'*} # throw away end including last '
-  value=${value##*\'} # throw away beginning including last '
+  # make sure we didn't get a comment
+  valid_value="^[[:space:]]*[^/\*].*"
+  temp=$(echo "${value}" | grep -E "${valid_value}")
+  if [ "${temp}" != "" ]; then
+    value=${value%\'*} # throw away end including last '
+    value=${value##*\'} # throw away beginning including last '
+  else
+    value=""
+  fi
   echo "${value}"
 }
 
@@ -188,6 +195,11 @@ read_config_php() {
   # reads config.php and assigns different paramters we need to know
   # check whether Nextclouds config-file is readable:
   check_readable_file "${configphp}" "configuration file of your Own-/Nextcloud installation."
+
+  # get dbtableprefix for prefix string of table names:
+  dbtableprefix=$(getvalue_from_configphp "dbtableprefix")
+  # set default dbtableprefix if empty or not found in config.php:
+  [ -z ${dbtableprefix:-} ] && dbtableprefix="oc_"
 
   # get version of Nextcloud to configure correct dav-endpoint:
   version_config_php=$(getvalue_from_configphp "version")
@@ -201,8 +213,8 @@ read_config_php() {
     # Values for Own-/Nextcloud >= 9.0:
     caldav="dav"
     carddav="dav"
-    table_calendars="oc_calendars"
-    table_addressbooks="oc_addressbooks"
+    table_calendars="${dbtableprefix}calendars"
+    table_addressbooks="${dbtableprefix}addressbooks"
     row_principaluri="principaluri"
     # correction of export-link of addressbooks for Own-/Nextcloud >= 9.0:
     extra_users="users/"
@@ -210,8 +222,8 @@ read_config_php() {
     # Values for Owncloud < 9.0:
     caldav="caldav"
     carddav="carddav"
-    table_calendars="oc_clndr_calendars"
-    table_addressbooks="oc_contacts_addressbooks"
+    table_calendars="${dbtableprefix}clndr_calendars"
+    table_addressbooks="${dbtableprefix}contacts_addressbooks"
     row_principaluri="userid"
     # must be empty for Owncloud < 9.0:
     extra_users=""
