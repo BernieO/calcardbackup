@@ -178,11 +178,11 @@ preparations() {
 
 getvalue_from_configphp() {
   # reads a line with a given paramter from config.php and echoes the parameters value:
-  value=$(grep "${1}" "${configphp}")
-  # make sure we didn't get a comment
-  valid_value="^[[:space:]]*[^/\*].*"
-  temp=$(echo "${value}" | grep -E "${valid_value}")
-  if [ "${temp}" != "" ]; then
+
+  # grep only value and not single line comment (having // before command):
+  # (notice: multi-line comments (/* ... */) are not recognized, if no marker at beginning of line)
+  value=$(grep -E "^[[:space:]]*'${1}'.*" "${configphp}")
+  if [ "${value}" != "" ]; then
     value=${value%\'*} # throw away end including last '
     value=${value##*\'} # throw away beginning including last '
   else
@@ -236,15 +236,11 @@ read_config_php() {
   nextcloud_url_default="https://www.my_nextcloud.net"
   nextcloud_url_overwrite=$(getvalue_from_configphp "overwrite.cli.url")
   if [ "${nextcloud_url}" != "${nextcloud_url_default}" ] && [ "${nextcloud_url}" != "${nextcloud_url_overwrite}" ] && [ "${nextcloud_url_overwrite}" != "" ]; then
-    # use overwrite.cli.uri and print Warning, if nextcloud_url has been configured to something other than default or overwrite.cli.url
+    # use given URL but print notice, if nextcloud_url has been configured to something other than default or overwrite.cli.url
     # (last test in if statement above: make sure overwrite.cli.url is present and not empty):
-    _output echo "--"
-    _output echo "-- WARNING: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
-    _output echo "-- ${nextcloud_url}/   ==>   given with option -a/--address or found in config file."
+    _output echo "-- NOTICE: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
     _output echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
-    _output echo "-- Using the latter one!"
-    _output echo "--"
-    nextcloud_url=${nextcloud_url_overwrite}
+    _output echo "-- ${nextcloud_url}/   ==>   given with option -a/--address or found in config file."
   elif [ "${nextcloud_url}" == "${nextcloud_url_default}" ] && [ "${nextcloud_url_overwrite}" == "" ]; then
     # Error, if nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
     error_exit "ERROR: Can't retrieve url from ${configphp}" "In your case the URL needs to be passed to the script (via -a/--address or config file)"

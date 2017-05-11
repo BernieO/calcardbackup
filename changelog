@@ -1,6 +1,7 @@
 [...]
 - use dbtableprefix
-
+- improve reading value from config.php
+- use given URL, if it is different from overwrite.cli.url
 
 v0.1 (30.04.2017)
 
