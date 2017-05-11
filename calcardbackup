@@ -19,7 +19,8 @@
 #######################################################
 #######################################################
 
-
+# calcardbackup version:
+version="0.1.1"
 
 _output() {
   [ "${mode:-}" == "batch" ] && "$@" >> /dev/null
@@ -556,6 +557,7 @@ error_exit() {
 }
 
 print_help() {
+  echo "calcardbackup version ${version}"
   echo "Usage: ./calcardbackup [URL] [option [argument]] [option [argument]] [option [argument]] ..."
   echo "Find more details in attached file 'README.md' or visit 'https://github.com/BernieO/calcardbackup'"
 }
