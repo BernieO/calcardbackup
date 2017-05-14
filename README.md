@@ -22,8 +22,8 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 `chown -R www-data:www-data .`  
 `chmod 600 users.txt`
 
-5. Run the script as user `www-data` and give as first argument the path to your ownCloud/Nextcloud instance (here `/usr/share/nginx/nextcloud`). If you are using a self-signed certificate, you might have to use option `-s` as well:  
-`sudo -u www-data ./calcardbackup "/usr/share/nginx/nextcloud"`
+5. Run the script as user `www-data` and give as first argument the path to your ownCloud/Nextcloud instance (here `/var/www/nextcloud`). If you are using a self-signed certificate, you might have to use option `-s` as well:  
+`sudo -u www-data ./calcardbackup "/var/www/nextcloud"`
 
 6. Check output of script - it will tell, if it needs any other options.
 
