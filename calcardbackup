@@ -423,7 +423,7 @@ get_icsvcf_files() {
   for (( i=0; i<${count}; i++ )); do
     for index in "${!users[@]}"; do
       if [ "${principal[$i]}" == "${user[$index]}" ] && [ "${uri[$i]}" != "contact_birthdays" ]; then
-        filename=${displayname[$i]// /_}
+        filename=${displayname[$i]//[\/\\*? ]/_} # remove funky characters from filename
         _output printf "+  Saving ${item} ${principal[$i]}-${filename}${item_extension}..."
         curl -s ${trust} -o "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]}/${uri[$i]}?export"
         cerror=$?
