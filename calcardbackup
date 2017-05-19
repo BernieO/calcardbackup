@@ -429,12 +429,14 @@ get_icsvcf_files() {
         cerror=$?
         [ "${cerror}" -eq 0 ] || curl_error
 
-        # an empty addressbook can't be exported, so we need to check whether we received a file:
-        file_received="yes" # let us say for now a file has been downloaded and change it below if no addressbook has been exported.
-        if [ "${item}" == "addressbook" ] && [ ! -f "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" ]; then
-          _output printf "...not saved. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
-          file_received="no" # set to 1 because we have not received a file and thus do not want to check whether it is a valid ics-/vcf-file
-          exported=$((exported + 1)) # increase $exported, because we don't want to print notice that nothing has been found
+        # an empty addressbook results in an empty file (or no file for curl < 7.42.0), so we need to check whether we received a file that is not empty:
+        file_received="yes" # let's say for now that a file has been downloaded and change it below if no addressbook has been exported.
+        if [ "${item}" == "addressbook" ] && [ ! -s "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" ]; then
+          # touch file to create empty file, if it was not created by curl on successful download of empty file (which is the case for curl < 7.42.0)
+          touch "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}"
+          _output printf "...empty file. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
+          file_received="no" # because we have received an empty file and thus do not want to check whether it is a valid ics-/vcf-file
+          exported=$((exported + 1)) # increase ${exported}, because we don't want to print notice that nothing has been found
           break
         fi
 
