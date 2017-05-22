@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.1.1"
+version="pre 0.1.2"
 
 _output() {
   [ "${mode:-}" == "batch" ] && "$@" >> /dev/null
@@ -44,7 +44,7 @@ check_readable_file() {
 }
 
 set_required_paths() {
-  # store current directory, because we have to change dir later and need to come back to where we were (because of unknown hook commands):
+  # store current directory, because we have to change dir later and need to be able to come back to where we were:
   working_dir=$(pwd)
   # get path to scripts dir:
   script_dir=$(readlink -m "${BASH_SOURCE[0]}")
@@ -325,7 +325,9 @@ get_database_details() {
       dbhost=$(getvalue_from_configphp "dbhost")
       dbuser=$(getvalue_from_configphp "dbuser")
       dbpassword=$(getvalue_from_configphp "dbpassword")
-      dboptions="-h${dbhost} -u${dbuser} -p${dbpassword} ${dbname} -se"
+      # mysql>=5.6 throws a warning when using password on command line interface: https://bugs.mysql.com/bug.php?id=66546
+      # avoiding that with option --defaults-extra-file and printf as suggested by Dave James Miller: https://stackoverflow.com/questions/20751352/suppress-warning-messages-using-mysql-from-within-terminal-but-password-written/20854048#comment42372603_22933056
+      dbcommand='mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" "${dbname}" -se '
       database="MySQL/MariaDB"
     ;;
     sqlite3)
@@ -333,9 +335,9 @@ get_database_details() {
       which sqlite3 > /dev/null || error_exit "ERROR: ${productname} database is sqlite3. Therefore this script requires package 'sqlite3'." "Install with 'apt-get install sqlite3' and run script again"
       datadirectory=$(getvalue_from_configphp "datadirectory") # has to be absolute path for Own-/Nextcloud, so no need to get absolute path
       sqlite3_database="${datadirectory}/owncloud.db"
-      dboptions="owncloud.db" # we cd to ${datadirectory} later for database queries
+      dbcommand='sqlite3 owncloud.db ' # we cd to ${datadirectory} later for database queries so no need to use absolute path
       database="SQLite3"
-     # check if sqlite3-database-file is readable:
+      # check if sqlite3-database-file is readable:
       check_readable_file "${sqlite3_database}" "${productname}s SQLite3 database."
     ;;
     *)
@@ -379,30 +381,30 @@ query_database() {
 
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
-  query_row_principaluri="select ${row_principaluri} from ${table} order by id"
-  query_row_uri="select ${row_uri} from ${table} order by id"
-  query_row_displayname="select ${row_displayname} from ${table} order by id"
+  query_row_principaluri='"select ${row_principaluri} from ${table} order by id"'
+  query_row_uri='"select ${row_uri} from ${table} order by id"'
+  query_row_displayname='"select ${row_displayname} from ${table} order by id"'
 
   # cd needed for SQLite3, because ${datadirectory} could contain spaces --> sqlite3 would then need "${dboptions}", but mysql needs ${dboptions}:
   cd "${datadirectory}"
   # check if table exists:
-  [ "${dbtype}" == "mysql" ] && check_table=$(mysql ${dboptions} "show tables like '${table}'")
-  [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 ${dboptions} "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")
+  [ "${dbtype}" == "mysql" ] && check_table=$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" "${dbname}" -e "show tables like '${table}'")
+  [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")
   if [ "${check_table}" == "" ]; then
     _output echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
     _output echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
   else
     while read calline; do
       principal+=("${calline}")
-    done < <("${dbtype}" ${dboptions} "${query_row_principaluri}" | sed 's/principals\/users\///')
+    done < <(eval "${dbcommand}" "${query_row_principaluri}" | sed 's/principals\/users\///')
     while read calline; do
       uri+=("${calline}")
-    done < <("${dbtype}" ${dboptions} "${query_row_uri}")
+    done < <(eval "${dbcommand}" "${query_row_uri}")
     while read calline; do
       displayname+=("${calline}")
-    done < <("${dbtype}" ${dboptions} "${query_row_displayname}")
+    done < <(eval "${dbcommand}" "${query_row_displayname}")
   fi
-  cd "${working_dir}" # switch back to original directory (needed, because we don't know what will happen in hook file)
+  cd "${working_dir}" # switch back to original directory
 }
 
 get_icsvcf_files() {
