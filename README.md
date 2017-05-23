@@ -63,6 +63,10 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Encrypt backup file with AES256 (gnupg). First line of FILE will be used as passphrase
 -h | --help
        Print version number and a short help text 
+-na | --no-addressbooks
+       Do not backup addressbooks
+-nc | --no-calendars
+       Do not backup calendars
 -o | --output DIRECTORY
        Use directory DIRECTORY to store backups.
        If this option is not given, folder 'backups/' in script's directory is created and used.

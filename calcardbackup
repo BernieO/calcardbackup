@@ -61,6 +61,8 @@ load_default_values() {
   compression_method="tar.gz"
   encrypt_backup="no"
   passphrase="1234"
+  backup_addressbooks="yes"
+  backup_calendars="yes"
 }
 
 read_config_file() {
@@ -270,10 +272,11 @@ read_status_php() {
   # Owncloud 8.2.10  {"installed":true,"maintenance":false,"version":"8.2.10.2","versionstring":"8.2.10","edition":""}
   # Owncloud 9.0.8   {"installed":true,"maintenance":false,"version":"9.0.8.2","versionstring":"9.0.8","edition":""}
   # Owncloud 9.1.4   {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"9.1.4","edition":""}
-  # Owncloud 10 alpha{"installed":"true","maintenance":"false","needsDbUpgrade":"false","version":"10.0.0.4","versionstring":"10.0.0 alpha","edition":"Community","productname":"ownCloud"}
+  # Owncloud 10.0.0  {"installed":"true","maintenance":"false","needsDbUpgrade":"false","version":"10.0.0.12","versionstring":"10.0.0","edition":"Community","productname":"ownCloud"}
   # Nextcloud 9.0.57 {"installed":true,"maintenance":false,"version":"9.0.57.2","versionstring":"9.0.57","edition":""}
   # Nextcloud 10.0.4 {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"10.0.4","edition":""}
   # Nextcloud 11.0.2 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.2.7","versionstring":"11.0.2","edition":"","productname":"Nextcloud"}
+  # Nextcloud 12.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"12.0.0.29","versionstring":"12.0.0","edition":"","productname":"Nextcloud"}
   grep -E -q '^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"(ownCloud|Nextcloud)")?\}$' <<< ${status_php}
   [ $? != 0 ] && error_exit "ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
 
@@ -603,7 +606,8 @@ do
     ;;
     -d | --date )
       shift
-      if [ ! -z "${1:-}" ] && [[ ! ${1} =~ -{1,2}[a-eoqrsuxz] ]]; then
+      # make sure argument passed to --date does not clash with any other option:
+      if [ ! -z "${1:-}" ] && [[ ! ${1} =~ -{1,2}[a-ehnorsuxz] ]]; then
         date_extension="${1}"
       else
         check_argument "${1:-}"
@@ -618,6 +622,12 @@ do
     -h | --help )
       print_help
       exit 0
+    ;;
+    -na | --no-addressbooks )
+      backup_addressbooks="no"
+    ;;
+    -nc | --no-calendars )
+      backup_calendars="no"
     ;;
     -o | --output )
       shift
@@ -656,8 +666,8 @@ read_status_php
 get_database_details
 read_users_txt
 create_backup_folder
-get_calendars
-get_addressbooks
+[ "${backup_calendars}" == "yes" ] && get_calendars || _output echo "+  Not backing up calenders as configured."
+[ "${backup_addressbooks}" == "yes" ] && get_addressbooks || _output echo "+  Not backing up addressbooks as configured."
 [ "${compress}" == "no" ] && _output echo "+  Find your uncompressed backup in folder ${backupfolder_day}/" || pack_it
 [ "${encrypt_backup}" == "yes" ] && gpg_encrypt_backup
 [ "${delete_backups_older_than}" -gt 0 ] && delete_old_backups

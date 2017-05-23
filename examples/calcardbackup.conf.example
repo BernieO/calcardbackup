@@ -94,4 +94,11 @@ encrypt_backup="no"
 gpg_passphrase="1234"
 
 
+# change to "no" if you do not want to backup the according categorie
+# correlates to options -na|--no-addressbooks, -nc|--no-calendars
+
+backup_addressbooks="yes"
+backup_calendars="yes"
+
+
 ########  end of config file for calcardbackup  ########

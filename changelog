@@ -1,4 +1,6 @@
-- create empty file, if addressbook contains no contacts
+vx.x.x (xx.xx.xxxx)
+- new options (-na, -nc) to not backup addressbooks or calendars
+- create empty file, if addressbook contains no contacts (compatibility for curl >= 7.42.0)
 - replace unsafe characters in filename with underscores
 - adjust mysql commands to avoid warning messages by mysql>=5.6
 
@@ -9,5 +11,4 @@ v0.1.1 (11.05.2017)
 - use given URL, if it is different from overwrite.cli.url
 
 v0.1.0 (30.04.2017)
-
-Initial release
+- initial release
