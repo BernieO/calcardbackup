@@ -36,7 +36,7 @@ If no configuration file via option `-c|--config` is given, the path to your own
 
 ## Options
 ```
-Usage: ./calcardbackup [URL] [option [argument]] [option [argument]] [option [argument]] ...
+Usage: ./calcardbackup [PATH] [option [argument]] [option [argument]] [option [argument]] ...
 
 Arguments in capital letters to options are mandatory.
 Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directory.
