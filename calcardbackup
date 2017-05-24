@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="pre 0.1.2"
+version="pre-0.1.2 (24.05.2017), AGPL-3.0"
 
 _output() {
   [ "${mode:-}" == "batch" ] && "$@" >> /dev/null
@@ -90,7 +90,7 @@ preparations() {
   # print timestamp
   _output printf "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
   _output echo "+"
-  _output echo "+  $(date) --> START calcardbackup"
+  _output echo "+  $(date) --> START calcardbackup ver. ${version}"
   _output echo "+  Checking dependencies and preparing..."
 
   # check for packages curl, sed, grep
@@ -565,7 +565,7 @@ error_exit() {
 
 print_help() {
   echo "calcardbackup version ${version}"
-  echo "Usage: ./calcardbackup [URL] [option [argument]] [option [argument]] [option [argument]] ..."
+  echo "Usage: ./calcardbackup [DIRECTORY] [option [argument]] [option [argument]] [option [argument]] ..."
   echo "Find more details in attached file 'README.md' or visit 'https://github.com/BernieO/calcardbackup'"
 }
 
