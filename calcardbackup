@@ -76,7 +76,7 @@ read_config_file() {
   # check if config file is a file and readable:
   check_readable_file "${config_file}" "calcardbackups config file."
   # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
-  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]+"[[:space:]]*)(#.*)?$' "${config_file}"
+  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]*"[[:space:]]*)(#.*)?$' "${config_file}"
   [ "$?" -eq 0 ] && error_exit "ERROR: invalid config file! only variable-declarations, comments and empty lines allowed." "Edit configuration file and run sript again."
   # config file is readable and has correct syntax. So let's include it now:
   . "${config_file}"
@@ -481,7 +481,7 @@ get_addressbooks() {
 check_for_backup_files() {
   # check for files in backup-directory and print warning, if there are no files:
   backupfolder_content=$(ls -A "${backupfolder_day}")
-  if [ -z "${backupfolder_content:-}" ]; then
+  if [ -z ${backupfolder_content:-} ]; then
     echo "-- WARNING: No files in backup directory - meaning no backup created !!" >&2
     backup_files_present="no"
     rm -r "${backupfolder_day}"  # remove empty backup folder
