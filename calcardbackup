@@ -23,8 +23,9 @@
 version="pre-0.1.2 (24.05.2017), AGPL-3.0"
 
 _output() {
-  [ "${mode:-}" == "batch" ] && "$@" >> /dev/null
-  [ -z ${mode:-} ] && "$@"
+  # print output only if not in batch mode (-b)
+  # use || instead of && so that function returns true in any case - corrected in ver. 0.1.2
+  [ "${mode:-}" == "batch" ] || "$@"
 }
 
 get_absolute_path() {
