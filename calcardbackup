@@ -478,11 +478,20 @@ get_addressbooks() {
   get_icsvcf_files "addressbook" ".vcf" "BEGIN:VCARD" "${carddav}" "${extra_users}"
 }
 
-pack_it() {
-  # print notice and quit, if there are no files in backup-directory:
+check_for_backup_files() {
+  # check for files in backup-directory and print warning, if there are no files:
   backupfolder_content=$(ls -A "${backupfolder_day}")
-  [ -z "${backupfolder_content}" ] && _output echo "-- NOTICE: No files in backup directory. Nothing more to do." && finish
+  if [ -z "${backupfolder_content:-}" ]; then
+    echo "-- WARNING: No files in backup directory - meaning no backup created !!" >&2
+    backup_files_present="no"
+    rm -r "${backupfolder_day}"  # remove empty backup folder
+  else
+    backup_files_present="yes"
+  fi
+}
 
+pack_it() {
+  # compress backup
   _output echo "+  Compressing backup as *.${compression_method} file. Be patient - this may take a while."
   cd "${backupfolder}"
   if [ "${compression_method}" == "zip" ]; then
@@ -499,7 +508,8 @@ pack_it() {
   rm -r "${backupfolder_day}"
   path_to_backup="${backupfolder}/calcardbackup${day}.${compression_method}"
   _output echo "+  Backup successfully compressed!"
-  [ "${encrypt_backup}" == "no" ] && _output echo "+  Find your backup here: ${path_to_backup}"
+  # use || instead of && so that function returns true in any case - corrected in ver. 0.1.2
+  [ "${encrypt_backup}" == "yes" ] || _output echo "+  Find your backup here: ${path_to_backup}"
 }
 
 gpg_encrypt_backup() {
@@ -536,7 +546,7 @@ finish() {
   _output echo "+"
   _output echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   _output echo
-  [ "${mode}" == "batch" ] && echo "${path_to_backup}"
+  [ "${mode}" == "batch" ] && [ "${backup_files_present}" == "yes" ] && echo "${path_to_backup}"
   exit 0
 }
 
@@ -669,7 +679,10 @@ read_users_txt
 create_backup_folder
 [ "${backup_calendars}" == "yes" ] && get_calendars || _output echo "+  Not backing up calenders as configured."
 [ "${backup_addressbooks}" == "yes" ] && get_addressbooks || _output echo "+  Not backing up addressbooks as configured."
-[ "${compress}" == "no" ] && _output echo "+  Find your uncompressed backup in folder ${backupfolder_day}/" || pack_it
-[ "${encrypt_backup}" == "yes" ] && gpg_encrypt_backup
+check_for_backup_files
+if [ "${backup_files_present}" == "yes" ]; then
+  [ "${compress}" == "no" ] && _output echo "+  Find your uncompressed backup in folder ${backupfolder_day}/" || pack_it
+  [ "${encrypt_backup}" == "yes" ] && gpg_encrypt_backup
+fi
 [ "${delete_backups_older_than}" -gt 0 ] && delete_old_backups
 finish

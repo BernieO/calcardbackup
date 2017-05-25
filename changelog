@@ -1,6 +1,7 @@
 vx.x.x (xx.xx.xxxx)
 - added: print version number in regular output of script
 - added: possibility to backup only addressbooks or only calendars (options -na, -nc)
+- fixed: better handling, if no backup was created
 - fixed: in batch mode backup did get compressed despite of given option -x|--uncompressed
 - fixed: create empty file, if addressbook contains no contacts (compatibility for curl >= 7.42.0)
 - fixed: replace unsafe characters in filename with underscores
