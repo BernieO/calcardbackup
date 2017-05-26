@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.1.2 (25.05.2017), AGPL-3.0"
+version="0.1.2 (26.05.2017), AGPL-3.0"
 
 _output() {
   # print output only if not in batch mode (-b)
@@ -481,7 +481,7 @@ get_addressbooks() {
 check_for_backup_files() {
   # check for files in backup-directory and print warning, if there are no files:
   backupfolder_content=$(ls -A "${backupfolder_day}")
-  if [ -z ${backupfolder_content:-} ]; then
+  if [ -z "${backupfolder_content}" ]; then
     echo "-- WARNING: No files in backup directory - meaning no backup created !!" >&2
     backup_files_present="no"
     rm -r "${backupfolder_day}"  # remove empty backup folder
