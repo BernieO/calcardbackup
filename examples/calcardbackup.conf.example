@@ -7,6 +7,8 @@
 #
 # You can copy this file to any location, then use option -c|--configfile PATH_TO_FILE,
 # or place this file in script's directory and don't pass ownCloud/Nextcloud path to script.
+# If calcardbackup is being run with using a configfile like this, all options
+# except for -b|--batch are being ignored.
 #
 # All paths in this config file need to be relative to this files location or absolute paths!
 #
@@ -99,6 +101,15 @@ gpg_passphrase="1234"
 
 backup_addressbooks="yes"
 backup_calendars="yes"
+
+
+# change to "yes" if you want to backup shared addressbooks/calendars as well.
+# This may be used to provide just one username with according password in 'users.txt',
+# to whom all items, needed to be backed up, are shared. With that approach, only
+# this user's password will be compromised in case 'users.txt' gets in wrong hands.
+# correlates to option -i|--include-shares
+
+include_shares="no"
 
 
 ########  end of config file for calcardbackup  ########

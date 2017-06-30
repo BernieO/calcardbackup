@@ -1,3 +1,6 @@
+v0.2.0 (30.06.2017)
+- added: possibility to backup shared addressbooks/calendars (option -i)
+
 v0.1.2 (26.05.2017)
 - added: print version number in regular output of script
 - added: possibility to backup only addressbooks or only calendars (options -na, -nc)

@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.1.2 (26.05.2017), AGPL-3.0"
+version="0.2.0 (30.06.2017), AGPL-3.0"
 
 _output() {
   # print output only if not in batch mode (-b)
@@ -64,6 +64,7 @@ load_default_values() {
   passphrase="1234"
   backup_addressbooks="yes"
   backup_calendars="yes"
+  include_shares="no"
 }
 
 read_config_file() {
@@ -220,6 +221,12 @@ read_config_php() {
     table_calendars="${dbtableprefix}calendars"
     table_addressbooks="${dbtableprefix}addressbooks"
     row_principaluri="principaluri"
+    if [ "${include_shares}" == "yes" ]; then
+      table_shares="${dbtableprefix}dav_shares"
+      row_share_principaluri="principaluri"
+      row_share_type="type"
+      row_share_resourceid="resourceid"
+    fi
     # correction of export-link of addressbooks for Own-/Nextcloud >= 9.0:
     extra_users="users/"
   else
@@ -229,6 +236,12 @@ read_config_php() {
     table_calendars="${dbtableprefix}clndr_calendars"
     table_addressbooks="${dbtableprefix}contacts_addressbooks"
     row_principaluri="userid"
+    if [ "${include_shares}" == "yes" ]; then
+      table_shares="${dbtableprefix}share"
+      row_share_principaluri="share_with"
+      row_share_type="item_type"
+      row_share_resourceid="item_source"
+    fi
     # must be empty for Owncloud < 9.0:
     extra_users=""
   fi
@@ -411,6 +424,76 @@ query_database() {
   cd "${working_dir}" # switch back to original directory
 }
 
+include_shares() {
+  # look for shared items and add them to arrays:
+
+  # cd needed for SQLite3, because ${datadirectory} could contain spaces --> sqlite3 would then need "${dboptions}", but mysql needs ${dboptions}:
+  cd "${datadirectory}"
+
+  # unset array id (to not include calendardata for addressbook export):
+  [ "${id:-}" == "" ] || unset id
+
+  # we need to get id to be able to backup shared calendars/addressbooks:
+  query_row_id='"select id from ${table} order by id"'
+  while read calline; do
+    id+=("${calline}")
+  done < <(eval "${dbcommand}" "${query_row_id}")
+
+  # database only needs to be queried once for dav_shares, because same table for shared calendars and addressbooks:
+  if [ "${read_shared:-}" == "" ]; then
+    read_shared=1
+    # check if table exists:
+    [ "${dbtype}" == "mysql" ] && check_table=$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" "${dbname}" -e "show tables like '${table_shares}'")
+    [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}'")
+    if [ "${check_table}" == "" ]; then
+      _output echo "-- NOTICE: table '${table_shares}' containing shared calendars/addressbooks does not exist in database."
+      _output echo "-- NOTICE: Looks like there are no shared calenders/addressbooks in your ${productname}."
+    else
+      # read table with details about shares:
+      query_share_principaluri='"select ${row_share_principaluri} from ${table_shares} order by id"'
+      query_share_type='"select ${row_share_type} from ${table_shares} order by id"'
+      query_share_resourceid='"select ${row_share_resourceid} from ${table_shares} order by id"'
+      while read line; do
+        share_principal+=("${line}")
+      done < <(eval "${dbcommand}" "${query_share_principaluri}" | sed 's/principals\/users\///')
+      while read line; do
+        share_type+=("${line}")
+      done < <(eval "${dbcommand}" "${query_share_type}")
+      while read line; do
+        share_resourceid+=("${line}")
+      done < <(eval "${dbcommand}" "${query_share_resourceid}")
+    fi
+  fi
+
+  # look for matches of share_resourceid and id and store values in a temp array:
+  for (( i=0; i<${#id[@]}; i++ )); do   # go through calender/addressbook-ids
+    for (( s=0; s<${#share_resourceid[@]}; s++ )); do    # go through dav-shares-ids
+      if [ ${share_resourceid[$s]} == ${id[$i]} ] && [ "${share_type[$s]}" == "${item}" ]; then
+        temp_principal+=("${share_principal[$s]}")
+        temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
+        temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
+        temp_id+=("${share_resourceid[$s]}")
+      fi
+    done
+  done
+
+  # add values of temp-arrays to arrays which will later be used to download the files:
+  for (( i=0; i<${#temp_principal[@]}; i++ )); do
+    principal+=("${temp_principal[$i]}")
+    uri+=("${temp_uri[$i]}")
+    displayname+=("${temp_displayname[$i]}")
+    id+=("${temp_id[$i]}")
+  done
+
+  # unset temp-arrays:
+  unset temp_principal
+  unset temp_uri
+  unset temp_displayname
+  unset temp_id
+
+  cd "${working_dir}" # switch back to original directory
+}
+
 get_icsvcf_files() {
 
   item="${1}" item_extension="${2}" item_header="${3}" calcarddav="${4}" ex_users="${5}"
@@ -425,21 +508,37 @@ get_icsvcf_files() {
     exported=1
   fi
 
-  count=${#uri[@]}
-  for (( i=0; i<${count}; i++ )); do
+  # array already_saved_from (stores filenames and (as index) ids of saved items) needs to be unset to not mix up addressbook data with calendar data:
+  [ "${include_shares}"="yes" ] && unset already_saved_as
+
+  for (( i=0; i<${#uri[@]}; i++ )); do
     for index in "${!users[@]}"; do
       if [ "${principal[$i]}" == "${user[$index]}" ] && [ "${uri[$i]}" != "contact_birthdays" ]; then
-        filename=${displayname[$i]//[\/\\*? ]/_} # remove funky characters from filename
-        _output printf "+  Saving ${item} ${principal[$i]}-${filename}${item_extension}..."
-        curl -s ${trust} -o "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]}/${uri[$i]}?export"
+
+        filename="${principal[$i]}-${displayname[$i]}${item_extension}"
+        filename=${filename//[\/\\*? ]/_} # remove funky characters from filename
+
+        # only if shared items shall be included: check if item was already downloaded before and break if yes or mark as downloaded:
+        if [ "${include_shares}" == "yes"  ]; then
+          z=${id[$i]} # increase readability: id of current item is used as index for array already_saved_as which stores filenames of downloaded items.
+          if [ "${already_saved_as[$z]:-}" != "" ]; then
+            item_name="${principal[$i]}-${displayname[$i]}"
+            item_name=${item_name//[\/\\*? ]/_} # remove funky characters
+            _output echo "+  Skipping ${item} '${item_name}': already saved as '${already_saved_as[$z]}'." && break
+          fi
+          already_saved_as[$z]="${filename}"
+        fi
+
+        _output printf "+  Saving ${item} ${filename}..."
+        curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]}/${uri[$i]}?export"
         cerror=$?
         [ "${cerror}" -eq 0 ] || curl_error
 
         # an empty addressbook results in an empty file (or no file for curl < 7.42.0), so we need to check whether we received a file that is not empty:
         file_received="yes" # let's say for now that a file has been downloaded and change it below if no addressbook has been exported.
-        if [ "${item}" == "addressbook" ] && [ ! -s "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" ]; then
+        if [ "${item}" == "addressbook" ] && [ ! -s "${backupfolder_day}/${filename}" ]; then
           # touch file to create empty file, if it was not created by curl on successful download of empty file (which is the case for curl < 7.42.0)
-          touch "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}"
+          touch "${backupfolder_day}/${filename}"
           _output printf "...empty file. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
           file_received="no" # because we have received an empty file and thus do not want to check whether it is a valid ics-/vcf-file
           exported=$((exported + 1)) # increase ${exported}, because we don't want to print notice that nothing has been found
@@ -447,10 +546,10 @@ get_icsvcf_files() {
         fi
 
         # check for ics-/vcf-header in received file:
-        if [ "${file_received}" == "yes" ] && [ ! $(head -n1 "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" | grep "${item_header}") ]; then
-          mv "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}" "${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
+        if [ "${file_received}" == "yes" ] && [ ! $(head -n1 "${backupfolder_day}/${filename}" | grep "${item_header}") ]; then
+          mv "${backupfolder_day}/${filename}" "${backupfolder_day}/${filename}-ERROR.txt"
           _output printf "\n"
-          error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${principal[$i]}-${filename}${item_extension}-ERROR.txt"
+          error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${filename}-ERROR.txt"
         fi
         exported=$((exported + 1))
         _output printf "...success!\n"
@@ -469,12 +568,14 @@ get_icsvcf_files() {
 get_calendars() {
   # Get calendars and save them in backup-folder:
   query_database "${table_calendars}" "calendar"
+  [ "${include_shares}" == "yes" ] && include_shares
   get_icsvcf_files "calendar" ".ics" "BEGIN:VCALENDAR" "${caldav}" ""
 }
 
 get_addressbooks() {
   # Get addressbooks and save them in backup-folder:
   query_database "${table_addressbooks}" "addressbook"
+  [ "${include_shares}" == "yes" ] && include_shares
   get_icsvcf_files "addressbook" ".vcf" "BEGIN:VCARD" "${carddav}" "${extra_users}"
 }
 
@@ -633,6 +734,9 @@ do
     -h | --help )
       print_help
       exit 0
+    ;;
+    -i | --include-shares )
+      include_shares="yes"
     ;;
     -na | --no-addressbooks )
       backup_addressbooks="no"
