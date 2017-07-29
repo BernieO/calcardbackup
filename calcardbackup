@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.2.0 (30.06.2017), AGPL-3.0"
+version="0.2.1 (29.07.2017), AGPL-3.0"
 
 _output() {
   # print output only if not in batch mode (-b)
@@ -340,11 +340,24 @@ get_database_details() {
     mysql)
       dbname=$(getvalue_from_configphp "dbname")
       dbhost=$(getvalue_from_configphp "dbhost")
+      # check whether dbhost contains portnumber (e.g. 'localhost:3306') and store it for mysql commands:
+      if [[ ${dbhost} =~ ^.+:/.+$ ]]; then
+        # dbhost contains socket after hostname (e.g. 'localhost:/var/run/mysqld/mysqld.sock'):
+        dbprotocol="-S ${dbhost#*:}"
+        dbhost=${dbhost%%:*}
+      elif [[ ${dbhost} =~ ^.+:[[:digit:]]+$ ]]; then
+        # dbhost contains portnumber after hostname (e.g. '127.0.0.1:3306'):
+        dbprotocol="-P ${dbhost#*:}"
+        dbhost=${dbhost%%:*}
+      else
+        # dbhost contains only hostname - tell mysql to use default portnumber:
+        dbprotocol="-P 0"
+      fi
       dbuser=$(getvalue_from_configphp "dbuser")
       dbpassword=$(getvalue_from_configphp "dbpassword")
       # mysql>=5.6 throws a warning when using password on command line interface: https://bugs.mysql.com/bug.php?id=66546
       # avoiding that with option --defaults-extra-file and printf as suggested by Dave James Miller: https://stackoverflow.com/questions/20751352/suppress-warning-messages-using-mysql-from-within-terminal-but-password-written/20854048#comment42372603_22933056
-      dbcommand='mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" "${dbname}" -se '
+      dbcommand='mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" ${dbprotocol} "${dbname}" -se '
       database="MySQL/MariaDB"
     ;;
     sqlite3)
@@ -405,7 +418,7 @@ query_database() {
   # cd needed for SQLite3, because ${datadirectory} could contain spaces --> sqlite3 would then need "${dboptions}", but mysql needs ${dboptions}:
   cd "${datadirectory}"
   # check if table exists:
-  [ "${dbtype}" == "mysql" ] && check_table=$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" "${dbname}" -e "show tables like '${table}'")
+  [ "${dbtype}" == "mysql" ] && check_table=$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" ${dbprotocol} "${dbname}" -e "show tables like '${table}'")
   [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")
   if [ "${check_table}" == "" ]; then
     _output echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
@@ -443,7 +456,7 @@ include_shares() {
   if [ "${read_shared:-}" == "" ]; then
     read_shared=1
     # check if table exists:
-    [ "${dbtype}" == "mysql" ] && check_table=$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" "${dbname}" -e "show tables like '${table_shares}'")
+    [ "${dbtype}" == "mysql" ] && check_table=$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" ${dbprotocol} "${dbname}" -e "show tables like '${table_shares}'")
     [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}'")
     if [ "${check_table}" == "" ]; then
       _output echo "-- NOTICE: table '${table_shares}' containing shared calendars/addressbooks does not exist in database."
@@ -617,10 +630,10 @@ gpg_encrypt_backup() {
   # encrypts compressed backup
   path_encrypted_backup="${path_to_backup}.gpg"
   gpg --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_to_backup}"
-  # command to decrypt (maybe implemented in the future: gpg --passphrase-file <(echo "${gpg_passphrase}") --output decrypted_output_file -d encrypted_file
+  # command to decrypt: gpg --passphrase-file <(echo "${gpg_passphrase}") --batch --output decrypted_output_file --decrypt encrypted_file
   [ "$?" == 0 ] || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
   # delete passphrase from memory:
-  gpg_passphrase=""
+  unset gpg_passphrase
   # delete compressed backup
   rm "${path_to_backup}"
   path_to_backup="${path_encrypted_backup}"

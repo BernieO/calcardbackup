@@ -1,3 +1,6 @@
+v0.2.1 (29.07.2017)
+- fixed: proper treatment of value dbhost in config.php (portnumber/socket)
+
 v0.2.0 (30.06.2017)
 - added: possibility to backup shared addressbooks/calendars (option -i)
 
