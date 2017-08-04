@@ -291,7 +291,7 @@ read_status_php() {
   # Nextcloud 10.0.4 {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"10.0.4","edition":""}
   # Nextcloud 11.0.2 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.2.7","versionstring":"11.0.2","edition":"","productname":"Nextcloud"}
   # Nextcloud 12.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"12.0.0.29","versionstring":"12.0.0","edition":"","productname":"Nextcloud"}
-  grep -E -q '^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"(ownCloud|Nextcloud)")?\}$' <<< ${status_php}
+  grep -E -q '^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"[^"]*")?\}$' <<< ${status_php}
   [ $? != 0 ] && error_exit "ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
 
   # get version from status.php:
