@@ -1,3 +1,7 @@
+v0.2.2 (xx.xx.2017)
+- fixed: support custom productname
+- fixed: improve stability (handling variables)
+
 v0.2.1 (29.07.2017)
 - fixed: proper treatment of value dbhost in config.php (portnumber/socket)
 
