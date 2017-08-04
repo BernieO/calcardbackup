@@ -97,7 +97,7 @@ This option may be used as follows to keep passwords of the main users secret:
 - in `users.txt` give only the username and password of this new user
 - use calcardbackup with option `-i` to back up shared items as well
 
-__Benefit of this approach:__ if the file gets in wrong hands, only this new user account is being compromised.  
+__Benefit of this approach:__ if the file `users.txt` gets in wrong hands, only this new user account is being compromised.  
 __Drawback:__ no automatic inclusion of newly created addressbooks/calendars. Items will not be backed up unless being shared with that new user account.
 
 ## Usage examples
