@@ -320,6 +320,14 @@ read_status_php() {
     [ "${mainversion_status_php}" -lt "${mainversionstring_status_php}" ] || [ "${lastversionstring_status_php}" -ge 50 ] && productname="Nextcloud"
   fi
 
+  # check for and use productname of status.php (for Nextcloud or custom productnames):
+  grep -E -q '"productname":"' <<< ${status_php} && {
+    productname_status_php=${status_php#*productname\":\"}
+    productname_status_php=${productname_status_php%%\"*}
+    [[ ! "${productname_status_php}" =~ (^$|ownCloud|Nextcloud) ]] && productname="'${productname_status_php}'"
+    unset productname_status_php
+  }
+
   _output echo "+  ${productname} ${versionstring_status_php} detected."
 
   # check whether version of config.php is the same than version of status.php
