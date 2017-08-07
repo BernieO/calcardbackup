@@ -326,7 +326,7 @@ read_status_php() {
     productname_status_php=${status_php#*productname\":\"}
     productname_status_php=${productname_status_php%%\"*}
     [[ ! "${productname_status_php}" =~ (^$|ownCloud|Nextcloud) ]] && productname="'${productname_status_php}'"
-    unset productname_status_php
+    unset -v productname_status_php
   }
 
   _output echo "+  ${productname} ${versionstring_status_php} detected."
@@ -414,9 +414,7 @@ query_database() {
   table="${1}"  # ${table_calendars} or ${table_addressbooks}
   item="${2}"   # "calendar" or "addressbook"
   # unset arrays (to not include calendardata for addressbook export):
-  unset principal
-  unset uri
-  unset displayname
+  unset -v principal uri displayname
 
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
@@ -453,7 +451,7 @@ include_shares() {
   cd "${datadirectory}"
 
   # unset array id (to not include calendardata for addressbook export):
-  [ "${id:-}" == "" ] || unset id
+  [ "${id:-}" == "" ] || unset -v id
 
   # we need to get id to be able to backup shared calendars/addressbooks:
   query_row_id='"select id from ${table} order by id"'
@@ -534,11 +532,8 @@ include_shares() {
     id+=("${temp_id[$i]}")
   done
 
-  # unset temp-arrays:
-  unset temp_principal
-  unset temp_uri
-  unset temp_displayname
-  unset temp_id
+  # unset temp-arrays and for-loop-variables:
+  unset -v temp_principal temp_uri temp_displayname temp_id i s g
 
   cd "${working_dir}" # switch back to original directory
 }
@@ -558,7 +553,7 @@ get_icsvcf_files() {
   fi
 
   # array already_saved_from (stores filenames and (as index) ids of saved items) needs to be unset to not mix up addressbook data with calendar data:
-  [ "${include_shares}"="yes" ] && unset already_saved_as
+  [ "${include_shares}"="yes" ] && unset -v already_saved_as
 
   for (( i=0; i<${#uri[@]}; i++ )); do
     for index in "${!users[@]}"; do
@@ -669,7 +664,7 @@ gpg_encrypt_backup() {
   # command to decrypt: gpg --passphrase-file <(echo "${gpg_passphrase}") --batch --output decrypted_output_file --decrypt encrypted_file
   [ "$?" == 0 ] || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
   # delete passphrase from memory:
-  unset gpg_passphrase
+  unset -v gpg_passphrase
   # delete compressed backup
   rm "${path_to_backup}"
   path_to_backup="${path_encrypted_backup}"
