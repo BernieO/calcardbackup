@@ -226,6 +226,7 @@ read_config_php() {
       row_share_principaluri="principaluri"
       row_share_type="type"
       row_share_resourceid="resourceid"
+      table_group_user="${dbtableprefix}group_user"
     fi
     # correction of export-link of addressbooks for Own-/Nextcloud >= 9.0:
     extra_users="users/"
@@ -483,22 +484,49 @@ include_shares() {
       while read line; do
         share_resourceid+=("${line}")
       done < <(eval "${dbcommand}" "${query_share_resourceid}")
+
+      # we also need to get info about group members to be able to backup calendars/addressbooks which are shared to groups:
+      # check if table exists:
+      [ "${dbtype}" == "mysql" ] && check_table=$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" ${dbprotocol} "${dbname}" -e "show tables like '${table_group_user}'")
+      [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}'")
+      if [ "${check_table}" != "" ]; then # if table group_user exists, read values in array grouplist:
+        query_group_user='"select gid, uid from ${table_group_user} order by gid"'
+        while read line; do
+          grouplist+=("${line}")
+        done < <(eval "${dbcommand}" "${query_group_user}")
+      fi
     fi
   fi
 
   # look for matches of share_resourceid and id and store values in a temp array:
   for (( i=0; i<${#id[@]}; i++ )); do   # go through calender/addressbook-ids
     for (( s=0; s<${#share_resourceid[@]}; s++ )); do    # go through dav-shares-ids
+      # if dav-share-id matches calendar/addressbook-id, we need to add it to the list of to be backed up items:
       if [ ${share_resourceid[$s]} == ${id[$i]} ] && [ "${share_type[$s]}" == "${item}" ]; then
-        temp_principal+=("${share_principal[$s]}")
-        temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
-        temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
-        temp_id+=("${share_resourceid[$s]}")
+        # make sure, principal of dav-share is not a group (group will be treated below):
+        if [[ ! "${share_principal[$s]}" =~ principals\/groups\/ ]]; then
+          # add identified dav-share to the 'shares to be backed up'-list:
+          temp_principal+=("${share_principal[$s]}")
+          temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
+          temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
+          temp_id+=("${share_resourceid[$s]}")
+        else
+          # if share-principal is a group: go through list with groups and their users and
+          # add item to the 'shares to be backed up'-list for all users of that very group
+          for g in "${!grouplist[@]}"; do
+            if [ "${share_principal[$s]#*principals/groups/}" == "${grouplist[$g]%|*}" ]; then
+              temp_principal+=("${grouplist[$g]#*|}")
+              temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
+              temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
+              temp_id+=("${share_resourceid[$s]}")
+            fi
+          done
+        fi
       fi
     done
   done
 
-  # add values of temp-arrays to arrays which will later be used to download the files:
+  # add values of 'shares to be backed up'-list to arrays which will later be used to download the files:
   for (( i=0; i<${#temp_principal[@]}; i++ )); do
     principal+=("${temp_principal[$i]}")
     uri+=("${temp_uri[$i]}")
