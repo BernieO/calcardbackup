@@ -226,7 +226,6 @@ read_config_php() {
       row_share_principaluri="principaluri"
       row_share_type="type"
       row_share_resourceid="resourceid"
-      table_group_user="${dbtableprefix}group_user"
     fi
     # correction of export-link of addressbooks for Own-/Nextcloud >= 9.0:
     extra_users="users/"
@@ -241,6 +240,7 @@ read_config_php() {
       table_shares="${dbtableprefix}share"
       row_share_principaluri="share_with"
       row_share_type="item_type"
+      row_share_type_group="share_type" # needed for ownCloud < 9.0 to identify, if shared with group (and not with user)
       row_share_resourceid="item_source"
     fi
     # must be empty for Owncloud < 9.0:
@@ -249,6 +249,7 @@ read_config_php() {
   # those values are the same for Owncloud < 9.0 und Own-/Nextcloud >= 9.0
   row_uri="uri"
   row_displayname="displayname"
+  table_group_user="${dbtableprefix}group_user"
 
   # get nextcloud_url from config.php or from config file and error, if something is weird:
   nextcloud_url_default="https://www.my_nextcloud.net"
@@ -483,6 +484,15 @@ include_shares() {
         share_resourceid+=("${line}")
       done < <(eval "${dbcommand}" "${query_share_resourceid}")
 
+      # we also need to get share type to identify group-shares for ownCloud < 9.0:
+      if [ ! "${mainversion}" -ge "${davchangeversion}" ]; then
+        query_share_type_group='"select ${row_share_type_group} from ${table_shares} order by id"'
+        while read line; do
+          # share_type_group will be 0 for user-share, 1 for group-share, 3 for public-share
+          share_type_group+=("${line}")
+        done < <(eval "${dbcommand}" "${query_share_type_group}")
+      fi
+
       # we also need to get info about group members to be able to backup calendars/addressbooks which are shared to groups:
       # check if table exists:
       [ "${dbtype}" == "mysql" ] && check_table=$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" ${dbprotocol} "${dbname}" -e "show tables like '${table_group_user}'")
@@ -501,8 +511,8 @@ include_shares() {
     for (( s=0; s<${#share_resourceid[@]}; s++ )); do    # go through dav-shares-ids
       # if dav-share-id matches calendar/addressbook-id, we need to add it to the 'shares to be backed up'-list:
       if [ ${share_resourceid[$s]} == ${id[$i]} ] && [ "${share_type[$s]}" == "${item}" ]; then
-        # make sure, principal of dav-share is not a group (group will be treated below):
-        if [[ ! "${share_principal[$s]}" =~ principals\/groups\/ ]]; then
+        # make sure, principal of dav-share is not a group (group will be treated below) - second test is for ownCloud < 9.0, first test is for younger versions:
+        if [[ ! "${share_principal[$s]}" =~ principals\/groups\/ ]] && [[ ! "${share_type_group[$s]}" =~ ^1$ ]]; then
           # add identified dav-share (shared with a user) to the 'shares to be backed up'-list:
           temp_principal+=("${share_principal[$s]}")
           temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
