@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="pre-0.2.2 (04.08.2017), AGPL-3.0"
+version="pre-0.2.2 (09.08.2017), AGPL-3.0"
 
 _output() {
   # print output only if not in batch mode (-b)
