@@ -499,20 +499,25 @@ include_shares() {
   # look for matches of share_resourceid and id and store values in a temp array:
   for (( i=0; i<${#id[@]}; i++ )); do   # go through calender/addressbook-ids
     for (( s=0; s<${#share_resourceid[@]}; s++ )); do    # go through dav-shares-ids
-      # if dav-share-id matches calendar/addressbook-id, we need to add it to the list of to be backed up items:
+      # if dav-share-id matches calendar/addressbook-id, we need to add it to the 'shares to be backed up'-list:
       if [ ${share_resourceid[$s]} == ${id[$i]} ] && [ "${share_type[$s]}" == "${item}" ]; then
         # make sure, principal of dav-share is not a group (group will be treated below):
         if [[ ! "${share_principal[$s]}" =~ principals\/groups\/ ]]; then
-          # add identified dav-share to the 'shares to be backed up'-list:
+          # add identified dav-share (shared with a user) to the 'shares to be backed up'-list:
           temp_principal+=("${share_principal[$s]}")
           temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
           temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
           temp_id+=("${share_resourceid[$s]}")
         else
           # if share-principal is a group: go through list with groups and their users and
-          # add item to the 'shares to be backed up'-list for all users of that very group
+          # add item to the 'shares to be backed up'-list for all users of that very group:
           for g in "${!grouplist[@]}"; do
             if [ "${share_principal[$s]#*principals/groups/}" == "${grouplist[$g]%|*}" ]; then
+              # if item owner is member of group: do not add item to 'shares to be backed up'-list for owner
+              # (owners item is already in the array with items to be downloaded):
+              [ "${grouplist[$g]#*|}" == "${principal[$i]}" ] && continue
+
+              # add item shared with group to 'shares to be backed up'-list:
               temp_principal+=("${grouplist[$g]#*|}")
               temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
               temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
