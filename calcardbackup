@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="pre-0.2.2 (09.08.2017), AGPL-3.0"
+version="pre-0.2.2 (12.08.2017), AGPL-3.0"
 
 _output() {
   # print output only if not in batch mode (-b)
@@ -498,10 +498,18 @@ include_shares() {
       [ "${dbtype}" == "mysql" ] && check_table=$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" ${dbprotocol} "${dbname}" -e "show tables like '${table_group_user}'")
       [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}'")
       if [ "${check_table}" != "" ]; then # if table group_user exists, read values in array grouplist:
-        query_group_user='"select gid, uid from ${table_group_user} order by gid"'
+        query_group_gid='"select gid from ${table_group_user} order by gid"'
+        query_group_uid='"select uid from ${table_group_user} order by gid"'
         while read line; do
-          grouplist+=("${line}")
-        done < <(eval "${dbcommand}" "${query_group_user}")
+          gid+=("${line}")
+        done < <(eval "${dbcommand}" "${query_group_gid}")
+        while read line; do
+          uid+=("${line}")
+        done < <(eval "${dbcommand}" "${query_group_uid}")
+        # for version 0.2.3: query_group_user='"select gid, uid from ${table_group_user} order by gid"'
+        # while read line; do
+        #   grouplist+=("${line}")
+        # done < <(eval "${dbcommand}" "${query_group_user}")
       fi
     fi
   fi
@@ -521,14 +529,18 @@ include_shares() {
         else
           # if share-principal is a group: go through list with groups and their users and
           # add item to the 'shares to be backed up'-list for all users of that very group:
-          for g in "${!grouplist[@]}"; do
-            if [ "${share_principal[$s]#*principals/groups/}" == "${grouplist[$g]%|*}" ]; then
+          for g in "${!gid[@]}"; do
+          # for version 0.2.3: for g in "${!grouplist[@]}"; do
+            if [ "${share_principal[$s]#*principals/groups/}" == "${gid[$g]}" ]; then
+            # for version 0.2.3: if [ "${share_principal[$s]#*principals/groups/}" == "${grouplist[$g]%|*}" ]; then
               # if item owner is member of group: do not add item to 'shares to be backed up'-list for owner
               # (owners item is already in the array with items to be downloaded):
-              [ "${grouplist[$g]#*|}" == "${principal[$i]}" ] && continue
+              [ "${uid[$g]}" == "${principal[$i]}" ] && continue
+              # for version 0.2.3: [ "${grouplist[$g]#*|}" == "${principal[$i]}" ] && continue
 
               # add item shared with group to 'shares to be backed up'-list:
-              temp_principal+=("${grouplist[$g]#*|}")
+              temp_principal+=("${uid[$g]}")
+              # for version 0.2.3: temp_principal+=("${grouplist[$g]#*|}")
               temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
               temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
               temp_id+=("${share_resourceid[$s]}")
