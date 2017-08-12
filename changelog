@@ -1,7 +1,7 @@
-v0.2.2 (xx.xx.2017)
-- fixed: improve stability (handling variables)
+v0.2.2 (12.08.2017)
+- fixed: improve stability (better handling of variables)
 - fixed: support custom productname
-- fixed: backup items shared with groups as well (when using option -i|--include-shares)
+- fixed: items shared with groups did not get backed up (when using option -i|--include-shares)
 
 v0.2.1 (29.07.2017)
 - fixed: proper treatment of value dbhost in config.php (portnumber/socket)
