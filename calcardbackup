@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.2.2 (12.08.2017), AGPL-3.0"
+version="pre-0.2.3_1 (14.08.2017), AGPL-3.0"
 
 _output() {
   # print output only if not in batch mode (-b)
@@ -246,7 +246,8 @@ read_config_php() {
     # must be empty for Owncloud < 9.0:
     extra_users=""
   fi
-  # those values are the same for Owncloud < 9.0 und Own-/Nextcloud >= 9.0
+  # those values are the same for Owncloud < 9.0 and Own-/Nextcloud >= 9.0
+  row_id="id"
   row_uri="uri"
   row_displayname="displayname"
   table_group_user="${dbtableprefix}group_user"
@@ -375,7 +376,8 @@ get_database_details() {
       which sqlite3 > /dev/null || error_exit "ERROR: ${productname} database is sqlite3. Therefore this script requires package 'sqlite3'." "Install with 'apt-get install sqlite3' and run script again"
       datadirectory=$(getvalue_from_configphp "datadirectory") # has to be absolute path for Own-/Nextcloud, so no need to get absolute path
       sqlite3_database="${datadirectory}/owncloud.db"
-      dbcommand='sqlite3 owncloud.db ' # we cd to ${datadirectory} later for database queries so no need to use absolute path
+      # use options '-list' and '-separator "|"' for sqlite3 command to override eventually existent user-specific config-file '~/.sqlite3rc':
+      dbcommand='sqlite3 -list -separator "|" owncloud.db ' # for database queries we do "cd ${datadirectory}" later so no need to use absolute path
       database="SQLite3"
       # check if sqlite3-database-file is readable:
       check_readable_file "${sqlite3_database}" "${productname}s SQLite3 database."
@@ -415,13 +417,14 @@ query_database() {
   table="${1}"  # ${table_calendars} or ${table_addressbooks}
   item="${2}"   # "calendar" or "addressbook"
   # unset arrays (to not include calendardata for addressbook export):
-  unset -v principal uri displayname
+  unset -v id principal uri displayname
 
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
-  query_row_principaluri='"select ${row_principaluri} from ${table} order by id"'
-  query_row_uri='"select ${row_uri} from ${table} order by id"'
-  query_row_displayname='"select ${row_displayname} from ${table} order by id"'
+  fields="${row_principaluri}, ${row_displayname}, ${row_uri}"
+  [ "${include_shares}" == "yes" ] && fields="${row_id}, ${fields}" # we also need to get id of item to be able to include shares
+  [ "${dbtype}" == "mysql" ] && fields="CONCAT_WS('|', ${fields})"  # adjust output format of MySQL/MariaDB to match output of SQLite3: field|field|field
+  db_query='"select ${fields} from ${table} order by id"'
 
   # cd needed for SQLite3, because ${datadirectory} could contain spaces --> sqlite3 would then need "${dboptions}", but mysql needs ${dboptions}:
   cd "${datadirectory}"
@@ -432,15 +435,16 @@ query_database() {
     _output echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
     _output echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
   else
-    while read calline; do
-      principal+=("${calline}")
-    done < <(eval "${dbcommand}" "${query_row_principaluri}" | sed 's/principals\/users\///')
-    while read calline; do
-      uri+=("${calline}")
-    done < <(eval "${dbcommand}" "${query_row_uri}")
-    while read calline; do
-      displayname+=("${calline}")
-    done < <(eval "${dbcommand}" "${query_row_displayname}")
+    while read line; do
+      if [ "${include_shares}" == "yes" ]; then
+        id+=("${line%%|*}")        # store id (first field) in array
+        line="${line#*|}"          # cut first field (id) in array
+      fi
+      principal+=("${line%%|*}")   # get principal (is now first field)
+      line="${line#*|}"            # cut first field (principal)
+      displayname+=("${line%%|*}") # store displayname (is now first field) in array
+      uri+=("${line##*|}")         # store uri (last field) in array
+    done < <(eval "${dbcommand}" "${db_query}" | sed 's/principals\/users\///')
   fi
   cd "${working_dir}" # switch back to original directory
 }
@@ -450,15 +454,6 @@ include_shares() {
 
   # cd needed for SQLite3, because ${datadirectory} could contain spaces --> sqlite3 would then need "${dboptions}", but mysql needs ${dboptions}:
   cd "${datadirectory}"
-
-  # unset array id (to not include calendardata for addressbook export):
-  [ "${id:-}" == "" ] || unset -v id
-
-  # we need to get id to be able to backup shared calendars/addressbooks:
-  query_row_id='"select id from ${table} order by id"'
-  while read calline; do
-    id+=("${calline}")
-  done < <(eval "${dbcommand}" "${query_row_id}")
 
   # database only needs to be queried once for dav_shares, because same table for shared calendars and addressbooks:
   if [ "${read_shared:-}" == "" ]; then
@@ -471,45 +466,35 @@ include_shares() {
       _output echo "-- NOTICE: Looks like there are no shared calenders/addressbooks in your ${productname}."
     else
       # read table with details about shares:
-      query_share_principaluri='"select ${row_share_principaluri} from ${table_shares} order by id"'
-      query_share_type='"select ${row_share_type} from ${table_shares} order by id"'
-      query_share_resourceid='"select ${row_share_resourceid} from ${table_shares} order by id"'
-      while read line; do
-        share_principal+=("${line}")
-      done < <(eval "${dbcommand}" "${query_share_principaluri}" | sed 's/principals\/users\///')
-      while read line; do
-        share_type+=("${line}")
-      done < <(eval "${dbcommand}" "${query_share_type}")
-      while read line; do
-        share_resourceid+=("${line}")
-      done < <(eval "${dbcommand}" "${query_share_resourceid}")
-
+      fields="${row_share_principaluri}, ${row_share_type}, ${row_share_resourceid}"
       # we also need to get share type to identify group-shares for ownCloud < 9.0:
-      if [ ! "${mainversion}" -ge "${davchangeversion}" ]; then
-        query_share_type_group='"select ${row_share_type_group} from ${table_shares} order by id"'
-        while read line; do
-          # share_type_group will be 0 for user-share, 1 for group-share, 3 for public-share
-          share_type_group+=("${line}")
-        done < <(eval "${dbcommand}" "${query_share_type_group}")
-      fi
+      [ "${mainversion}" -lt "${davchangeversion}" ] && fields="${row_share_type_group}, ${fields}"
+      [ "${dbtype}" == "mysql" ] && fields="CONCAT_WS('|', ${fields})"  # adjust output format of MySQL/MariaDB to match output of SQLite3: field|field|field
+      db_query='"select ${fields} from ${table_shares} order by id"'
+      while read line; do
+        if [ "${mainversion}" -lt "${davchangeversion}" ]; then
+          # for ownCloud < 9.0: store share_type_group (first field) in array
+          # (will be 0 for user-share, 1 for group-share, 3 for public-share):
+          share_type_group+=("${line%%|*}") # first field contains share-type_group
+          line="${line#*|}"                 # cut first field (share_type_group) from array
+        fi
+        share_principal+=("${line%%|*}")    # get share_principal (is now first field)
+        line="${line#*|}"                   # cut first field (share-principal)
+        share_type+=("${line%%|*}")         # store share_type (is now first field) in array
+        share_resourceid+=("${line##*|}")   # store share_resourceid (last field) in array
+      done < <(eval "${dbcommand}" "${db_query}" | sed 's/principals\/users\///')
 
       # we also need to get info about group members to be able to backup calendars/addressbooks which are shared to groups:
       # check if table exists:
       [ "${dbtype}" == "mysql" ] && check_table=$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s" "${dbuser}" "${dbpassword}") -h "${dbhost}" ${dbprotocol} "${dbname}" -e "show tables like '${table_group_user}'")
       [ "${dbtype}" == "sqlite3" ] && check_table=$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}'")
       if [ "${check_table}" != "" ]; then # if table group_user exists, read values in array grouplist:
-        query_group_gid='"select gid from ${table_group_user} order by gid"'
-        query_group_uid='"select uid from ${table_group_user} order by gid"'
+        fields="gid, uid"
+        [ "${dbtype}" == "mysql" ] && fields="CONCAT_WS('|', ${fields})"   # adjust output format of MySQL/MariaDB to match output of SQLite3: field|field|field
+        db_query='"select ${fields} from ${table_group_user} order by gid"'
         while read line; do
-          gid+=("${line}")
-        done < <(eval "${dbcommand}" "${query_group_gid}")
-        while read line; do
-          uid+=("${line}")
-        done < <(eval "${dbcommand}" "${query_group_uid}")
-        # for version 0.2.3: query_group_user='"select gid, uid from ${table_group_user} order by gid"'
-        # while read line; do
-        #   grouplist+=("${line}")
-        # done < <(eval "${dbcommand}" "${query_group_user}")
+          grouplist+=("${line}")
+        done < <(eval "${dbcommand}" "${db_query}")
       fi
     fi
   fi
@@ -518,9 +503,9 @@ include_shares() {
   for (( i=0; i<${#id[@]}; i++ )); do   # go through calender/addressbook-ids
     for (( s=0; s<${#share_resourceid[@]}; s++ )); do    # go through dav-shares-ids
       # if dav-share-id matches calendar/addressbook-id, we need to add it to the 'shares to be backed up'-list:
-      if [ ${share_resourceid[$s]} == ${id[$i]} ] && [ "${share_type[$s]}" == "${item}" ]; then
+      if [ "${share_resourceid[$s]}" == "${id[$i]}" ] && [ "${share_type[$s]}" == "${item}" ]; then
         # make sure, principal of dav-share is not a group (group will be treated below) - second test is for ownCloud < 9.0, first test is for younger versions:
-        if [[ ! "${share_principal[$s]}" =~ principals\/groups\/ ]] && [[ ! "${share_type_group[$s]}" =~ ^1$ ]]; then
+        if [[ ! "${share_principal[$s]}" =~ principals\/groups\/ ]] && [[ ! "${share_type_group[$s]:-}" =~ ^1$ ]]; then
           # add identified dav-share (shared with a user) to the 'shares to be backed up'-list:
           temp_principal+=("${share_principal[$s]}")
           temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
@@ -529,18 +514,14 @@ include_shares() {
         else
           # if share-principal is a group: go through list with groups and their users and
           # add item to the 'shares to be backed up'-list for all users of that very group:
-          for g in "${!gid[@]}"; do
-          # for version 0.2.3: for g in "${!grouplist[@]}"; do
-            if [ "${share_principal[$s]#*principals/groups/}" == "${gid[$g]}" ]; then
-            # for version 0.2.3: if [ "${share_principal[$s]#*principals/groups/}" == "${grouplist[$g]%|*}" ]; then
-              # if item owner is member of group: do not add item to 'shares to be backed up'-list for owner
+          for g in "${!grouplist[@]}"; do
+            if [ "${share_principal[$s]#*principals/groups/}" == "${grouplist[$g]%|*}" ]; then
+              # if item owner is member of group: do not add item to 'shares to be backed up'-list for owner, instead continue with next element
               # (owners item is already in the array with items to be downloaded):
-              [ "${uid[$g]}" == "${principal[$i]}" ] && continue
-              # for version 0.2.3: [ "${grouplist[$g]#*|}" == "${principal[$i]}" ] && continue
+              [ "${grouplist[$g]#*|}" == "${principal[$i]}" ] && continue
 
               # add item shared with group to 'shares to be backed up'-list:
-              temp_principal+=("${uid[$g]}")
-              # for version 0.2.3: temp_principal+=("${grouplist[$g]#*|}")
+              temp_principal+=("${grouplist[$g]#*|}")
               temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
               temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
               temp_id+=("${share_resourceid[$s]}")
@@ -579,8 +560,8 @@ get_icsvcf_files() {
     exported=1
   fi
 
-  # array already_saved_from (stores filenames and (as index) ids of saved items) needs to be unset to not mix up addressbook data with calendar data:
-  [ "${include_shares}"="yes" ] && unset -v already_saved_as
+  # array already_saved_as (stores filenames and (as index) ids of saved items) needs to be unset to not mix up addressbook data with calendar data:
+  unset -v already_saved_as
 
   for (( i=0; i<${#uri[@]}; i++ )); do
     for index in "${!users[@]}"; do
