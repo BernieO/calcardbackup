@@ -5,7 +5,7 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 ## Requirements
 
 - local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
-- Packages `grep`, `curl` and according database package (`mysql-server`/`mariadb-server` or `sqlite3`)
+- Package `curl` and according database package (`mysql-server`/`mariadb-server` or `sqlite3`)
 
 ## Quick Installation Guide
 
