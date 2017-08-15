@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="pre-0.2.3_2 (14.08.2017), AGPL-3.0"
+version="pre-0.2.3_3 (15.08.2017), AGPL-3.0"
 
 _output() {
   # print output only if not in batch mode (-b)
@@ -77,8 +77,12 @@ read_config_file() {
   # check if config file is a file and readable:
   check_readable_file "${config_file}" "calcardbackups config file."
   # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
-  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]*"[[:space:]]*)(#.*)?$' "${config_file}"
-  [ "$?" -eq 0 ] && error_exit "ERROR: invalid config file! only variable-declarations, comments and empty lines allowed." "Edit configuration file and run sript again."
+#  grep -E -qv '^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]*"[[:space:]]*)(#.*)?$' "${config_file}"
+#  [ "$?" -eq 0 ] && error_exit "ERROR: invalid config file! only variable-declarations, comments and empty lines allowed." "Edit configuration file and run sript again."
+  regex='^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]*"[[:space:]]*)(#.*)?$'
+  while read -r line; do
+    [[ ! "${line}" =~ ${regex} ]] && error_exit "ERROR: invalid config file! Only variable-declarations, comments and empty lines allowed." "Edit configuration file and run sript again."
+  done <"${config_file}"
   # config file is readable and has correct syntax. So let's include it now:
   . "${config_file}"
   # change paths (relative to config files directory) to absolute paths, remove trailing slashes
@@ -188,14 +192,25 @@ getvalue_from_configphp() {
 
   # grep only value and not single line comment (having // before command):
   # (notice: multi-line comments (/* ... */) are not recognized, if no marker at beginning of line)
-  value=$(grep -E "^[[:space:]]*'${1}'.*" "${configphp}")
-  if [ "${value}" != "" ]; then
-    value=${value%\'*} # throw away end including last '
-    value=${value##*\'} # throw away beginning including last '
-  else
-    value=""
+
+#  value=$(grep -E "^[[:space:]]*'${1}'.*" "${configphp}")
+#  if [ "${value}" != "" ]; then
+#    value=${value%\'*} # throw away end including last '
+#    value=${value##*\'} # throw away beginning including last '
+#  else
+#    value=""
+#  fi
+
+  regex="^[[:space:]]*'${1}'.*"
+  while read -r line; do
+    [[ "${line}" =~ $regex ]] && break
+    line=""
+  done <"${configphp}"
+  if [ "${line:-}" != "" ]; then
+    line=${line%\'*}  # throw away end including last '
+    line=${line##*\'} # throw away beginning including last '
   fi
-  echo "${value}"
+  echo "${line}"
 }
 
 read_config_php() {
@@ -296,8 +311,12 @@ read_status_php() {
   # Nextcloud 10.0.4 {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"10.0.4","edition":""}
   # Nextcloud 11.0.2 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.2.7","versionstring":"11.0.2","edition":"","productname":"Nextcloud"}
   # Nextcloud 12.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"12.0.0.29","versionstring":"12.0.0","edition":"","productname":"Nextcloud"}
-  grep -E -q '^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"[^"]*")?\}$' <<< ${status_php}
-  [ $? != 0 ] && error_exit "ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
+
+#  grep -E -q '^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"[^"]*")?\}$' <<< ${status_php}
+#  [ $? != 0 ] && error_exit "ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
+
+  regex='^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"[^"]*")?\}$'
+  [[ ! "${status_php}" =~ ${regex} ]] && error_exit "ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
 
   # get version from status.php:
   version_status_php=${status_php#*version\":\"}
@@ -311,7 +330,7 @@ read_status_php() {
   productname="ownCloud"
 
   # set productname to Nextcloud if status.php delivers it (this is the case for Nextcloud >= 11.0):
-  grep -E -q '"productname":"Nextcloud"' <<< ${status_php} && productname="Nextcloud"
+#  grep -E -q '"productname":"Nextcloud"' <<< ${status_php} && productname="Nextcloud"
 
   # for mainversion 9 we need to find out whether product is ownCloud 9.x or Nextcloud 9.x or Nextcloud 10.x
   if [ "${mainversion_status_php}" -eq 9 ]; then
@@ -326,10 +345,18 @@ read_status_php() {
   fi
 
   # check for and use productname of status.php (for Nextcloud or custom productnames):
-  grep -E -q '"productname":"' <<< ${status_php} && {
+#  grep -E -q '"productname":"' <<< ${status_php} && {
+#    productname_status_php=${status_php#*productname\":\"}
+#    productname_status_php=${productname_status_php%%\"*}
+#    [[ ! "${productname_status_php}" =~ (^$|ownCloud|Nextcloud) ]] && productname="'${productname_status_php}'"
+#    unset -v productname_status_php
+#  }
+
+  regex='"productname":"[^"]+"'
+  [[ "${status_php}" =~ ${regex} ]] && {
     productname_status_php=${status_php#*productname\":\"}
     productname_status_php=${productname_status_php%%\"*}
-    [[ ! "${productname_status_php}" =~ (^$|ownCloud|Nextcloud) ]] && productname="'${productname_status_php}'"
+    productname="'${productname_status_php}'"
     unset -v productname_status_php
   }
 
