@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="pre-0.2.3_1 (14.08.2017), AGPL-3.0"
+version="pre-0.2.3_2 (14.08.2017), AGPL-3.0"
 
 _output() {
   # print output only if not in batch mode (-b)
@@ -95,9 +95,8 @@ preparations() {
   _output echo "+  $(date) --> START calcardbackup ver. ${version}"
   _output echo "+  Checking dependencies and preparing..."
 
-  # check for packages curl, sed, grep
+  # check for packages curl and grep
   which curl > /dev/null || error_exit "ERROR: Package 'curl' is needed for running this script." "Install with 'apt-get install curl' and run script again"
-  which sed > /dev/null || error_exit "ERROR: Package 'sed' is needed for running this script." "Install with 'apt-get install sed' and run script again"
   which grep > /dev/null || error_exit "ERROR: Package 'grep' is needed for running this script." "Install with 'apt-get install grep' and run script again"
 
   # option -c|--configfile or nothing at all or only -b is given: read config file
@@ -105,9 +104,12 @@ preparations() {
   # error, if no path to ownCloud/Nextcloud and no configfile was given:
   [ -z "${config_file:-}" ] && [ -z "${nextcloud_path:-}" ] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
 
-  # remove trailing slashes from $nextcloud_path and $nextcloud_url:
+  # remove trailing slashes from $nextcloud_path:
   nextcloud_path=$(readlink -m "${nextcloud_path}")
-  nextcloud_url=$(echo "${nextcloud_url}" | sed 's:/*$::')
+  # remove trailing slashes from $nextcloud_url:
+  while [[ "${nextcloud_url}" =~ /$ ]]; do
+    nextcloud_url="${nextcloud_url%/}"
+  done
   # location of ownClouds/Nextclouds config.php:
   configphp="${nextcloud_path}/config/config.php"
 
@@ -440,11 +442,12 @@ query_database() {
         id+=("${line%%|*}")        # store id (first field) in array
         line="${line#*|}"          # cut first field (id) in array
       fi
-      principal+=("${line%%|*}")   # get principal (is now first field)
+      line="${line/principals\/users\/}" # remove "principals/users/" from line, to get username
+      principal+=("${line%%|*}")   # store principal (=username, is first field) in array
       line="${line#*|}"            # cut first field (principal)
       displayname+=("${line%%|*}") # store displayname (is now first field) in array
       uri+=("${line##*|}")         # store uri (last field) in array
-    done < <(eval "${dbcommand}" "${db_query}" | sed 's/principals\/users\///')
+    done < <(eval "${dbcommand}" "${db_query}")
   fi
   cd "${working_dir}" # switch back to original directory
 }
@@ -478,11 +481,12 @@ include_shares() {
           share_type_group+=("${line%%|*}") # first field contains share-type_group
           line="${line#*|}"                 # cut first field (share_type_group) from array
         fi
-        share_principal+=("${line%%|*}")    # get share_principal (is now first field)
+        line="${line/principals\/users\/}"  # remove "principals/users/" to get username ("/principals/groups" stays there for groupcheck later
+        share_principal+=("${line%%|*}")    # store share_principal (is now first field) in array
         line="${line#*|}"                   # cut first field (share-principal)
         share_type+=("${line%%|*}")         # store share_type (is now first field) in array
         share_resourceid+=("${line##*|}")   # store share_resourceid (last field) in array
-      done < <(eval "${dbcommand}" "${db_query}" | sed 's/principals\/users\///')
+      done < <(eval "${dbcommand}" "${db_query}")
 
       # we also need to get info about group members to be able to backup calendars/addressbooks which are shared to groups:
       # check if table exists:

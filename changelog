@@ -1,5 +1,6 @@
 v0.X.X (XX.XX.XXXX)
 - improved: reduce number of database queries
+- changed: use bash builtins for string manipulation (instead of sed): 'sed' is not required anymore
 
 v0.2.2 (12.08.2017)
 - fixed: improve stability (better handling of variables)
