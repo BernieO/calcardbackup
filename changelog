@@ -2,6 +2,7 @@ v0.X.X (XX.XX.XXXX)
 - improved: reduce number of database queries
 - improved: replaced sed-commands with bash-builtins: 'sed' is no requirement anymore
 - improved: replaced grep-commands with conditional expressions: 'grep' is no requirement anymore
+- fixed: minor syntax corrections (regarding printf)
 
 v0.2.2 (12.08.2017)
 - fixed: improve stability (better handling of variables)
