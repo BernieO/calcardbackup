@@ -25,7 +25,7 @@ version="pre-0.2.3_5 (17.08.2017), AGPL-3.0"
 _output() {
   # print output only if not in batch mode (-b)
   # use || instead of && so that function returns true in any case - corrected in ver. 0.1.2
-  [[ "${mode:-}" == "batch" ]] || "$@"
+  [[ "${mode:-}" != "batch" ]] && "$@"
 }
 
 get_absolute_path() {
@@ -92,7 +92,7 @@ read_config_file() {
 
 preparations() {
   # print timestamp
-  _output printf "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+  _output printf "\n%s\n" "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   _output echo "+"
   _output echo "+  $(date) --> START calcardbackup ver. ${version}"
   _output echo "+  Checking dependencies and preparing..."
@@ -589,7 +589,7 @@ get_icsvcf_files() {
           already_saved_as[$z]="${filename}"
         fi
 
-        _output printf "+  Saving ${item} ${filename}..."
+        _output printf "%s" "+  Saving ${item} ${filename}..."
         curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]}/${uri[$i]}?export"
         cerror=$?
         [[ "${cerror}" -eq 0 ]] || curl_error
@@ -599,7 +599,7 @@ get_icsvcf_files() {
         if [[ "${item}" == "addressbook" ]] && [[ ! -s "${backupfolder_day}/${filename}" ]]; then
           # touch file to create empty file, if it was not created by curl on successful download of empty file (which is the case for curl < 7.42.0)
           touch "${backupfolder_day}/${filename}"
-          _output printf "...empty file. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty.\n"
+          _output printf "%s\n" "...empty file. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty."
           file_received="no" # because we have received an empty file and thus do not want to check whether it is a valid ics-/vcf-file
           exported=$((exported + 1)) # increase ${exported}, because we don't want to print notice that nothing has been found
           break
@@ -609,11 +609,11 @@ get_icsvcf_files() {
         read -r line <"${backupfolder_day}/${filename}"        # reads first line of received file
         if [[ "${file_received}" == "yes" ]] && [[ ! "${line}" =~ ${item_header} ]]; then    # no valid file, if first line of file doesn't match item_header
           mv "${backupfolder_day}/${filename}" "${backupfolder_day}/${filename}-ERROR.txt"
-          _output printf "\n"
+          _output printf "%s" "\n"
           error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${filename}-ERROR.txt"
         fi
         exported=$((exported + 1))
-        _output printf "...success!\n"
+        _output printf "%s\n" "...success!"
         break
       fi
     done
