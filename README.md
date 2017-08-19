@@ -124,6 +124,7 @@ If you want to use the included encryption possibility, be aware that:
 - the passphrase is stored in a file. Other users with access to the server might be able to see the passphrase.
 - `calcardbackup` is designed to run without user interaction, so there can't be a rock solid encryption. I consider the offered one as sufficient in most cases though.
 - if you need rock solid encryption, don't let `calcardbackup` encrypt the backup. Instead, encrypt it yourself.
+- command to decrypt (you will be prompted to enter the passphrase): gpg -d FILE_TO_DECRYPT.GPG -o OUTPUT_FILE
 
 ## Want to read some of that in german?
 
