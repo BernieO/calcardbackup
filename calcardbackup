@@ -20,7 +20,11 @@
 #######################################################
 
 # calcardbackup version:
-version="pre-0.2.3_7 (19.08.2017), AGPL-3.0"
+version="pre-0.2.3_8 (19.08.2017), AGPL-3.0"
+
+###
+### BEGIN: FUNCTION DEFINITIONS
+###
 
 _output() {
   # print output only if not in batch mode (-b)
@@ -338,7 +342,10 @@ read_status_php() {
   _output echo "+  ${productname} ${versionstring_status_php} detected."
 
   # check whether version of config.php is the same than version of status.php
-  [[ "${version_status_php}" != "${version_config_php}" ]] && error_exit "ERROR: different versions detected:" "${productname} ${version_status_php} found at ${nextcloud_url}" "${productname} ${version_config_php} found at ${nextcloud_path}" "check configured url and path in config file '${config_file}'"
+  if [[ "${version_status_php}" != "${version_config_php}" ]]; then
+     [[ -z "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check given path and given url (option -a)"
+     [[ -n "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check configured path and url in config file '${config_file}'"
+  fi
 
   # check for installed=true in status.php
   regex='"installed":"?true"?'
@@ -753,14 +760,21 @@ check_argument() {
   [[ "${1:0:1}" == "-" ]] && error_exit "Invalid argument for option '${option}'"
 }
 
-# default values:
+
+###
+### END: FUNCTION DEFINITIONS
+###
+
+
 set_required_paths
 load_default_values
 
-# read config file from script_dir, if run with no or only option -b/--batch
+# check if options are passed via command line and store them in according variables:
+
+# if no option or only option -b/--batch given: configure to read config file from script_dir
 [[ "${#}" == 0 ]] || [[ "${#}" == 1 && "${1}" =~ -b|--batch ]] && config_file="${script_dir}/calcardbackup.conf"
 
-# get nextcloud path if first argument doesn't start with a hyphen
+# get nextcloud path, if first given argument doesn't start with a hyphen
 if [[ "${1}" != -* ]]; then
   nextcloud_path="${1}"
   shift
@@ -768,7 +782,7 @@ fi
 
 while [[ "${#}" -gt 0 ]]
 do
-  option="${1}"
+  option="${1}"     # store for error message, if invalid argument for option provided (because of needed shift to get arguments)
   case "${1}" in
     -a | --address )
       shift
@@ -841,6 +855,7 @@ do
   esac
   shift
 done
+
 
 preparations
 read_config_php
