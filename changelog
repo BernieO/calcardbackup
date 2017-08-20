@@ -2,6 +2,7 @@ v0.X.X (XX.XX.XXXX)
 - improved: reduce number of database queries
 - improved: bash-builtins replace sed commands: 'sed' is not a requirement anymore
 - improved: conditional expressions replace grep commands: 'grep' is not a requirement anymore
+- improved: increased security for mysql commands
 - fixed: improve stability due to minor syntax corrections
 - fixed: correction of error message, if different versions are found at given url and given path
 

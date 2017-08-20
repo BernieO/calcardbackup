@@ -5,7 +5,8 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 ## Requirements
 
 - local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB or SQLite3 (PostgreSQL unsupported)
-- Package `curl` and according database package (`mysql-server`/`mariadb-server` or `sqlite3`)
+- package `curl` and according database package (`mysql-server`/`mariadb-server` or `sqlite3`)
+- optional: package `zip` to compress backup as zip-file  (instead of tar.gz)
 
 ## Quick Installation Guide
 
@@ -120,7 +121,7 @@ Use files calcardbackup.conf and users.txt in the script's directory as configur
 ## Considerations about encryption
 
 If you want to use the included encryption possibility, be aware that:
-- the files are encrypted by Gnupg, AES256 with the passphrase given in a separate file
+- the files are encrypted by GnuPG, AES256 with the passphrase given in a separate file
 - the passphrase is stored in a file. Other users with access to the server might be able to see the passphrase.
 - `calcardbackup` is designed to run without user interaction, so there can't be a rock solid encryption. I consider the offered one as sufficient in most cases though.
 - if you need rock solid encryption, don't let `calcardbackup` encrypt the backup. Instead, encrypt it yourself.
