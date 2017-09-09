@@ -20,19 +20,23 @@
 #######################################################
 
 # calcardbackup version:
-version="pre-0.2.3_9 (20.08.2017), AGPL-3.0"
+version="pre-0.2.3_10 (09.09.2017), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
 ###
 
 _output() {
-  # print output only if not in batch mode (-b)
-  # use || instead of && so that function returns true in any case - corrected in ver. 0.1.2
-  [[ "${mode:-}" != "batch" ]] && "$@"
+  # prints output, but only if not in batch mode (option -b|--batch)
+
+  # use || instead of && so that function returns true in any case - corrected in ver. 0.1.2:
+  [[ "${mode:-}" == "batch" ]] || "$@"
 }
 
 get_absolute_path() {
+  # returns the absolute path to a given filepath.
+  # arguments: ${1}=directory (in case ${2} is a relative path); ${2}=path to file
+
   if [[ "${2}" != /* ]]; then
     # change path of ${2} (file) relative to ${1} (dir) to absolute path and remove trailing slashes:
     absolute_path="$(readlink -m "${1}/${2}")"
@@ -44,11 +48,15 @@ get_absolute_path() {
 }
 
 check_readable_file() {
-  # checks if path is file and readable. $1 is path to file, $2 is short verbal explanation of file for error message.
+  # checks, if a given path is a readable file.
+  # arguments: ${1} is path to file, ${2} is short verbal explanation of the file for error message.
+
   [[ ! -f "${1}" ]] || [[ ! -r "${1}" ]] && error_exit "ERROR: Can't read ${2}" "I need to be able to read ${1}"
 }
 
 set_required_paths() {
+  # sets required paths for script to work
+
   # store current directory, because we have to change dir later and need to be able to come back to where we were:
   working_dir="$(pwd)"
   # get path to scripts dir:
@@ -57,7 +65,8 @@ set_required_paths() {
 }
 
 load_default_values() {
-  # assign default values:
+  # assigns default-values as configuration (which will be overwritten later with values from config-file or passed via options):
+
   nextcloud_url="https://www.my_nextcloud.net"
   trustful_certificate="yes"
   date_extension="-%Y-%m-%d"
@@ -72,6 +81,8 @@ load_default_values() {
 }
 
 read_config_file() {
+  # reads calcardbackups config file (if passed with option -c or script is run with no option at all or only option -b)
+
   # absolute path to config file:
   config_file="$(readlink -m "${config_file}")"
   config_file_dir="$(dirname "${config_file}")"
