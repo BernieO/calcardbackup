@@ -482,16 +482,6 @@ query_database() {
 
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
-  # prepare database query:
-  # fields to be read from database table:
-  fields="${row_principaluri}, ${row_displayname}, ${row_uri}"
-  # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
-  [[ "${include_shares}" == "yes" ]] && fields="${row_id}, ${fields}"
-  # adjust output format of MySQL/MariaDB to match output of SQLite3 (field|field|field):
-  [[ "${dbtype}" == "mysql" ]] && fields="CONCAT_WS('|', ${fields})"
-  # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
-  db_query='"select ${fields} from ${table} order by id"'
-
   # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
   #     sqlite3 would then need "${dboptions}" to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
   cd "${datadirectory}"
@@ -506,7 +496,19 @@ query_database() {
     _output echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
 
   else
-    # table exists - read required fields from table and assign values to arrays:
+    # table exists
+
+    # prepare database query:
+    # fields to be read from database table:
+    fields="${row_principaluri}, ${row_displayname}, ${row_uri}"
+    # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
+    [[ "${include_shares}" == "yes" ]] && fields="${row_id}, ${fields}"
+    # adjust output format of MySQL/MariaDB to match output of SQLite3 (field|field|field):
+    [[ "${dbtype}" == "mysql" ]] && fields="CONCAT_WS('|', ${fields})"
+    # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
+    db_query='"select ${fields} from ${table} order by id"'
+
+    # read required fields from table and assign values to arrays:
     while read line; do
       if [[ "${include_shares}" == "yes" ]]; then
         id+=("${line%%|*}")        # store id (first field) in array
