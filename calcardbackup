@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# calcardbackup by BernieO - extracts Own-/Nextcloud calendars and addressbooks
+# calcardbackup by BernieO - extracts ownCloud/Nextcloud calendars and addressbooks
 # Source: https://github.com/BernieO/calcardbackup
 # Copyright (C) 2017 BernieO
 #
@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="pre-0.2.3_10 (09.09.2017), AGPL-3.0"
+version="pre-0.2.3_11 (19.09.2017), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -34,8 +34,9 @@ _output() {
 }
 
 get_absolute_path() {
-  # returns the absolute path to a given filepath.
-  # arguments: ${1}=directory (in case ${2} is a relative path); ${2}=path to file
+  # returns the absolute path to a given filepath which may be absolute or relative to a directory.
+  # this is only needed and used for paths given by user via config-file (because config-file could be in a different dir from working dir or script dir)
+  # arguments: ${1}=directory; ${2}=path to file (relative to ${1} or absolute)
 
   if [[ "${2}" != /* ]]; then
     # change path of ${2} (file) relative to ${1} (dir) to absolute path and remove trailing slashes:
@@ -65,7 +66,7 @@ set_required_paths() {
 }
 
 load_default_values() {
-  # assigns default-values as configuration (which will be overwritten later with values from config-file or passed via options):
+  # assigns default-values as configuration (which will be overwritten later with values from config-file or options passed from command line).
 
   nextcloud_url="https://www.my_nextcloud.net"
   trustful_certificate="yes"
@@ -81,7 +82,7 @@ load_default_values() {
 }
 
 read_config_file() {
-  # reads calcardbackups config file (if passed with option -c or script is run with no option at all or only option -b)
+  # reads calcardbackups config file (if passed with option -c or in case script is run with no option at all or only option -b)
 
   # absolute path to config file:
   config_file="$(readlink -m "${config_file}")"
@@ -91,21 +92,25 @@ read_config_file() {
 
   # check if config file is a file and readable:
   check_readable_file "${config_file}" "calcardbackups config file."
-  # check config file for correct syntax (only comments, variable declarations and empty lines allowed)
+  # check config file for correct syntax (only variable declarations, comments and empty lines allowed)
   regex='^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]*"[[:space:]]*)(#.*)?$'
   while read -r line; do
     [[ ! "${line}" =~ ${regex} ]] && error_exit "ERROR: invalid config file! Only variable-declarations, comments and empty lines allowed." "Edit configuration file and run sript again."
   done <"${config_file}"
   # config file is readable and has correct syntax. So let's include it now:
   . "${config_file}"
-  # change paths (relative to config files directory) to absolute paths, remove trailing slashes
+  # make sure $nextcloud_path is set - otherwise print error and exit:
   [[ -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud to be configured." "Check value of variable 'nextcloud_path' in ${config_file}"
+  # change given paths (they might be relative to $config_file_dir) to absolute paths:
+  # (this is only needed when using config-file, because config-file might be in different directory from working dir or scripts dir)
   nextcloud_path="$(get_absolute_path "${config_file_dir}" "${nextcloud_path}")"
   [[ -z "${users_file:-}" ]] || users_file="$(get_absolute_path "${config_file_dir}" "${users_file}")"
   [[ -z "${backupfolder:-}" ]] || backupfolder="$(get_absolute_path "${config_file_dir}" "${backupfolder}")"
 }
 
 preparations() {
+  # checks for needed packages, reads config-file and validates user given values:
+
   # print timestamp
   _output printf "\n%s\n" "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   _output echo "+"
@@ -115,9 +120,9 @@ preparations() {
   # check for package curl
   which curl > /dev/null || error_exit "ERROR: Package 'curl' is needed for running this script." "Install with 'apt-get install curl' and run script again"
 
-  # if option -c|--configfile or nothing at all or only -b is given: read config file
+  # if option -c|--configfile or nothing at all or only -b is given - read config file:
   [[ ! -z "${config_file:-}" ]] && read_config_file
-  # error, if no path to ownCloud/Nextcloud and no configfile was given:
+  # if neither configfile nor path to ownCloud/Nextcloud is given - error and exit:
   [[ -z "${config_file:-}" ]] && [[ -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
 
   # remove trailing slashes from $nextcloud_path:
@@ -129,13 +134,13 @@ preparations() {
   # location of ownClouds/Nextclouds config.php:
   configphp="${nextcloud_path}/config/config.php"
 
-  # if using configfile: check $trustful_certificate for valid value:
+  # check $trustful_certificate for valid value (could only be invalid when using config-file):
   if [[ ! "${trustful_certificate}" =~ ^(yes|no)$ ]]; then
     _output echo "-- NOTICE: Parameter 'trustful_certificate' is not valid (allowed is only \"yes\" or \"no\")."
     _output echo "-- NOTICE: Using default value instead: trustful_certificate=\"yes\""
     trustful_certificate="yes"
   fi
-  # assign insecure-option for curl, depending on certificates trustfullness:
+  # assign insecure option for curl (depending on value given by user):
   [[ "${trustful_certificate}" == "yes" ]] && trust=""
   [[ "${trustful_certificate}" == "no" ]] && trust="--insecure"
 
@@ -146,7 +151,7 @@ preparations() {
 
   # if $backupfolder is empty or not set: set it to 'backups/' in script's dir
   [[ -z "${backupfolder:-}" ]] && backupfolder="${script_dir}/backups/"
-  # absolute path to backupfolder (writeable test follows later):
+  # absolute path to backupfolder (writeable test will follow later):
   backupfolder="$(readlink -m "${backupfolder}")"
 
   # make sure the configured date format in $date_extension is valid:
@@ -157,7 +162,7 @@ preparations() {
     date_extension="-%Y-%m-%d"
   fi
 
-  # make sure $delete_backups_older_than is a positive integer and set it to 0 if not:
+  # make sure $delete_backups_older_than is a positive integer and set it to default (0) if not:
   if [[ ! "${delete_backups_older_than}" =~ ^[0-9]+$ ]]; then
     [[ -z "${config_file:-}" ]] && _output echo "-- NOTICE: Argument to option '-r/--remove' is not a positive number."
     [[ -n "${config_file:-}" ]] && _output echo "-- NOTICE: Parameter 'delete_backups_older_than' is not a positive number."
@@ -165,21 +170,22 @@ preparations() {
     delete_backups_older_than="0"
   fi
 
+  # check value $compression_method:
   if [[ "${compression_method}" == "zip" ]]; then
-    # check for package zip
+    # check for package zip:
     which zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
   else
+    # if $compression_method is set to something else than "zip" - use "tar.gz":
     compression_method="tar.gz"
   fi
 
-  # check $encrypt_backup for valid value:
+  # check $encrypt_backup for valid value (could only be invalid when using config-file):
   if [[ ! "${encrypt_backup}" =~ ^(yes|no)$ ]]; then
-    # can only happen, if misconfigured in config-file
     _output echo "-- WARNING: Parameter 'encrypt_backup' is not valid (only \"yes\" or \"no\" allowed)."
     _output echo "-- WARNING: Using default value instead: encrypt_backup=\"no\""
     encrypt_backup="no"
   elif [[ "${encrypt_backup}" == "yes" ]]; then
-    # check for gpg:
+    # check for package gpg:
     which gpg > /dev/null || error_exit "ERROR: You chose to encrypt your backup." "Therefore package 'gnupg' is needed. Install with 'apt-get install gnupg' and run script again"
     if [[ "${compress}" == "no" ]]; then
       _output echo "-- WARNING: Can't encrypt uncompressed backup."
@@ -201,23 +207,28 @@ preparations() {
 }
 
 getvalue_from_configphp() {
-  # reads a line with a given paramter from config.php and echoes the parameters value:
+  # reads a line with a given paramter from config.php and echoes the parameters value
+  # arguments: ${1} is parameter which value should be returned
 
-  # (notice: multi-line comments (/* ... */) are not recognized, if no marker at beginning of line)
+  # Notice: multi-line comments (/* ... */) are not recognized, if no marker at beginning of line. The first occurence of ${1} will be returned.
+  # This might be a problem: because wrong value might be returned, if value is also present in a multi-line comment before the actual declaration in config.php!
   regex="^[[:space:]]*'${1}'.*"
   while read -r line; do
     [[ "${line}" =~ $regex ]] && break
     line=""
   done <"${configphp}"
+
+  # if parameter was found ($line is not empty) - manipulate $line to only return value and nothing else:
   if [[ "${line:-}" != "" ]]; then
-    line=${line%\'*}  # throw away end including last '
-    line=${line##*\'} # throw away beginning including last '
+    line=${line%\'*}    # throw away end including last '
+    line=${line##*\'}   # throw away beginning including last '
   fi
   echo "${line}"
 }
 
 read_config_php() {
   # reads config.php and assigns different paramters we need to know
+
   # check whether Nextclouds config-file is readable:
   check_readable_file "${configphp}" "configuration file of your Own-/Nextcloud installation."
 
@@ -226,16 +237,15 @@ read_config_php() {
   # set default dbtableprefix if empty or not found in config.php:
   [[ -z "${dbtableprefix:-}" ]] && dbtableprefix="oc_"
 
-  # get version of Nextcloud to configure correct dav-endpoint:
+  # get version of ownCloud/Nextcloud and configure correct dav-endpoint:
   version_config_php="$(getvalue_from_configphp "version")"
-  # get version number
-  mainversion=${version_config_php%%.*}
+  mainversion=${version_config_php%%.*}   # $mainversion is only first number
   minimumversion="5"
   davchangeversion="9"
-  # error and exit, if mainversion < 5.0:
+  # error and exit, if $mainversion < 5 (because ownCloud < 5.0 is not supported by calcardbackup):
   [[ "${mainversion}" -lt "${minimumversion}" ]] && error_exit "ERROR: This script only works with versions >= 5.0." "You are using Owncloud ${version_config_php}."
   if [[ "${mainversion}" -ge "${davchangeversion}" ]]; then
-    # Values for Own-/Nextcloud >= 9.0:
+    # Values for ownCloud/Nextcloud >= 9.0:
     caldav="dav"
     carddav="dav"
     table_calendars="${dbtableprefix}calendars"
@@ -247,10 +257,10 @@ read_config_php() {
       row_share_type="type"
       row_share_resourceid="resourceid"
     fi
-    # correction of export-link of addressbooks for Own-/Nextcloud >= 9.0:
+    # next line is needed for addressbook-export from ownCloud/Nextcloud >= 9.0:
     extra_users="users/"
   else
-    # Values for Owncloud < 9.0:
+    # Values for ownCloud < 9.0:
     caldav="caldav"
     carddav="carddav"
     table_calendars="${dbtableprefix}clndr_calendars"
@@ -263,29 +273,29 @@ read_config_php() {
       row_share_type_group="share_type" # needed for ownCloud < 9.0 to identify, if shared with group (and not with user)
       row_share_resourceid="item_source"
     fi
-    # must be empty for Owncloud < 9.0:
+    # must be empty for ownCloud < 9.0:
     extra_users=""
   fi
-  # those values are the same for Owncloud < 9.0 and Own-/Nextcloud >= 9.0
+  # those values are the same for ownCloud < 9.0 and ownCloud/Nextcloud >= 9.0
   row_id="id"
   row_uri="uri"
   row_displayname="displayname"
   table_group_user="${dbtableprefix}group_user"
 
-  # get nextcloud_url from config.php or from config file and error, if something is weird:
+  # get ownClouds/Nextclouds URL from config.php (overwrite.cli.url), compare to user given url ($nextcloud_url) and notice/error, if something is not as expected:
   nextcloud_url_default="https://www.my_nextcloud.net"
   nextcloud_url_overwrite="$(getvalue_from_configphp "overwrite.cli.url")"
   if [[ "${nextcloud_url}" != "${nextcloud_url_default}" ]] && [[ "${nextcloud_url}" != "${nextcloud_url_overwrite}" ]] && [[ "${nextcloud_url_overwrite}" != "" ]]; then
-    # use given URL but print notice, if nextcloud_url has been configured to something other than default or overwrite.cli.url
-    # (last test in if statement above: make sure overwrite.cli.url is present and not empty):
+    # use given URL but print notice, if $nextcloud_url has been configured to something other than default or overwrite.cli.url:
+    # (last conditional expression in if statement above: make sure overwrite.cli.url is present and not empty):
     _output echo "-- NOTICE: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
     _output echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
     _output echo "-- ${nextcloud_url}/   ==>   given with option -a/--address or found in config file."
   elif [[ "${nextcloud_url}" == "${nextcloud_url_default}" ]] && [[ "${nextcloud_url_overwrite}" == "" ]]; then
-    # Error, if nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
+    # Error, if $nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
     error_exit "ERROR: Can't retrieve url from ${configphp}" "In your case the URL needs to be passed to the script (via -a/--address or config file)"
   elif [[ "${nextcloud_url_overwrite}" != "" ]]; then
-    # if overwrite.cli.uri is found (and nextcloud_url is on default value): use it as nextcloud_url
+    # if overwrite.cli.uri is found (and $nextcloud_url is on default value): use it as $nextcloud_url
     nextcloud_url="${nextcloud_url_overwrite}"
   fi
   # Print url which will be used:
@@ -293,29 +303,34 @@ read_config_php() {
 }
 
 read_status_php() {
-  # check whether URL to Own-/Nextcloud is correct and store productname (Owncloud/Nextcloud):
+  # checks for installation of ownCloud/Nextcloud by requesting $nextcloud_url/status.php and
+  #     checks, if version number of $nextcloud_url/status.php correlates with version number of config.php
+
+  # store output of status.php in variable:
   status_php="$(curl -s ${trust} "${nextcloud_url}/status.php")"
+  # store exit code of curl to be able to react on error in separate function:
   cerror=$?
+  # if exit code was different from 0 call function to examine error and print according message to stderr:
   [[ "${cerror}" -eq 0 ]] || curl_error
 
-  # check whether Own-/Nextcloud can be found at nextcloud_url with return of status.php
-  # check regex with regex101.com (checked with versions mentioned below)
-  # Output of status.php of the different versions:
-  # Owncloud 5.0.9   {"installed":"true","version":"5.0.38","versionstring":"5.0.19","edition":""}
-  # Owncloud 6.0.9   {"installed":"true","version":"6.0.9.2","versionstring":"6.0.9","edition":""}
-  # Owncloud 7.0.15  {"installed":"true","version":"7.0.15.2","versionstring":"7.0.15","edition":""}
-  # Owncloud 8.0.16  {"installed":true,"maintenance":false,"version":"8.0.16.3","versionstring":"8.0.16","edition":""}
-  # Owncloud 8.1.12  {"installed":true,"maintenance":false,"version":"8.1.12.2","versionstring":"8.1.12","edition":""}
-  # Owncloud 8.2.10  {"installed":true,"maintenance":false,"version":"8.2.10.2","versionstring":"8.2.10","edition":""}
-  # Owncloud 9.0.8   {"installed":true,"maintenance":false,"version":"9.0.8.2","versionstring":"9.0.8","edition":""}
-  # Owncloud 9.1.4   {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"9.1.4","edition":""}
-  # Owncloud 10.0.0  {"installed":"true","maintenance":"false","needsDbUpgrade":"false","version":"10.0.0.12","versionstring":"10.0.0","edition":"Community","productname":"ownCloud"}
+  # Output of status.php of the different ownCloud/Nextcloud versions:
+  # ownCloud 5.0.9   {"installed":"true","version":"5.0.38","versionstring":"5.0.19","edition":""}
+  # ownCloud 6.0.9   {"installed":"true","version":"6.0.9.2","versionstring":"6.0.9","edition":""}
+  # ownCloud 7.0.15  {"installed":"true","version":"7.0.15.2","versionstring":"7.0.15","edition":""}
+  # ownCloud 8.0.16  {"installed":true,"maintenance":false,"version":"8.0.16.3","versionstring":"8.0.16","edition":""}
+  # ownCloud 8.1.12  {"installed":true,"maintenance":false,"version":"8.1.12.2","versionstring":"8.1.12","edition":""}
+  # ownCloud 8.2.10  {"installed":true,"maintenance":false,"version":"8.2.10.2","versionstring":"8.2.10","edition":""}
+  # ownCloud 9.0.8   {"installed":true,"maintenance":false,"version":"9.0.8.2","versionstring":"9.0.8","edition":""}
+  # ownCloud 9.1.4   {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"9.1.4","edition":""}
+  # owncloud 10.0.0  {"installed":"true","maintenance":"false","needsDbUpgrade":"false","version":"10.0.0.12","versionstring":"10.0.0","edition":"Community","productname":"ownCloud"}
   # Nextcloud 9.0.57 {"installed":true,"maintenance":false,"version":"9.0.57.2","versionstring":"9.0.57","edition":""}
   # Nextcloud 10.0.4 {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"10.0.4","edition":""}
   # Nextcloud 11.0.2 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.2.7","versionstring":"11.0.2","edition":"","productname":"Nextcloud"}
   # Nextcloud 12.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"12.0.0.29","versionstring":"12.0.0","edition":"","productname":"Nextcloud"}
 
+  # regex matching versions mentioned above (tested with regex101.com):
   regex='^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}(\.[[:digit:]]{1,2})?","versionstring":"[[:digit:]]{1,2}\.[[:digit:]]\.[[:digit:]]{1,2}","edition":"[^"]*"(,"productname":"[^"]*")?\}$'
+  # check status.php for valid installation of ownCloud/Nextcloud:
   [[ ! "${status_php}" =~ ${regex} ]] && error_exit "ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
 
   # get version from status.php:
@@ -327,6 +342,7 @@ read_status_php() {
   versionstring_status_php=${status_php#*versionstring\":\"}
   versionstring_status_php=${versionstring_status_php%%\"*}
 
+  # set productname to "ownCloud" for now and overwrite it later if different:
   productname="ownCloud"
 
   # for mainversion 9 we need to find out whether product is ownCloud 9.x or Nextcloud 9.x or Nextcloud 10.x
@@ -341,7 +357,7 @@ read_status_php() {
     [[ "${mainversion_status_php}" -lt "${mainversionstring_status_php}" ]] || [[ "${lastversionstring_status_php}" -ge 50 ]] && productname="Nextcloud"
   fi
 
-  # check for and use productname of status.php (for Nextcloud or custom productnames):
+  # check for productname in status.php and use it if present (this is for ownCloud>=10.0, Nextcloud>=11.0 or custom productnames):
   regex='"productname":"[^"]+"'
   [[ "${status_php}" =~ ${regex} ]] && {
     productname_status_php=${status_php#*productname\":\"}
@@ -352,16 +368,16 @@ read_status_php() {
 
   _output echo "+  ${productname} ${versionstring_status_php} detected."
 
-  # check whether version of config.php is the same than version of status.php
+  # check whether version of config.php is the same than version of status.php:
   if [[ "${version_status_php}" != "${version_config_php}" ]]; then
      [[ -z "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check given path and given url (option -a)"
      [[ -n "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check configured path and url in config file '${config_file}'"
   fi
 
-  # check for installed=true in status.php
+  # check for installed=true in status.php and exit if ownCloud/Nextcloud report installed:false:
   regex='"installed":"?true"?'
   [[ "${status_php}" =~ ${regex} ]] || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
-  # check for maintenance=false for versions >= 8.0 in status.php
+  # check for maintenance=false for versions >= 8.0 in status.php and exit if ownCloud/Nextcloud in maintenance mode:
   if [[ "$mainversion" -ge 8 ]]; then
     regex='"maintenance":"?false"?'
     [[ "${status_php}" =~ ${regex} ]] || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again"
@@ -369,7 +385,9 @@ read_status_php() {
 }
 
 get_database_details() {
-  # get database details:
+  # reads database configuration from config.php and assigns variable $dbcommand which is used to issue database queries later on
+
+  # read type of database being used (SQLite or MySQL/MariaDB)
   dbtype="$(getvalue_from_configphp "dbtype")"
   case "${dbtype}" in
     mysql)
@@ -394,6 +412,7 @@ get_database_details() {
       # avoiding that with option --defaults-extra-file and printf as suggested by Dave James Miller: https://stackoverflow.com/questions/20751352/suppress-warning-messages-using-mysql-from-within-terminal-but-password-written/20854048#comment42372603_22933056
       # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
       dbcommand='mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -se '
+      # store type of database for output of script:
       database="MySQL/MariaDB"
     ;;
     sqlite3)
@@ -401,14 +420,16 @@ get_database_details() {
       which sqlite3 > /dev/null || error_exit "ERROR: ${productname} database is sqlite3. Therefore this script requires package 'sqlite3'." "Install with 'apt-get install sqlite3' and run script again"
       datadirectory="$(getvalue_from_configphp "datadirectory")" # has to be absolute path for working Own-/Nextcloud, so no need to get absolute path
       sqlite3_database="${datadirectory}/owncloud.db"
-      # use options '-list' and '-separator "|"' for sqlite3 command to override eventually existent user-specific config-file '~/.sqlite3rc':
+      # use options '-list' and '-separator "|"' for sqlite3 command, to override eventually existing user-specific config-file '~/.sqlite3rc':
       # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
       dbcommand='sqlite3 -list -separator "|" owncloud.db ' # for database queries we do "cd ${datadirectory}" later so no need to use absolute path
+      # store type of database for output of script:
       database="SQLite3"
-      # check if sqlite3-database-file is readable:
+      # check if sqlite3 database file is readable:
       check_readable_file "${sqlite3_database}" "${productname}s SQLite3 database."
     ;;
     *)
+      # print error and exit, if used dbtype is not supported by calcardbackup:
       error_exit "ERROR: Unsupported Database type: ${dbtype}" "Only MySQL/MariaDB and SQLite3 are supported."
     ;;
   esac
@@ -416,7 +437,9 @@ get_database_details() {
 }
 
 read_users_txt() {
-  # Reads file users:
+  # reads file with user credentials
+
+  # split each line at the first colon (username:password) and store usernames and according passwords in array:
   readarray -t users < "${users_file}"
   for i in "${!users[@]}"; do
     user[$i]="${users[$i]%%:*}"
@@ -425,43 +448,59 @@ read_users_txt() {
 }
 
 create_backup_folder() {
+  # creates backup folder and subfolder with date extension to store files
+
   # create backup folder:
   mkdir -p "${backupfolder}"
   [[ "$?" -eq 0 ]] || error_exit "ERROR: Backupfolder could not be created."
 
-  # check if backupfolder is writable
+  # check if backupfolder is writable:
   [[ -w "${backupfolder}" ]] || error_exit "ERROR: Backupfolder is not writable."
 
   day="$(date +"${date_extension}")"
   backupfolder_day="${backupfolder}/calcardbackup${day}"
-  path_to_backup="${backupfolder_day}" # depending on config changes later to path to compressed or encrypted backup
+  # store path to backup (depending on config, this value might get changed later to path to compressed- or encrypted-backup):
+  path_to_backup="${backupfolder_day}"
   mkdir -p "${backupfolder_day}"
 }
 
 query_database() {
-  # Get details of calendars/addressbooks from database
+  # gets details of calendars/addressbooks from database
+  # see next lines for description of arguments ${1} and ${2}
+
   table="${1}"  # ${table_calendars} or ${table_addressbooks}
-  item="${2}"   # "calendar" or "addressbook"
-  # unset arrays (to not include calendardata for addressbook export):
+  item="${2}"   # "calendar" or "addressbook", just a verbal description, needed for output messages
+
+  # unset arrays (to not include calendardata for second run of this function with addressbook export):
   unset -v id principal uri displayname
 
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
+  # prepare database query:
+  # fields to be read from database table:
   fields="${row_principaluri}, ${row_displayname}, ${row_uri}"
-  [[ "${include_shares}" == "yes" ]] && fields="${row_id}, ${fields}" # we also need to get id of item to be able to include shares
-  [[ "${dbtype}" == "mysql" ]] && fields="CONCAT_WS('|', ${fields})"  # adjust output format of MySQL/MariaDB to match output of SQLite3: field|field|field
+  # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
+  [[ "${include_shares}" == "yes" ]] && fields="${row_id}, ${fields}"
+  # adjust output format of MySQL/MariaDB to match output of SQLite3 (field|field|field):
+  [[ "${dbtype}" == "mysql" ]] && fields="CONCAT_WS('|', ${fields})"
   # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
   db_query='"select ${fields} from ${table} order by id"'
 
-  # cd needed for SQLite3, because ${datadirectory} could contain spaces --> sqlite3 would then need "${dboptions}", but mysql needs ${dboptions}:
+  # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
+  #     sqlite3 would then need "${dboptions}" to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
   cd "${datadirectory}"
+
   # check if table exists:
   [[ "${dbtype}" == "mysql" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
   [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")"
+
   if [[ "${check_table:-}" == "" ]]; then
+    # print notice, if table doesn't exist:
     _output echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
     _output echo "-- NOTICE: Looks like ${productname} did not create any ${item}s yet."
+
   else
+    # table exists - read required fields from table and assign values to arrays:
     while read line; do
       if [[ "${include_shares}" == "yes" ]]; then
         id+=("${line%%|*}")        # store id (first field) in array
@@ -474,36 +513,49 @@ query_database() {
       uri+=("${line##*|}")         # store uri (last field) in array
     done < <(eval "${dbcommand}" "${db_query}")
   fi
-  cd "${working_dir}" # switch back to original directory
+
+   # switch back to original directory:
+  cd "${working_dir}"
 }
 
 include_shares() {
-  # look for shared items and add them to arrays:
+  # looks for shared items and adds them to arrays created in function query_database()
 
-  # cd needed for SQLite3, because ${datadirectory} could contain spaces --> sqlite3 would then need "${dboptions}", but mysql needs ${dboptions}:
+  # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
+  #     sqlite3 would then need "${dboptions}" to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
   cd "${datadirectory}"
 
-  # database only needs to be queried once for dav_shares, because same table for shared calendars and addressbooks:
+  # database only needs to be queried once for table with infos about shares ($table_shares), because same table for shared calendars and addressbooks:
   if [[ "${read_shared:-}" == "" ]]; then
     read_shared=1
-    # check if table exists:
+
+    # check if table $table_shares exists:
     [[ "${dbtype}" == "mysql" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
     [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}'")"
+
     if [[ "${check_table:-}" == "" ]]; then
+      # print notice, if $table_shares doesn't exist:
       _output echo "-- NOTICE: table '${table_shares}' containing shared calendars/addressbooks does not exist in database."
       _output echo "-- NOTICE: Looks like there are no shared calenders/addressbooks in your ${productname}."
+
     else
-      # read table with details about shares:
+      # table with info about shares ($table_shares) exists - read required fields from table and assign values to share_arrays
+
+      # prepare database query
+      # fields to be read from database table with shares:
       fields="${row_share_principaluri}, ${row_share_type}, ${row_share_resourceid}"
       # we also need to get share type to identify group-shares for ownCloud < 9.0:
       [[ "${mainversion}" -lt "${davchangeversion}" ]] && fields="${row_share_type_group}, ${fields}"
-      [[ "${dbtype}" == "mysql" ]] && fields="CONCAT_WS('|', ${fields})"  # adjust output format of MySQL/MariaDB to match output of SQLite3: field|field|field
+      # adjust output format of MySQL/MariaDB to match output of SQLite3 (field|field|field):
+      [[ "${dbtype}" == "mysql" ]] && fields="CONCAT_WS('|', ${fields})"
       # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
       db_query='"select ${fields} from ${table_shares} order by id"'
+
+      # read required fields from table and assign values to share-arrays:
       while read line; do
         if [[ "${mainversion}" -lt "${davchangeversion}" ]]; then
           # for ownCloud < 9.0: store share_type_group (first field) in array
-          # (will be 0 for user-share, 1 for group-share, 3 for public-share):
+          # (share_type_group will be 0 for user-share, 1 for group-share, 3 for public-share):
           share_type_group+=("${line%%|*}") # first field contains share-type_group
           line="${line#*|}"                 # cut first field (share_type_group) from array
         fi
@@ -515,43 +567,55 @@ include_shares() {
       done < <(eval "${dbcommand}" "${db_query}")
 
       # we also need to get info about group members to be able to backup calendars/addressbooks which are shared to groups:
-      # check if table exists:
+      # check if table group_user ($table_group_user) exists:
       [[ "${dbtype}" == "mysql" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = %s\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_group_user}'")"
       [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}'")"
-      if [[ "${check_table:-}" != "" ]]; then     # if table group_user exists, read values in array grouplist:
+
+      if [[ "${check_table:-}" != "" ]]; then
+        # table group_user exists -> read values in array grouplist:
+        # fields to be read from table group_user:
         fields="gid, uid"
-        [[ "${dbtype}" == "mysql" ]] && fields="CONCAT_WS('|', ${fields})"   # adjust output format of MySQL/MariaDB to match output of SQLite3: field|field|field
+        # adjust output format of MySQL/MariaDB to match output of SQLite3 (field|field|field):
+        [[ "${dbtype}" == "mysql" ]] && fields="CONCAT_WS('|', ${fields})"
         # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
         db_query='"select ${fields} from ${table_group_user} order by gid"'
+
+        # read values from database and create array with list of groups and their users:
         while read line; do
           grouplist+=("${line}")
         done < <(eval "${dbcommand}" "${db_query}")
+      # no need for else section with error-message, because: if there is no group list - there are no groups, which is not a problem
       fi
+
     fi
   fi
 
-  # look for matches of share_resourceid and id and store values in a temp array:
+  # look for matches of share_resourceid of $table_shares and calendar/addressbook-ids and store values in a temporary array:
+  # notice: share_resourceid doesn't get compared with id from same table ($table_shares), but
+  #         with id from table containing calendars/addressbooks ($table_calendars/$table_addressbooks)
   for (( i=0; i<${#id[@]}; i++ )); do                    # go through calender/addressbook-ids
-    for (( s=0; s<${#share_resourceid[@]}; s++ )); do    # go through dav-shares-ids
-      # if dav-share-id matches calendar/addressbook-id, we need to add it to the 'shares to be backed up'-list:
+    for (( s=0; s<${#share_resourceid[@]}; s++ )); do    # go through share_resourceid
+      # if share_resourceid matches calendar/addressbook-id, we need to add it to the temporary 'shares to be backed up'-arrays:
       if [[ "${share_resourceid[$s]}" == "${id[$i]}" ]] && [[ "${share_type[$s]}" == "${item}" ]]; then
-        # make sure, principal of dav-share is not a group (group will be treated below) - second test is for ownCloud < 9.0, first test is for younger versions:
+        # make sure, principal of share is not a group (group will be treated below)
+        # first conditional expression in next line is for ownCloud/Nextcloud >= 9.0, the second one is for ownCloud < 9.0:
         if [[ ! "${share_principal[$s]}" =~ principals\/groups\/ ]] && [[ ! "${share_type_group[$s]:-}" =~ ^1$ ]]; then
-          # add identified dav-share (shared with a user) to the 'shares to be backed up'-list:
+          # add identified dav-share (shared with a user!) to the temporary 'shares to be backed up'-arrays:
           temp_principal+=("${share_principal[$s]}")
           temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
           temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
           temp_id+=("${share_resourceid[$s]}")
         else
-          # if share-principal is a group: go through list with groups and their users and
-          # add item to the 'shares to be backed up'-list for all users of that very group:
+          # if share-principal is a group:
+          #     go through list with groups and their users and
+          #     add item to the temporary 'shares to be backed up'-arrays for all users of that very group:
           for g in "${!grouplist[@]}"; do
             if [[ "${share_principal[$s]#*principals/groups/}" == "${grouplist[$g]%|*}" ]]; then
-              # if item owner is member of group: do not add item to 'shares to be backed up'-list for owner, instead continue with next element
-              # (owners item is already in the array with items to be downloaded):
+              # if item owner is member of group:
+              #     do not add item to 'shares to be backed up'-arrays for owner, instead continue with next element
+              #     (owner is excluded here, because owners item will be downloaded anyway: it is already in the array with items to be downloaded):
               [[ "${grouplist[$g]#*|}" == "${principal[$i]}" ]] && continue
-
-              # add item shared with group to 'shares to be backed up'-list:
+              # add details of item shared with group to temporary 'shares to be backed up'-arrays:
               temp_principal+=("${grouplist[$g]#*|}")
               temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
               temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
@@ -563,7 +627,7 @@ include_shares() {
     done
   done
 
-  # add values of 'shares to be backed up'-list to arrays which will later be used to download the files:
+  # add values of temporary 'shares to be backed up'-arrays to arrays which will later be used to download the files:
   for (( i=0; i<${#temp_principal[@]}; i++ )); do
     principal+=("${temp_principal[$i]}")
     uri+=("${temp_uri[$i]}")
@@ -571,73 +635,101 @@ include_shares() {
     id+=("${temp_id[$i]}")
   done
 
-  # unset temp-arrays and for-loop-variables:
+  # unset temporary arrays and for-loop-variables:
   unset -v temp_principal temp_uri temp_displayname temp_id i s g
 
-  cd "${working_dir}" # switch back to original directory
+  # switch back to original directory:
+  cd "${working_dir}"
 }
 
 get_icsvcf_files() {
+  # looks for matches between array with user and arrays (created by database-queries) and then downloads addressbooks/calendars
+  # see next lines for description of arguments:
 
-  item="${1}" item_extension="${2}" item_header="${3}" calcarddav="${4}" ex_users="${5}"
+  item="${1}"            # items to be downloaded: "addressbook" or "calendar"
+  item_extension="${2}"  # filename extension: ".vcf" or ".ics"
+  item_header="${3}"     # valid vcf/ics-header (first line of vcf/ics-file): "BEGIN:VCARD" or "BEGIN:VCALENDAR"
+  calcarddav="${4}"      # dav-endpoint: "dav" for ownCloud/Nextcloud >= 9.0; "carddav"/"caldav" for ownCloud < 9.0
+  ex_users="${5}"        # needed for download of addressbooks from ownCloud/Nextcloud >= 9.0: "users/" (or empty string for ownCloud < 9.0)
 
-  # counter for exported items (if no calendar/addressbook was exported, there is no valid nextcloud user in users.txt):
+  # counter for exported items:
+  # (to be able to print message that there is no valid user in users.txt, if no calendar/addressbook was exported)
   exported=0
 
-  # Check whether database returned 0 entries (meaning there is not a single calendar/addressbook):
+  # check whether database returned 0 entries (meaning there is not a single calendar/addressbook in the database):
   if [[ ${#uri[@]} == 0 ]]; then
     _output echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
     # in this case: exported=1 though nothing exported, because different from no user match (see end of this function)
     exported=1
   fi
 
-  # array already_saved_as (stores filenames and (as index) ids of saved items) needs to be unset to not mix up addressbook data with calendar data:
+  # array already_saved_as (stores filenames and as index the ids of saved items) needs to
+  # be unset to not mix up addressbook data with calendar data:
   unset -v already_saved_as
 
+  # loop through array with addressbooks/calendars:
   for (( i=0; i<${#uri[@]}; i++ )); do
+    # loop through array with usernames given in file with users credentials (users.txt):
     for index in "${!users[@]}"; do
+      # compare prinicpal with username. If there is a match, we found an item to be downloaded
+      # (exclude birthday calendar (contact_birthdays), because it is an automatically created calendar from ownCloud/Nextcloud):
       if [[ "${principal[$i]}" == "${user[$index]}" ]] && [[ "${uri[$i]}" != "contact_birthdays" ]]; then
 
+        # create filename like: username-(calendar-/addressbook-)name-date:
         filename="${principal[$i]}-${displayname[$i]}${item_extension}"
-        filename="${filename//[\/\\*? ]/_}" # remove funky characters from filename
+        # remove funky characters from filename:
+        filename="${filename//[\/\\*? ]/_}"
 
-        # only if shared items shall be included: check if item was already downloaded before and break if yes or mark as downloaded:
+        # only if shared items shall be included: check if item was already downloaded and break if yes or mark as downloaded:
         if [[ "${include_shares}" == "yes" ]]; then
-          z=${id[$i]} # increase readability: id of current item is used as index for array already_saved_as which stores filenames of downloaded items.
+          # increase readability: id of current item is used as index ($z) for array already_saved_as which stores filenames of downloaded items.
+          z=${id[$i]}
+          # check if there is already an entry for that item, meaning that it was already downloaded:
           if [[ "${already_saved_as[$z]:-}" != "" ]]; then
+            # create name of item for message:
             item_name="${principal[$i]}-${displayname[$i]}"
-            item_name="${item_name//[\/\\*? ]/_}" # remove funky characters
+            # remove funky characters:
+            item_name="${item_name//[\/\\*? ]/_}"
+            # print message that item is already downloaded and break the for-loop going through usernames to continue with next addressbook/calendar:
             _output echo "+  Skipping ${item} '${item_name}': already saved as '${already_saved_as[$z]}'." && break
           fi
+          # item has not yet been downloaded, but will be downloaded, so let's add it to the arraay $already_saved_as:
           already_saved_as[$z]="${filename}"
         fi
 
         _output printf "%s" "+  Saving ${item} ${filename}..."
+        # download item with curl (command uses export link provided by contacts/calendar app from ownCloud/Nextcloud):
         curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]}/${uri[$i]}?export"
+        # store exit code of curl to be able to react on error in separate function:
         cerror=$?
+        # if exit code was different from 0 call function to examine error and print according message to stderr:
         [[ "${cerror}" -eq 0 ]] || curl_error
 
         # an empty addressbook results in an empty file (or no file for curl < 7.42.0), so we need to check whether we received a file that is not empty:
         file_received="yes" # let's say for now that a file has been downloaded and change it below if no addressbook has been exported.
+        # check for addressbook and whether no file was received (for curl < 7.42.0) or file received has size of 0 (meaning empty file):
         if [[ "${item}" == "addressbook" ]] && [[ ! -s "${backupfolder_day}/${filename}" ]]; then
-          # touch file to create empty file, if it was not created by curl on successful download of empty file (which is the case for curl < 7.42.0)
+          # touch file to create empty file, if it was not created by curl on successful download of empty addressbook (which is the case for curl < 7.42.0)
           touch "${backupfolder_day}/${filename}"
           _output printf "%s\n" "...empty file. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty."
-          file_received="no" # because we have received an empty file and thus do not want to check whether it is a valid ics-/vcf-file
-          exported=$((exported + 1)) # increase ${exported}, because we don't want to print notice that nothing has been found
-          break
+          file_received="no" # because we have received an empty file and thus do not need to check whether it is a valid ics-/vcf-file
+          exported=$((exported + 1)) # increase $exported, because we don't want to print notice that nothing has been found
+          break # break the for-loop going through usernames to continue with next addressbook
         fi
 
-        # check for ics-/vcf-header in received file:
-        read -r line <"${backupfolder_day}/${filename}"        # reads first line of received file
+        # check for valid ics-/vcf-header in received file:
+        read -r line <"${backupfolder_day}/${filename}"    # reads first line of received file
         if [[ "${file_received}" == "yes" ]] && [[ ! "${line}" =~ ${item_header} ]]; then    # no valid file, if first line of file doesn't match item_header
+          # attach "-ERROR.txt" to filename:
           mv "${backupfolder_day}/${filename}" "${backupfolder_day}/${filename}-ERROR.txt"
-          _output printf "%s" "\n"
+          _output printf "%s" "\n"    # newline is needed for error-message to start on a separate line. Increases readability.
+          # print error message and exit:
           error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${filename}-ERROR.txt"
         fi
+        # increase counter $exported, because at least one item has been downloaded successfully:
         exported=$((exported + 1))
         _output printf "%s\n" "...success!"
-        break
+        break # break the for-loop going through usernames to continue with next addressbook/calendar.
       fi
     done
   done
@@ -650,21 +742,24 @@ get_icsvcf_files() {
 }
 
 get_calendars() {
-  # Get calendars and save them in backup-folder:
+  # gets calendars and saves them in backup-folder. Have a look at used functions for more detailed explanations.
+
   query_database "${table_calendars}" "calendar"
   [[ "${include_shares}" == "yes" ]] && include_shares
   get_icsvcf_files "calendar" ".ics" "BEGIN:VCALENDAR" "${caldav}" ""
 }
 
 get_addressbooks() {
-  # Get addressbooks and save them in backup-folder:
+  # gets addressbooks and saves them in backup-folder. Have a look at used functions for more detailed explanations.
+
   query_database "${table_addressbooks}" "addressbook"
   [[ "${include_shares}" == "yes" ]] && include_shares
   get_icsvcf_files "addressbook" ".vcf" "BEGIN:VCARD" "${carddav}" "${extra_users}"
 }
 
 check_for_backup_files() {
-  # check for files in backup-directory and print warning, if there are no files:
+  # checks for files in backup-directory and prints warning, if there are no files (meaning absolutely nothing has been downloaded).
+
   backupfolder_content="$(ls -A "${backupfolder_day}")"
   if [[ -z "${backupfolder_content}" ]]; then
     echo "-- WARNING: No files in backup directory - meaning no backup created !!" >&2
@@ -676,68 +771,107 @@ check_for_backup_files() {
 }
 
 pack_it() {
-  # compress backup
+  # compresses backup
+
   _output echo "+  Compressing backup as *.${compression_method} file. Be patient - this may take a while."
+  # change to backupfolder to make sure there won't be any funky paths in compressed file:
   cd "${backupfolder}"
+
+  # compress backup using the configured method (zip or tar.gz):
   if [[ "${compression_method}" == "zip" ]]; then
-    # zip folder with backed up files:
+    # use zip to compress folder with backed up files:
     zip -r -q "calcardbackup${day}.zip" "calcardbackup${day}"
+    # store error, to be able to print error message:
     [[ $? -eq 0 ]] || compress_error="1"
   else
-    # use tar.gz to compress backup folder:
+    # use tar.gz to compress folder with backed up files:
     tar -czf "calcardbackup${day}.tar.gz" "calcardbackup${day}"
+    # store error, to be able to print error message:
     [[ $? -eq 0 ]] || compress_error="1"
   fi
   [[ "${compress_error}" == "1" ]] && error_exit "ERROR: Compressing the files produced an error. See lines right above."
-  cd "${working_dir}" # switch back to original directory
+
+  # switch back to original directory:
+  cd "${working_dir}"
+  # delete folder with uncompressed ics/vcf-files:
   rm -r "${backupfolder_day}"
+  # path to backup needs to be stored in case backup shall be encrypted or calcardbackup is running in batch-mode (-b):
   path_to_backup="${backupfolder}/calcardbackup${day}.${compression_method}"
   _output echo "+  Backup successfully compressed!"
-  # use || instead of && so that function returns true in any case - corrected in ver. 0.1.2
+
   # if backup shall NOT be encrypted, print path to backup:
+  # (use || instead of && so that function returns true in any case - corrected in ver. 0.1.2)
   [[ "${encrypt_backup}" == "yes" ]] || _output echo "+  Find your backup here: ${path_to_backup}"
 }
 
 gpg_encrypt_backup() {
   # encrypts compressed backup
+
+  # compose path to encrypted backup by adding ".gpg" to the path/filename of compressed backup:
   path_encrypted_backup="${path_to_backup}.gpg"
+  # encrypt compressed backup file:
   gpg --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_to_backup}"
   # command to decrypt: gpg --passphrase-file <(echo "${gpg_passphrase}") --batch --output decrypted_output_file --decrypt encrypted_file
+  # if exit code of gpg is different than 0 - print error message:
   [[ "$?" == 0 ]] || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
+
   # delete passphrase from memory:
   unset -v gpg_passphrase
   # delete compressed backup
   rm "${path_to_backup}"
+  # path_to_backup has changed and needs to be stored, in case calcardbackup is running in batch-mode (-b):
   path_to_backup="${path_encrypted_backup}"
   _output echo "+  Backup successfully encrypted!"
   _output echo "+  Find your encrypted backup here: ${path_to_backup}"
 }
 
 delete_old_backups() {
-  # deletes backups older than ${delete_backups_older_than} days:
+  # deletes backups older than the configured amount of days (${delete_backups_older_than}) days
+
+  # delete backups older than ${delete_backups_older_than} days
+  # (use option -daystart to set beginning of day = 0:00 am in order 
+  # to satisfy probably by users expected behavior of this function):
   deleted="$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)"
+
+  # check for error or deleted files and print according messages:
   if [[ "$?" -ne 0 ]]; then
+    # print error and exit, if find (-delete) produced an error:
     error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
   elif [[ "${deleted}" != "" ]]; then
+    # if there have been files deleted:
+    # print info about which older backups have been deleted:
     _output echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
     _output echo "${deleted}"
   else
+    # if nothing has been found to delete:
+    # print info that no backups were old enough to be deleted:
     _output echo "+  No backups older than ${delete_backups_older_than} days found to delete."
   fi
 }
 
 finish() {
-  # print timestamp
+  # last function to be executed. This is the end of calcardbackup
+  # prints END-message or if in batch-mode (-b) only path to backup
+
+  # print timestamp and END-message:
   _output echo "+  $(date) --> END calcardbackup"
   _output echo "+"
   _output echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   _output echo
+
+  # if running in batch mode and there are backed up files - print path to backup:
   [[ "${mode}" == "batch" ]] && [[ "${backup_files_present}" == "yes" ]] && echo "${path_to_backup}"
+
+  # exit without error, because script catches errors and exits on error with error-code:
   exit 0
 }
 
 curl_error() {
+  # prints to curls exit code according message
+  # ${cerror} is curls exit code
+
   if [[ "${cerror}" -eq 6 ]]; then
+    # curl error 6: could not resolve host:
     if [[ "${nextcloud_url}" == "${nextcloud_url_overwrite}" ]]; then
       problem="Either that host is temporarily unavailable or 'overwrite.cli.uri' in ${configphp} is wrong."
     else
@@ -745,29 +879,44 @@ curl_error() {
     fi
     error_exit "ERROR: Curl error 6: could not resolve host \"${nextcloud_url}\"" "${problem}"
   elif [[ "${cerror}" -eq 60 ]]; then
+    # curl error 60: cannot authenticate certificate (probably self-signed certificate):
     error_exit "ERROR: Curl error 60: cannot authenticate peer certificate with known CA certificates." "You need to use option -s or configure trustful_certificate=\"no\" in config file."
   fi
+  # error message for any other (not 6 nor 60) curl error:
   error_exit "ERROR: Curl cannot get the requested file. This can have various reasons." "For clarification lookup Curl Error number ${cerror}"
 }
 
 error_exit() {
+  # prints error message and exits script
+  # if any arguments are passed, they all will be printed as error message
+
   echo "-- calcardbackup: ERROR --" >&2
-  # if an error message is needed:
+
+  # print all arguments that have been passed to this function as error message:
   for message in "$@"; do
     echo "-- ${message}" >&2
   done
   echo "-- calcardbackup: Exiting." >&2
-  exit 64 # 1 is reserved.
+
+  # exit with error code 64, because I read somewhere that 1 is reserved.
+  # Not so sure about that anymore though, but error code stays 64 for backwards compatibility:
+  exit 64
 }
 
 print_help() {
+  # prints short help text
+
   echo "calcardbackup version ${version}"
   echo "Usage: ./calcardbackup [DIRECTORY] [option [argument]] [option [argument]] [option [argument]] ..."
   echo "Find more details in attached file 'README.md' or visit 'https://github.com/BernieO/calcardbackup'"
 }
 
 check_argument() {
+  # checks for argument, if an option passed on command line needs an argument
+
+  # if option was last on command line and no argument is following:
   [[ -z "${1:-}" ]] && error_exit "Option '${option}' requires an additional argument."
+  # if option was not last on command line, but an option (starting with a dash) is following instead of argument:
   [[ "${1:0:1}" == "-" ]] && error_exit "Invalid argument for option '${option}'"
 }
 
@@ -780,9 +929,12 @@ check_argument() {
 set_required_paths
 load_default_values
 
-# check if options are passed via command line and store them in according variables:
 
-# if no option or only option -b/--batch given: configure to read config file from script_dir
+###
+### BEGIN: parse command line for options/arguments
+###
+
+# if no option or only option -b/--batch given: configure script to read config file from script_dir
 [[ "${#}" == 0 ]] || [[ "${#}" == 1 && "${1}" =~ -b|--batch ]] && config_file="${script_dir}/calcardbackup.conf"
 
 # get nextcloud path, if first given argument doesn't start with a hyphen
@@ -791,9 +943,13 @@ if [[ "${1}" != -* ]]; then
   shift
 fi
 
+# read options and their arguments and store them in according variables:
 while [[ "${#}" -gt 0 ]]
 do
-  option="${1}"     # store for error message, if invalid argument for option provided (because of needed shift to get arguments)
+  # store argument for error message, if invalid argument for option provided
+  # (needed because of needed shift to get different arguments)
+  option="${1}"
+
   case "${1}" in
     -a | --address )
       shift
@@ -866,6 +1022,10 @@ do
   esac
   shift
 done
+
+###
+### END: parse command line for options/arguments
+###
 
 
 preparations
