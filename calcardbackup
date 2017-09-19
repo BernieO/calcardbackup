@@ -533,7 +533,8 @@ include_shares() {
   #     sqlite3 would then need "${dboptions}" to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
   cd "${datadirectory}"
 
-  # database only needs to be queried once for table with infos about shares ($table_shares), because same table for shared calendars and addressbooks:
+  # database only needs to be queried once for table with infos about shares ($table_shares)
+  # (because same table for shared calendars and shared addressbooks):
   if [[ "${read_shared:-}" == "" ]]; then
     read_shared=1
 
@@ -645,6 +646,12 @@ include_shares() {
 
   # unset temporary arrays and for-loop-variables:
   unset -v temp_principal temp_uri temp_displayname temp_id i s g
+
+  # unset arrays with infos about shares (from $table_shares), only after second run of this function:
+  [[ ${read_shared} -eq 2 ]] && unset -v share_type_group share_principal share_type share_resourceid
+
+  # set $read_shared to 2 for eventually second run of this function
+  read_shared=2
 
   # switch back to original directory:
   cd "${working_dir}"
