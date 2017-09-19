@@ -176,8 +176,9 @@ preparations() {
   if [[ "${compression_method}" == "zip" ]]; then
     # check for package zip:
     which zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
-  else
-    # if $compression_method is set to something else than "zip" - use "tar.gz":
+  elif [[ "${compression_method}" != "tar.gz" ]]; then
+    # if $compression_method is set to something else than "zip" or "tar.gz" - use "tar.gz":
+    _output echo "-- NOTICE: Parameter 'compression_method' is not valid. Using default value 'tar.gz'."
     compression_method="tar.gz"
   fi
 
