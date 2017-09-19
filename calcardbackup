@@ -143,6 +143,8 @@ preparations() {
   # assign insecure option for curl (depending on value given by user):
   [[ "${trustful_certificate}" == "yes" ]] && trust=""
   [[ "${trustful_certificate}" == "no" ]] && trust="--insecure"
+  # variable $trustful_certificate is not needed anymore:
+  unset -v trustful_certificate
 
   # if $users_file is empty or not set: set it to 'users.txt' in script's dir
   [[ -z "${users_file:-}" ]] && users_file="${script_dir}/users.txt"
@@ -197,6 +199,8 @@ preparations() {
       check_readable_file "${passphrase_file}" "file with passphrase."
       # read first line from on commandline given file and use that as passphrase:
       read -r gpg_passphrase <"${passphrase_file}"
+      # variable $passphrase_file is not needed anymore:
+      unset -v passphrase_file
     fi
     # error and exit, if backup shall be encrypted, but passphrase is on example value (1234) or empty:
     if [[ "${gpg_passphrase}" =~ ^(1234|)$ ]]; then
@@ -300,6 +304,9 @@ read_config_php() {
   fi
   # Print url which will be used:
   _output echo "+  Using URL ${nextcloud_url}"
+
+  # variable $nextcloud_url_default is not needed anymore:
+  unset -v nextcloud_url_default
 }
 
 read_status_php() {
@@ -360,10 +367,8 @@ read_status_php() {
   # check for productname in status.php and use it if present (this is for ownCloud>=10.0, Nextcloud>=11.0 or custom productnames):
   regex='"productname":"[^"]+"'
   [[ "${status_php}" =~ ${regex} ]] && {
-    productname_status_php=${status_php#*productname\":\"}
-    productname_status_php=${productname_status_php%%\"*}
-    productname="'${productname_status_php}'"
-    unset -v productname_status_php
+    productname=${status_php#*productname\":\"} # cut beginning of line including 'productname":"'
+    productname=${productname%%\"*}             # cut end of line from first occurence of "
   }
 
   _output echo "+  ${productname} ${versionstring_status_php} detected."
@@ -382,6 +387,9 @@ read_status_php() {
     regex='"maintenance":"?false"?'
     [[ "${status_php}" =~ ${regex} ]] || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again"
   fi
+
+  # those variables are not needed anymore:
+  unset -v status_php version_status_php mainversion_status_php versionstring_status_php mainversionstring_status_php lastversionstring_status_php
 }
 
 get_database_details() {
@@ -470,9 +478,6 @@ query_database() {
 
   table="${1}"  # ${table_calendars} or ${table_addressbooks}
   item="${2}"   # "calendar" or "addressbook", just a verbal description, needed for output messages
-
-  # unset arrays (to not include calendardata for second run of this function with addressbook export):
-  unset -v id principal uri displayname
 
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
@@ -663,10 +668,6 @@ get_icsvcf_files() {
     exported=1
   fi
 
-  # array already_saved_as (stores filenames and as index the ids of saved items) needs to
-  # be unset to not mix up addressbook data with calendar data:
-  unset -v already_saved_as
-
   # loop through array with addressbooks/calendars:
   for (( i=0; i<${#uri[@]}; i++ )); do
     # loop through array with usernames given in file with users credentials (users.txt):
@@ -739,6 +740,9 @@ get_icsvcf_files() {
     _output echo "-- NOTICE: Found ${item}s in database, but none of them belongs to one of the users given in 'users.txt'."
     _output echo "-- NOTICE: You may want to check '${users_file}' for valid ${productname} users!"
   fi
+
+  # unset arrays (to not include calendardata for addressbook export):
+  unset -v id principal uri displayname already_saved_as
 }
 
 get_calendars() {
@@ -823,17 +827,20 @@ gpg_encrypt_backup() {
   path_to_backup="${path_encrypted_backup}"
   _output echo "+  Backup successfully encrypted!"
   _output echo "+  Find your encrypted backup here: ${path_to_backup}"
+
+  # variable $path_encrypted_backup not needed anymore:
+  unset -v path_encrypted_backup
 }
 
 delete_old_backups() {
-  # deletes backups older than the configured amount of days (${delete_backups_older_than}) days
+  # deletes backups older than the configured amount of days ($delete_backups_older_than)
 
-  # delete backups older than ${delete_backups_older_than} days
-  # (use option -daystart to set beginning of day = 0:00 am in order 
+  # delete backups older than $delete_backups_older_than days
+  # (use option -daystart to set beginning of day = 0:00 am in order
   # to satisfy probably by users expected behavior of this function):
   deleted="$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)"
 
-  # check for error or deleted files and print according messages:
+  # check for error or for deleted files and print according messages:
   if [[ "$?" -ne 0 ]]; then
     # print error and exit, if find (-delete) produced an error:
     error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
@@ -842,6 +849,8 @@ delete_old_backups() {
     # print info about which older backups have been deleted:
     _output echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
     _output echo "${deleted}"
+    # variable $deleted is not needed anymore:
+    unset -v deleted
   else
     # if nothing has been found to delete:
     # print info that no backups were old enough to be deleted:
