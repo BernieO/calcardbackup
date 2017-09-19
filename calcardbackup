@@ -372,13 +372,13 @@ read_status_php() {
     productname=${productname%%\"*}             # cut end of line from first occurence of "
   }
 
-  _output echo "+  ${productname} ${versionstring_status_php} detected."
-
   # check whether version of config.php is the same than version of status.php:
   if [[ "${version_status_php}" != "${version_config_php}" ]]; then
      [[ -z "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check given path and given url (option -a)"
      [[ -n "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check configured path and url in config file '${config_file}'"
   fi
+
+  _output echo "+  ${productname} ${versionstring_status_php} detected."
 
   # check for installed=true in status.php and exit if ownCloud/Nextcloud report installed:false:
   regex='"installed":"?true"?'
