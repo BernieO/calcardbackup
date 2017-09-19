@@ -300,7 +300,7 @@ read_config_php() {
     # Error, if $nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
     error_exit "ERROR: Can't retrieve url from ${configphp}" "In your case the URL needs to be passed to the script (via -a/--address or config file)"
   elif [[ "${nextcloud_url_overwrite}" != "" ]]; then
-    # if overwrite.cli.uri is found (and $nextcloud_url is on default value): use it as $nextcloud_url
+    # if overwrite.cli.url is found (and $nextcloud_url is on default value): use it as $nextcloud_url
     nextcloud_url="${nextcloud_url_overwrite}"
   fi
   # Print url which will be used:
@@ -892,7 +892,7 @@ curl_error() {
   if [[ "${cerror}" -eq 6 ]]; then
     # curl error 6: could not resolve host:
     if [[ "${nextcloud_url}" == "${nextcloud_url_overwrite}" ]]; then
-      problem="Either that host is temporarily unavailable or 'overwrite.cli.uri' in ${configphp} is wrong."
+      problem="Either that host is temporarily unavailable or 'overwrite.cli.url' in ${configphp} is wrong."
     else
       problem="Either that host is temporarily unavailable or given url is wrong."
     fi
