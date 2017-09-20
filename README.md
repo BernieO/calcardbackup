@@ -106,7 +106,7 @@ __Drawback:__ no automatic inclusion of newly created addressbooks/calendars. It
 1. `./calcardbackup /var/www/nextcloud -s -na -i -x`  
 Ignore, that certificate is not trustful (`-s`), do not backup addressbooks (`-na`), include shared items (`-i`), use credentials given in ./users.txt (default) and store backed up files uncompressed (`-x`) in folder named `calcardbackup-YYYY-MM-DD` (default) under ./backups/ (default).
 
-2. `./calcardbackup /var/www/nextcloud --self-signed --no-addressbooks --include-shares --uncompressed`  
+2. `./calcardbackup /var/www/nextcloud --selfsigned --no-addressbooks --include-shares --uncompressed`  
 This is exactly the same command like in the first example but with using long options instead of short options.
 
 3. `./calcardbackup -c /etc/calcardbackup.conf`  
@@ -125,7 +125,8 @@ If you want to use the included encryption possibility, be aware that:
 - the passphrase is stored in a file. Other users with access to the server might be able to see the passphrase.
 - `calcardbackup` is designed to run without user interaction, so there can't be a rock solid encryption. I consider the offered one as sufficient in most cases though.
 - if you need rock solid encryption, don't let `calcardbackup` encrypt the backup. Instead, encrypt it yourself.
-- command to decrypt (you will be prompted to enter the passphrase): `gpg -d FILE_TO_DECRYPT.GPG -o OUTPUT_FILE`
+- command to decrypt (you will be prompted to enter the passphrase):  
+`gpg -o OUTPUT_FILE -d FILE_TO_DECRYPT.GPG`
 
 ## Want to read some of that in german?
 
