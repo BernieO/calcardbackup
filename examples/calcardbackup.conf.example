@@ -7,8 +7,8 @@
 #
 # You can copy this file to any location, then use option -c|--configfile PATH_TO_FILE,
 # or place this file in script's directory and don't pass ownCloud/Nextcloud path to script.
-# If calcardbackup is being run with using a configfile like this, all options
-# except for -b|--batch are being ignored.
+# If calcardbackup is being run with using a configfile like this, all options given on
+# command line except for -b|--batch are being ignored.
 #
 # All paths in this config file need to be relative to this files location or absolute paths!
 #
