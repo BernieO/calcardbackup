@@ -40,10 +40,10 @@ get_absolute_path() {
 
   if [[ "${2}" != /* ]]; then
     # change path of ${2} (file) relative to ${1} (dir) to absolute path and remove trailing slashes:
-    absolute_path="$(readlink -m "${1}/${2}")"
+    local absolute_path="$(readlink -m "${1}/${2}")"
   else
     # if ${2} contains already absolute path, then only remove trailing slashes:
-    absolute_path="$(readlink -m "${2}")"
+    local absolute_path="$(readlink -m "${2}")"
   fi
   echo "${absolute_path}"
 }
@@ -97,7 +97,7 @@ read_config_file() {
   while read -r line; do
     [[ ! "${line}" =~ ${regex} ]] && error_exit "ERROR: invalid config file! Only variable-declarations, comments and empty lines allowed." "Edit configuration file and run sript again."
   done <"${config_file}"
-  # config file is readable and has correct syntax. So let's include it now:
+  # config file is readable and has correct syntax. So let's include it now (and overwrite default values):
   . "${config_file}"
   # make sure $nextcloud_path is set - otherwise print error and exit:
   [[ -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud to be configured." "Check value of variable 'nextcloud_path' in ${config_file}"
@@ -120,7 +120,7 @@ preparations() {
   # check for package curl
   which curl > /dev/null || error_exit "ERROR: Package 'curl' is needed for running this script." "Install with 'apt-get install curl' and run script again"
 
-  # if option -c|--configfile or nothing at all or only -b is given - read config file:
+  # if option -c|--configfile or nothing at all or only -b is given - read config file (and overwrite default values):
   [[ ! -z "${config_file:-}" ]] && read_config_file
   # if neither configfile nor path to ownCloud/Nextcloud is given - error and exit:
   [[ -z "${config_file:-}" ]] && [[ -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
@@ -288,7 +288,7 @@ read_config_php() {
   table_group_user="${dbtableprefix}group_user"
 
   # get ownClouds/Nextclouds URL from config.php (overwrite.cli.url), compare to user given url ($nextcloud_url) and notice/error, if something is not as expected:
-  nextcloud_url_default="https://www.my_nextcloud.net"
+  local nextcloud_url_default="https://www.my_nextcloud.net"
   nextcloud_url_overwrite="$(getvalue_from_configphp "overwrite.cli.url")"
   if [[ "${nextcloud_url}" != "${nextcloud_url_default}" ]] && [[ "${nextcloud_url}" != "${nextcloud_url_overwrite}" ]] && [[ "${nextcloud_url_overwrite}" != "" ]]; then
     # use given URL but print notice, if $nextcloud_url has been configured to something other than default or overwrite.cli.url:
@@ -305,14 +305,14 @@ read_config_php() {
   fi
   # Print url which will be used:
   _output echo "+  Using URL ${nextcloud_url}"
-
-  # variable $nextcloud_url_default is not needed anymore:
-  unset -v nextcloud_url_default
 }
 
 read_status_php() {
   # checks for installation of ownCloud/Nextcloud by requesting $nextcloud_url/status.php and
   #     checks, if version number of $nextcloud_url/status.php correlates with version number of config.php
+
+  # declare local variables:
+  local status_php version_status_php mainversion_status_php versionstring_status_php mainversionstring_status_php lastversionstring_status_php regex
 
   # store output of status.php in variable:
   status_php="$(curl -s ${trust} "${nextcloud_url}/status.php")"
@@ -388,9 +388,6 @@ read_status_php() {
     regex='"maintenance":"?false"?'
     [[ "${status_php}" =~ ${regex} ]] || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again"
   fi
-
-  # those variables are not needed anymore:
-  unset -v status_php version_status_php mainversion_status_php versionstring_status_php mainversionstring_status_php lastversionstring_status_php
 }
 
 get_database_details() {
@@ -599,6 +596,10 @@ include_shares() {
     fi
   fi
 
+  # declare local arrays and variables:
+  local -a temp_principal temp_displayname temp_uri temp_id
+  local -i i s g
+
   # look for matches of share_resourceid of $table_shares and calendar/addressbook-ids and store values in a temporary array:
   # notice: share_resourceid doesn't get compared with id from same table ($table_shares), but
   #         with id from table containing calendars/addressbooks ($table_calendars/$table_addressbooks)
@@ -635,7 +636,6 @@ include_shares() {
       fi
     done
   done
-
   # add values of temporary 'shares to be backed up'-arrays to arrays which will later be used to download the files:
   for (( i=0; i<${#temp_principal[@]}; i++ )); do
     principal+=("${temp_principal[$i]}")
@@ -644,11 +644,8 @@ include_shares() {
     id+=("${temp_id[$i]}")
   done
 
-  # unset temporary arrays and for-loop-variables:
-  unset -v temp_principal temp_uri temp_displayname temp_id i s g
-
   # unset arrays with infos about shares (from $table_shares), only after second run of this function:
-  [[ ${read_shared} -eq 2 ]] && unset -v share_type_group share_principal share_type share_resourceid
+  [[ ${read_shared} -eq 2 ]] && unset -v share_type_group share_principal share_type share_resourceid grouplist
 
   # set $read_shared to 2 for eventually second run of this function
   read_shared=2
@@ -661,11 +658,14 @@ get_icsvcf_files() {
   # looks for matches between array with user and arrays (created by database-queries) and then downloads addressbooks/calendars
   # see next lines for description of arguments:
 
-  item="${1}"            # items to be downloaded: "addressbook" or "calendar"
-  item_extension="${2}"  # filename extension: ".vcf" or ".ics"
-  item_header="${3}"     # valid vcf/ics-header (first line of vcf/ics-file): "BEGIN:VCARD" or "BEGIN:VCALENDAR"
-  calcarddav="${4}"      # dav-endpoint: "dav" for ownCloud/Nextcloud >= 9.0; "carddav"/"caldav" for ownCloud < 9.0
-  ex_users="${5}"        # needed for download of addressbooks from ownCloud/Nextcloud >= 9.0: "users/" (or empty string for ownCloud < 9.0)
+  local item="${1}"            # items to be downloaded: "addressbook" or "calendar"
+  local item_extension="${2}"  # filename extension: ".vcf" or ".ics"
+  local item_header="${3}"     # valid vcf/ics-header (first line of vcf/ics-file): "BEGIN:VCARD" or "BEGIN:VCALENDAR"
+  local calcarddav="${4}"      # dav-endpoint: "dav" for ownCloud/Nextcloud >= 9.0; "carddav"/"caldav" for ownCloud < 9.0
+  local ex_users="${5}"        # needed for download of addressbooks from ownCloud/Nextcloud >= 9.0: "users/" (or empty string for ownCloud < 9.0)
+
+  local -i exported i z index
+  local line filename item_name file_received
 
   # counter for exported items:
   # (to be able to print message that there is no valid user in users.txt, if no calendar/addressbook was exported)
@@ -733,7 +733,7 @@ get_icsvcf_files() {
         if [[ "${file_received}" == "yes" ]] && [[ ! "${line}" =~ ${item_header} ]]; then    # no valid file, if first line of file doesn't match item_header
           # attach "-ERROR.txt" to filename:
           mv "${backupfolder_day}/${filename}" "${backupfolder_day}/${filename}-ERROR.txt"
-          _output printf "%s" "\n"    # newline is needed for error-message to start on a separate line. Increases readability.
+          _output printf "%s\n" ""    # newline is needed for error-message to start on a separate line. Increases readability.
           # print error message and exit:
           error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${filename}-ERROR.txt"
         fi
@@ -774,7 +774,7 @@ get_addressbooks() {
 check_for_backup_files() {
   # checks for files in backup-directory and prints warning, if there are no files (meaning absolutely nothing has been downloaded).
 
-  backupfolder_content="$(ls -A "${backupfolder_day}")"
+  local backupfolder_content="$(ls -A "${backupfolder_day}")"
   if [[ -z "${backupfolder_content}" ]]; then
     echo "-- WARNING: No files in backup directory - meaning no backup created !!" >&2
     backup_files_present="no"
@@ -822,7 +822,7 @@ gpg_encrypt_backup() {
   # encrypts compressed backup
 
   # compose path to encrypted backup by adding ".gpg" to the path/filename of compressed backup:
-  path_encrypted_backup="${path_to_backup}.gpg"
+  local path_encrypted_backup="${path_to_backup}.gpg"
   # encrypt compressed backup file:
   gpg --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_to_backup}"
   # command to decrypt: gpg --passphrase-file <(echo "${gpg_passphrase}") --batch --output decrypted_output_file --decrypt encrypted_file
@@ -837,9 +837,6 @@ gpg_encrypt_backup() {
   path_to_backup="${path_encrypted_backup}"
   _output echo "+  Backup successfully encrypted!"
   _output echo "+  Find your encrypted backup here: ${path_to_backup}"
-
-  # variable $path_encrypted_backup not needed anymore:
-  unset -v path_encrypted_backup
 }
 
 delete_old_backups() {
@@ -848,7 +845,7 @@ delete_old_backups() {
   # delete backups older than $delete_backups_older_than days
   # (use option -daystart to set beginning of day = 0:00 am in order
   # to satisfy probably by users expected behavior of this function):
-  deleted="$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)"
+  local deleted="$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)"
 
   # check for error or for deleted files and print according messages:
   if [[ "$?" -ne 0 ]]; then
@@ -859,8 +856,6 @@ delete_old_backups() {
     # print info about which older backups have been deleted:
     _output echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
     _output echo "${deleted}"
-    # variable $deleted is not needed anymore:
-    unset -v deleted
   else
     # if nothing has been found to delete:
     # print info that no backups were old enough to be deleted:
