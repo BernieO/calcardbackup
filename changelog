@@ -1,3 +1,6 @@
+v0.3.x (xx.xx.xxxx)
+- fixed: take account of ownCloud 10.0 options in config.php (hide.version, show_server_hostname)
+
 v0.3.0 (21.09.2017)
 - added: print notice, if chosen compression_method is not supported
 - improved: reduce number of database queries
