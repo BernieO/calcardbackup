@@ -385,6 +385,10 @@ read_status_php() {
     productname=${productname%%\"*}             # cut end of line from first occurence of "
   }
 
+  # check for "needsDbUpgrade":true in status.php and exit if ownCloud/Nextcloud needs a DbUpgrade:
+  regex='"needsDbUpgrade":"?true"?'
+  [[ "${status_php}" =~ ${regex} ]] && error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your ${productname} Installation before running this script again!"
+
   # check whether version of config.php is the same than version of status.php:
   if [[ "${version_status_php}" != "${version_config_php}" ]]; then
      [[ -z "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check given path and given url (option -a)"
