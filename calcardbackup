@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.3.1 (06.02.2018), AGPL-3.0"
+version="pre-0.3.2 (13.02.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -40,10 +40,14 @@ get_absolute_path() {
 
   if [[ "${2}" != /* ]]; then
     # change path of ${2} (file) relative to ${1} (dir) to absolute path and remove trailing slashes:
-    local absolute_path="$(readlink -m "${1}/${2}")"
+    local absolute_path="$(readlink -f "${1}/${2}")"
+    # error and exit if readlink could not canonicalize the given path and did return nothing:
+    [[ "${absolute_path}" == "" ]] && error_exit "ERROR: ${1}/${2} can't be canonicalized. Check given path in config-file!"
   else
     # if ${2} contains already absolute path, then only remove trailing slashes:
-    local absolute_path="$(readlink -m "${2}")"
+    local absolute_path="$(readlink -f "${2}")"
+    # error and exit if readlink could not canonicalize the given path and did return nothing:
+    [[ "${absolute_path}" == "" ]] && error_exit "ERROR: ${1}/${2} can't be canonicalized. Check given path in config-file!"
   fi
   echo "${absolute_path}"
 }
@@ -61,7 +65,9 @@ set_required_paths() {
   # store current directory, because we have to change dir later and need to be able to come back to where we were:
   working_dir="$(pwd)"
   # get path to scripts dir:
-  script_dir="$(readlink -m "${BASH_SOURCE[0]}")"
+  script_dir="$(readlink -f "${BASH_SOURCE[0]}")"
+  # no need to check whether readlink could canonicalize, since environment variable $BASH_SOURCE[0] should contain a valid path.
+
   script_dir="$(dirname "${script_dir}")"
 }
 
@@ -85,7 +91,10 @@ read_config_file() {
   # reads calcardbackups config file (if passed with option -c or in case script is run with no option at all or only option -b)
 
   # absolute path to config file:
-  config_file="$(readlink -m "${config_file}")"
+  local temp="$(readlink -f "${config_file}")"
+  # error and exit if readlink could not canonicalize the given path and did return nothing:
+  [[ "${temp}" == "" ]] && error_exit "ERROR: path to config file '${config_file}' can't be canonicalized." "Check given path!"
+  config_file="${temp}"
   config_file_dir="$(dirname "${config_file}")"
   _output echo "+  Using configuration file ${config_file}, ignoring all other command line options."
   load_default_values # if more options have been passed to command: ignore all options except for -b
@@ -126,7 +135,10 @@ preparations() {
   [[ -z "${config_file:-}" ]] && [[ -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
 
   # remove trailing slashes from $nextcloud_path:
-  nextcloud_path="$(readlink -m "${nextcloud_path}")"
+  local temp="$(readlink -f "${nextcloud_path}")"
+  # error and exit if readlink could not canonicalize the given path and did return nothing:
+  [[ "${temp}" == "" ]] && error_exit "ERROR: path to ownCloud/Nextcloud '${nextcloud_path}' can't be canonicalized." "Check given path!"
+  nextcloud_path="${temp}"
   # remove trailing slashes from $nextcloud_url:
   while [[ "${nextcloud_url}" =~ /$ ]]; do
     nextcloud_url="${nextcloud_url%/}"
@@ -154,7 +166,10 @@ preparations() {
   # if $backupfolder is empty or not set: set it to 'backups/' in script's dir
   [[ -z "${backupfolder:-}" ]] && backupfolder="${script_dir}/backups/"
   # absolute path to backupfolder (writeable test will follow later):
-  backupfolder="$(readlink -m "${backupfolder}")"
+  local temp="$(readlink -f "${backupfolder}")"
+  # error and exit if readlink could not canonicalize the given path and did return nothing:
+  [[ "${temp}" == "" ]] && error_exit "ERROR: path to output directory '${backupfolder}' can't be canonicalized." "Check given path!"
+  backupfolder="${temp}"
 
   # make sure the configured date format in $date_extension is valid:
   if [[ ! "$(date +"${date_extension}" 2>/dev/null)" ]]; then

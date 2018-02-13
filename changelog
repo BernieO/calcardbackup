@@ -1,3 +1,6 @@
+vx.x.x (xx.xx.xxxx)
+- fixed: compatibility with busybox (use 'readlink -f' instead of 'readlink -m')
+
 v0.3.1 (06.02.2018)
 - added: check whether ownCloud/Nextcloud requires a database-upgrade
 - fixed: take account of ownCloud 10.0 options in config.php (hide.version, show_server_hostname)
