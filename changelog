@@ -1,4 +1,4 @@
-vx.x.x (xx.xx.xxxx)
+v0.3.2 (13.02.2018)
 - fixed: compatibility with busybox (use 'readlink -f' instead of 'readlink -m')
 
 v0.3.1 (06.02.2018)
