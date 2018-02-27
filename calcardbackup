@@ -327,7 +327,7 @@ read_status_php() {
   #     checks, if version number of $nextcloud_url/status.php correlates with version number of config.php
 
   # declare local variables:
-  local status_php version_status_php mainversion_status_php versionstring_status_php mainversionstring_status_php lastversionstring_status_php regex
+  local status_php version_status_php versionstring_status_php regex
 
   # store output of status.php in variable:
   status_php="$(curl -s ${trust} "${nextcloud_url}/status.php")"
@@ -364,9 +364,7 @@ read_status_php() {
   # get version from status.php:
   version_status_php=${status_php#*version\":\"}
   version_status_php=${version_status_php%%\"*}
-  # get versions first number (needed for detection of Nextcloud 10):
-  mainversion_status_php=${version_status_php%%.*}
-  # get versionstring from status_php (needed for detection of Nextcloud 9):
+  # get versionstring from status_php (needed for proper versioning (ownloud 5.0 has in version also only 3 numbers)):
   versionstring_status_php=${status_php#*versionstring\":\"}
   versionstring_status_php=${versionstring_status_php%%\"*}
 
@@ -375,31 +373,21 @@ read_status_php() {
     # version number hidden (empty): print notice and use values from config.php:
     _output echo "-- NOTICE: version number hidden in status.php."
     version_status_php=${version_config_php}
-    mainversion_status_php=${version_config_php%%.*}
     versionstring_status_php=${version_config_php%.*}
   }
 
-  # set productname to "ownCloud" for now and overwrite it later if different:
-  productname="ownCloud"
-
-  # for mainversion 9 we need to find out whether product is ownCloud 9.x or Nextcloud 9.x or Nextcloud 10.x
-  if [[ "${mainversion_status_php}" -eq 9 ]]; then
-
-    # Nextcloud 10 has different main version numbers in version and versionstring delivered by status.php:
-    # get main version number from versionstring:
-    mainversionstring_status_php=${versionstring_status_php%%.*}
-    # Nextcloud 9 has last number greater or equal than 50 in versionstring (first tagged version on github was 9.0.50):
-    # get last number of versionstring:
-    lastversionstring_status_php=${versionstring_status_php##*.}
-    [[ "${mainversion_status_php}" -lt "${mainversionstring_status_php}" ]] || [[ "${lastversionstring_status_php}" -ge 50 ]] && productname="Nextcloud"
+  # detect whether Installation is Nextcloud or ownCloud (look in user documentation for productname):
+  regex="((N|n)extcloud|own(C|c)loud)"
+  while read -r line; do
+    [[ "${line}" =~ $regex ]] && break
+    line=""
+  done <"${nextcloud_path}/core/doc/user/index.html"
+  regex="(N|n)extcloud"
+  if [[ "${line}" =~ $regex ]]; then
+    productname="Nextcloud"
+  else
+    productname="ownCloud"
   fi
-
-  # check for productname in status.php and use it if present (this is for ownCloud>=10.0, Nextcloud>=11.0 or custom productnames):
-  regex='"productname":"[^"]+"'
-  [[ "${status_php}" =~ ${regex} ]] && {
-    productname=${status_php#*productname\":\"} # cut beginning of line including 'productname":"'
-    productname=${productname%%\"*}             # cut end of line from first occurence of "
-  }
 
   # check for "needsDbUpgrade":true in status.php and exit if ownCloud/Nextcloud needs a DbUpgrade:
   regex='"needsDbUpgrade":"?true"?'
