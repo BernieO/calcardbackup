@@ -1,4 +1,5 @@
 vx.x.x (xx.xx.xxxx)
+- added: support for PostgreSQL
 - improved: detection of vendor (Nextcloud/ownCloud)
 
 v0.3.2 (13.02.2018)
