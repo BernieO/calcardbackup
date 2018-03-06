@@ -1,4 +1,4 @@
-vx.x.x (xx.xx.xxxx)
+v0.4.0 (06.03.2018)
 - added: support PostgreSQL
 - fixed: proper treatment of user-/addressbooknames containing spaces (encode spaces in url)
 - changed: use vendor (Nextcloud/ownCloud) instead of custom productname in output
