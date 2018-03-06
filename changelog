@@ -1,3 +1,6 @@
+v0.4.1 (06.03.2018)
+- fixed: detect vendor via http(s) instead of using filesystem
+
 v0.4.0 (06.03.2018)
 - added: support PostgreSQL
 - fixed: proper treatment of user-/addressbooknames containing spaces (encode spaces in url)

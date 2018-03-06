@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.4.0 (06.03.2018), AGPL-3.0"
+version="0.4.1 (06.03.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -327,7 +327,7 @@ read_status_php() {
   #     checks, if version number of $nextcloud_url/status.php correlates with version number of config.php
 
   # declare local variables:
-  local status_php version_status_php versionstring_status_php regex
+  local status_php version_status_php versionstring_status_php regex line
 
   # store output of status.php in variable:
   status_php="$(curl -s ${trust} "${nextcloud_url}/status.php")"
@@ -377,16 +377,20 @@ read_status_php() {
   }
 
   # detect whether Installation is Nextcloud or ownCloud (look in user documentation for productname):
-  regex="((N|n)extcloud|own(C|c)loud)"
+  regex="(Nextcloud|ownCloud)"
+  line=""
   while read -r line; do
     [[ "${line}" =~ $regex ]] && break
     line=""
-  done <"${nextcloud_path}/core/doc/user/index.html"
-  regex="(N|n)extcloud"
-  if [[ "${line}" =~ $regex ]]; then
+  done <<<"$(curl -s ${trust} "${nextcloud_url}/core/doc/user/index.html")"
+  if [[ "${line}" =~ Nextcloud ]]; then
     productname="Nextcloud"
-  else
+  elif [[ "${line}" =~ ownCloud ]]; then
     productname="ownCloud"
+  else {
+    _output echo "-- Notice: can't detect vendor."
+    productname="server"
+  }
   fi
 
   # check for "needsDbUpgrade":true in status.php and exit if ownCloud/Nextcloud needs a DbUpgrade:
