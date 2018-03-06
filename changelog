@@ -1,6 +1,7 @@
 vx.x.x (xx.xx.xxxx)
-- added: support for PostgreSQL
-- improved: detection of vendor (Nextcloud/ownCloud)
+- added: support PostgreSQL
+- fixed: proper treatment of user-/addressbooknames containing spaces (encode spaces in url)
+- changed: use vendor (Nextcloud/ownCloud) instead of custom productname in output
 
 v0.3.2 (13.02.2018)
 - fixed: compatibility with busybox (use 'readlink -f' instead of 'readlink -m')

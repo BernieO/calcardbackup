@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.3.2-2 (05.03.2018), AGPL-3.0"
+version="0.3.2-3 (06.03.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -763,7 +763,8 @@ get_icsvcf_files() {
 
         _output printf "%s" "+  Saving ${item} ${filename}..."
         # download item with curl (command uses export link provided by contacts/calendar app from ownCloud/Nextcloud):
-        curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]}/${uri[$i]}?export"
+        # replace spaces in username or addressbook(/calendar)name with %20 (url encoding, to work more reliable with webserver)
+        curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]// /%20}/${uri[$i]// /%20}?export"
         # store exit code of curl to be able to react on error in separate function:
         cerror=$?
         # if exit code was different from 0 call function to examine error and print according message to stderr:
