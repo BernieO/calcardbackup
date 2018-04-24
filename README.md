@@ -75,6 +75,11 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 -o | --output DIRECTORY
        Use directory DIRECTORY to store backups.
        If this option is not given, folder 'backups/' in script's directory is created and used.
+-p | --snap
+       Use this option, if you are running nextcloud-snap (https://github.com/nextcloud/nextcloud-snap).
+       calcardbackup will then use the in the snap package included cli utility nextcloud.mysql-client
+       to read the needed values from the database. Note that in order for this to work, calcardbackup has
+       to be run with sudo. Running as root will fail.
 -r | --remove N
        Remove backups older than N days from backup folder (N needs to be a positive integer).
 -s | --selfsigned
@@ -101,6 +106,11 @@ This option may be used as follows to keep passwords of the main users secret:
 __Benefit of this approach:__ if the file `users.txt` gets in wrong hands, only this new user account is being compromised.  
 __Drawback:__ no automatic inclusion of newly created addressbooks/calendars. Items will not be backed up unless being shared with that new user account.
 
+## nextcloud-snap users
+
+If you are running Nextcloud-snap (https://github.com/nextcloud/nextcloud-snap), you have to use option `-p|--snap` to tell calcardbackup to use the cli utility `nextcloud.mysql-client` from the snap package.  
+In order for this to work, calcardbackup has to be run with sudo (running as root will fail). As path to Nextcloud use the path to the configuration files of nextcloud. In a standard installation this would be `/var/snap/nextcloud/current/nextcloud`. See example no.6 below.
+
 ## Usage examples
 
 1. `./calcardbackup /var/www/nextcloud -s -na -i -x`  
@@ -117,6 +127,9 @@ Supress output except for path to the backup (`-b`), use extension .DD.HH (`-d .
 
 5. `./calcardbackup`  
 Use files calcardbackup.conf and users.txt in the script's directory as configuration file and login information.
+
+6. `sudo ./calcardbackup /var/snap/nextcloud/current/nextcloud -p`  
+This example is for nextcloud-snap users. calcardbackup will use the cli utility from nextcloud-snap to access the database.  
 
 ## Considerations about encryption
 

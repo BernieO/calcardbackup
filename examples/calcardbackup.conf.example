@@ -112,4 +112,15 @@ backup_calendars="yes"
 include_shares="no"
 
 
+# if you are running nextcloud-snap (https://github.com/nextcloud/nextcloud-snap),
+# you need to change this value to "yes" and use as path to nextcloud
+# the path to the nextcloud configuration files. If you haven't changed anything, this
+# will be: /var/snap/nextcloud/current/nextcloud/
+# Note that calcardbackup needs to be run with sudo when used with snap installations.
+# See example No.6 in README.md
+# correlates to option -p|--snap
+
+snap="no"
+
+
 ########  end of config file for calcardbackup  ########
