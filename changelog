@@ -1,3 +1,7 @@
+v0.4.2 (27.05.2018)
+- added: option -p|--snap adds support for nextcloud-snap
+- fixed: quote passwords in mysql statement
+
 v0.4.1 (06.03.2018)
 - fixed: detect vendor via http(s) instead of using filesystem
 
