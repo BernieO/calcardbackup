@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.4.2 (27.05.2018), AGPL-3.0"
+version="0.4.2-1 (03.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -870,16 +870,11 @@ pack_it() {
   # compress backup using the configured method (zip or tar.gz):
   if [[ "${compression_method}" == "zip" ]]; then
     # use zip to compress folder with backed up files:
-    zip -r -q "calcardbackup${day}.zip" "calcardbackup${day}"
-    # store error, to be able to print error message:
-    [[ $? -eq 0 ]] || compress_error="1"
+    zip -r -q "calcardbackup${day}.zip" "calcardbackup${day}" || error_exit "ERROR: Compressing the files produced an error. See lines right above."
   else
     # use tar.gz to compress folder with backed up files:
-    tar -czf "calcardbackup${day}.tar.gz" "calcardbackup${day}"
-    # store error, to be able to print error message:
-    [[ $? -eq 0 ]] || compress_error="1"
+    tar -czf "calcardbackup${day}.tar.gz" "calcardbackup${day}" || error_exit "ERROR: Compressing the files produced an error. See lines right above."
   fi
-  [[ "${compress_error}" == "1" ]] && error_exit "ERROR: Compressing the files produced an error. See lines right above."
 
   # switch back to original directory:
   cd "${working_dir}"
