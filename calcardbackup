@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.4.2-2 (03.06.2018), AGPL-3.0"
+version="0.4.2-3 (03.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -946,7 +946,7 @@ finish() {
   _output echo
 
   # if running in batch mode and there are backed up files - print path to backup:
-  [[ "${mode}" == "batch" ]] && [[ "${backup_files_present}" == "yes" ]] && echo "${path_to_backup}"
+  [[ ( "${mode:-}" == "batch" ) && ( "${backup_files_present}" == "yes" ) ]] && echo "${path_to_backup}"
 
   # exit without error, because script catches errors and exits on error with error-code:
   exit 0
@@ -1002,8 +1002,10 @@ check_argument() {
 
   # if option was last on command line and no argument is following:
   [[ -z "${1:-}" ]] && error_exit "Option '${option}' requires an additional argument."
+
   # if option was not last on command line, but an option (starting with a dash) is following instead of argument:
-  [[ "${1:0:1}" == "-" ]] && error_exit "Invalid argument for option '${option}'"
+  # (use || instead of && so that function returns true in any case - corrected in ver. 0.4.2-3)
+  [[ "${1:0:1}" != "-" ]] || error_exit "Invalid argument for option '${option}'"
 }
 
 
@@ -1021,10 +1023,10 @@ load_default_values
 ###
 
 # if no option or only option -b/--batch given: configure script to read config file from script_dir
-[[ "${#}" == 0 ]] || [[ "${#}" == 1 && "${1}" =~ -b|--batch ]] && config_file="${script_dir}/calcardbackup.conf"
+[[ ( "${#}" == 0 ) || ( ( "${#}" == 1 ) && ( "${1}" =~ -b|--batch ) ) ]] && config_file="${script_dir}/calcardbackup.conf"
 
 # get nextcloud path, if first given argument doesn't start with a hyphen
-if [[ "${1}" != -* ]]; then
+if [[ ( "${#}" > 0 ) && ( "${1}" != -* ) ]]; then
   nextcloud_path="${1}"
   shift
 fi
