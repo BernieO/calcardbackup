@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.4.2-1 (03.06.2018), AGPL-3.0"
+version="0.4.2-2 (03.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -53,10 +53,11 @@ get_absolute_path() {
 }
 
 check_readable_file() {
-  # checks, if a given path is a readable file.
+  # checks, if a given path is a regular and readable file.
   # arguments: ${1} is path to file, ${2} is short verbal explanation of the file for error message.
 
-  [[ ! -f "${1}" ]] || [[ ! -r "${1}" ]] && error_exit "ERROR: Can't read ${2}" "I need to be able to read ${1}"
+  # $1 needs to be a regular file AND readable (not OR like in versions < 0.4.2-2)
+  [[ -f "${1}" && -r "${1}" ]] || error_exit "ERROR: Can't read ${2}" "${1} needs to be a regular file and I need to be able to read it."
 }
 
 set_required_paths() {
@@ -543,8 +544,8 @@ query_database() {
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
   # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
-  #     sqlite3 would then need "${dboptions}" to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
-  cd "${datadirectory}"
+  # sqlite3 would then need "${dboptions}" to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
+  [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
   # check if table exists:
   [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
@@ -586,8 +587,8 @@ query_database() {
     done < <(eval "${dbcommand}" "${db_query}")
   fi
 
-   # switch back to original directory:
-  cd "${working_dir}"
+  # switch back to original directory when using sqlite3:
+  [[ "${dbtype}" == "sqlite3" ]] && cd "${working_dir}"
 }
 
 include_shares() {
