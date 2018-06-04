@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.4.2-4 (04.06.2018), AGPL-3.0"
+version="0.4.2-5 (04.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -519,8 +519,7 @@ create_backup_folder() {
   # creates backup folder and subfolder with date extension to store files
 
   # create backup folder:
-  mkdir -p "${backupfolder}"
-  [[ "$?" -eq 0 ]] || error_exit "ERROR: Backupfolder could not be created."
+  mkdir -p "${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
 
   # check if backupfolder is writable:
   [[ -w "${backupfolder}" ]] || error_exit "ERROR: Backupfolder is not writable."
@@ -593,8 +592,8 @@ include_shares() {
   # looks for shared items and adds them to arrays created in function query_database()
 
   # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
-  #     sqlite3 would then need "${dboptions}" to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
-  cd "${datadirectory}"
+  # sqlite3 would then need "${dboptions}" to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
+  [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
   # database only needs to be queried once for table with infos about shares ($table_shares)
   # (because same table for shared calendars and shared addressbooks):
@@ -724,8 +723,8 @@ include_shares() {
   # set $read_shared to 2 for eventually second run of this function
   read_shared=2
 
-  # switch back to original directory:
-  cd "${working_dir}"
+  # switch back to original directory when using sqlite3:
+  [[ "${dbtype}" == "sqlite3" ]] && cd "${working_dir}"
 }
 
 get_icsvcf_files() {
