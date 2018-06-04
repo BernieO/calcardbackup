@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.4.2-3 (03.06.2018), AGPL-3.0"
+version="0.4.2-4 (04.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -338,12 +338,10 @@ read_status_php() {
   # declare local variables:
   local status_php version_status_php versionstring_status_php regex line
 
-  # store output of status.php in variable:
-  status_php="$(curl -s ${trust} "${nextcloud_url}/status.php")"
-  # store exit code of curl to be able to react on error in separate function:
-  cerror=$?
-  # if exit code was different from 0 call function to examine error and print according message to stderr:
-  [[ "${cerror}" -eq 0 ]] || curl_error
+  # store output of status.php in variable OR store curls exit code if it returns an empty string (which is in case of an error):
+  status_php="$(curl -s ${trust} "${nextcloud_url}/status.php")" || cerror=$?
+  # if error code is set, call function to examine curls exit code and print according message to stderr:
+  [[ -n "${cerror:-}" ]] && curl_error
 
   # Output of status.php of the different ownCloud/Nextcloud versions:
   # ownCloud 5.0.9   {"installed":"true","version":"5.0.38","versionstring":"5.0.19","edition":""}
@@ -787,11 +785,10 @@ get_icsvcf_files() {
         _output printf "%s" "+  Saving ${item} ${filename}..."
         # download item with curl (command uses export link provided by contacts/calendar app from ownCloud/Nextcloud):
         # replace spaces in username or addressbook(/calendar)name with %20 (url encoding, to work more reliable with webserver)
-        curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]// /%20}/${uri[$i]// /%20}?export"
-        # store exit code of curl to be able to react on error in separate function:
-        cerror=$?
-        # if exit code was different from 0 call function to examine error and print according message to stderr:
-        [[ "${cerror}" -eq 0 ]] || curl_error
+        # (OR (in case curl exits with error): store exit code of curl to be able to react on error in separate function)
+        curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]// /%20}/${uri[$i]// /%20}?export" || cerror=$?
+        # if error code is set, call function to examine curls exit code and print according message to stderr:
+        [[ -n "${cerror:-}" ]] && curl_error
 
         # an empty addressbook results in an empty file (or no file for curl < 7.42.0), so we need to check whether we received a file that is not empty:
         file_received="yes" # let's say for now that a file has been downloaded and change it below if no addressbook has been exported.
