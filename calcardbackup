@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.4.2-5 (04.06.2018), AGPL-3.0"
+version="0.4.2-6 (04.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -232,6 +232,11 @@ preparations() {
     _output echo "-- WARNING: Parameter 'snap' is not valid (only \"yes\" or \"no\" allowed)."
     _output echo "-- WARNING: Using default value instead: snap=\"no\""
     snap="no"
+  fi
+
+  # make sure nextcloud.mysql-client is available when configured to use nextcloud-snap:
+  if [[ "${snap}" == "yes" ]]; then
+    which nextcloud.mysql-client || error_exit "ERROR: nextcloud-snaps cli-utility 'nextcloud.mysql-client' not found!" "To work with nextcloud-snap this script needs to be invoked  with sudo (even when root)." "If the script has been invoked with sudo: are you sure you are using nextcloud-snap?"
   fi
 }
 
