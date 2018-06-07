@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.4.2-7 (07.06.2018), AGPL-3.0"
+version="0.4.2-8 (07.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -576,8 +576,8 @@ query_database() {
     done < <(eval "${dbcommand}" "${db_query}")
   fi
 
-  # switch back to original directory when using sqlite3:
-  [[ "${dbtype}" == "sqlite3" ]] && cd "${working_dir}"
+  # switch back to original directory when using sqlite3 (use OR instead of AND to return true in any case - changed in 0.4.2-8):
+  [[ "${dbtype}" != "sqlite3" ]] || cd "${working_dir}"
 }
 
 include_shares() {
@@ -715,8 +715,8 @@ include_shares() {
   # set $read_shared to 2 for eventually second run of this function
   read_shared=2
 
-  # switch back to original directory when using sqlite3:
-  [[ "${dbtype}" == "sqlite3" ]] && cd "${working_dir}"
+  # switch back to original directory when using sqlite3 (use OR instead of AND to return true in any case - changed in 0.4.2-8):
+  [[ "${dbtype}" != "sqlite3" ]] || cd "${working_dir}"
 }
 
 get_icsvcf_files() {
