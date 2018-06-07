@@ -20,7 +20,7 @@
 #######################################################
 
 # calcardbackup version:
-version="0.4.2-8 (07.06.2018), AGPL-3.0"
+version="0.4.2-9 (07.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -127,7 +127,7 @@ preparations() {
   # if option -c|--configfile or nothing at all or only -b is given - read config file (and overwrite default values):
   [[ ! -z "${config_file:-}" ]] && read_config_file
   # if neither configfile nor path to ownCloud/Nextcloud is given - error and exit:
-  [[ -z "${config_file:-}" ]] && [[ -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
+  [[ -z "${config_file:-}" && -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
 
   # canonicalize and remove trailing slashes from $nextcloud_path:
   nextcloud_path="$(readlink -f "${nextcloud_path}")" || error_exit "ERROR: path to ownCloud/Nextcloud '${nextcloud_path}' can't be canonicalized." "Check given path!"
@@ -306,13 +306,13 @@ read_config_php() {
   # get ownClouds/Nextclouds URL from config.php (overwrite.cli.url), compare to user given url ($nextcloud_url) and notice/error, if something is not as expected:
   local nextcloud_url_default="https://www.my_nextcloud.net"
   nextcloud_url_overwrite="$(getvalue_from_configphp "overwrite.cli.url")"
-  if [[ "${nextcloud_url}" != "${nextcloud_url_default}" ]] && [[ "${nextcloud_url}" != "${nextcloud_url_overwrite}" ]] && [[ "${nextcloud_url_overwrite}" != "" ]]; then
+  if [[ "${nextcloud_url}" != "${nextcloud_url_default}" && "${nextcloud_url}" != "${nextcloud_url_overwrite}" && "${nextcloud_url_overwrite}" != "" ]]; then
     # use given URL but print notice, if $nextcloud_url has been configured to something other than default or overwrite.cli.url:
     # (last conditional expression in if statement above: make sure overwrite.cli.url is present and not empty):
     _output echo "-- NOTICE: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
     _output echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
     _output echo "-- ${nextcloud_url}/   ==>   given with option -a/--address or found in config file."
-  elif [[ "${nextcloud_url}" == "${nextcloud_url_default}" ]] && [[ "${nextcloud_url_overwrite}" == "" ]]; then
+  elif [[ "${nextcloud_url}" == "${nextcloud_url_default}" && "${nextcloud_url_overwrite}" == "" ]]; then
     # Error, if $nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
     error_exit "ERROR: Can't retrieve url from ${configphp}" "In your case the URL needs to be passed to the script (via -a/--address or config file)"
   elif [[ "${nextcloud_url_overwrite}" != "" ]]; then
@@ -671,10 +671,10 @@ include_shares() {
   for (( i=0; i<${#id[@]}; i++ )); do                    # go through calender/addressbook-ids
     for (( s=0; s<${#share_resourceid[@]}; s++ )); do    # go through share_resourceid
       # if share_resourceid matches calendar/addressbook-id, we need to add it to the temporary 'shares to be backed up'-arrays:
-      if [[ "${share_resourceid[$s]}" == "${id[$i]}" ]] && [[ "${share_type[$s]}" == "${item}" ]]; then
+      if [[ "${share_resourceid[$s]}" == "${id[$i]}" && "${share_type[$s]}" == "${item}" ]]; then
         # make sure, principal of share is not a group (group will be treated below)
         # first conditional expression in next line is for ownCloud/Nextcloud >= 9.0, the second one is for ownCloud < 9.0:
-        if [[ ! "${share_principal[$s]}" =~ principals\/groups\/ ]] && [[ ! "${share_type_group[$s]:-}" =~ ^1$ ]]; then
+        if [[ ! "${share_principal[$s]}" =~ principals\/groups\/ && ! "${share_type_group[$s]:-}" =~ ^1$ ]]; then
           # add identified dav-share (shared with a user!) to the temporary 'shares to be backed up'-arrays:
           temp_principal+=("${share_principal[$s]}")
           temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
@@ -749,7 +749,7 @@ get_icsvcf_files() {
     for index in "${!users[@]}"; do
       # compare prinicpal with username. If there is a match, we found an item to be downloaded
       # (exclude birthday calendar (contact_birthdays), because it is an automatically created calendar from ownCloud/Nextcloud):
-      if [[ "${principal[$i]}" == "${user[$index]}" ]] && [[ "${uri[$i]}" != "contact_birthdays" ]]; then
+      if [[ "${principal[$i]}" == "${user[$index]}" && "${uri[$i]}" != "contact_birthdays" ]]; then
 
         # create filename like: username-(calendar-/addressbook-)name-date:
         filename="${principal[$i]}-${displayname[$i]}${item_extension}"
@@ -784,7 +784,7 @@ get_icsvcf_files() {
         # an empty addressbook results in an empty file (or no file for curl < 7.42.0), so we need to check whether we received a file that is not empty:
         file_received="yes" # let's say for now that a file has been downloaded and change it below if no addressbook has been exported.
         # check for addressbook and whether no file was received (for curl < 7.42.0) or file received has size of 0 (meaning empty file):
-        if [[ "${item}" == "addressbook" ]] && [[ ! -s "${backupfolder_day}/${filename}" ]]; then
+        if [[ "${item}" == "addressbook" && ! -s "${backupfolder_day}/${filename}" ]]; then
           # touch file to create empty file, if it was not created by curl on successful download of empty addressbook (which is the case for curl < 7.42.0)
           touch "${backupfolder_day}/${filename}"
           _output printf "%s\n" "...empty file. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty."
@@ -795,7 +795,7 @@ get_icsvcf_files() {
 
         # check for valid ics-/vcf-header in received file:
         read -r line <"${backupfolder_day}/${filename}"    # reads first line of received file
-        if [[ "${file_received}" == "yes" ]] && [[ ! "${line}" =~ ${item_header} ]]; then    # no valid file, if first line of file doesn't match item_header
+        if [[ "${file_received}" == "yes" && ! "${line}" =~ ${item_header} ]]; then    # no valid file, if first line of file doesn't match item_header
           # attach "-ERROR.txt" to filename:
           mv "${backupfolder_day}/${filename}" "${backupfolder_day}/${filename}-ERROR.txt"
           _output printf "%s\n" ""    # newline is needed for error-message to start on a separate line. Increases readability.
@@ -934,7 +934,7 @@ finish() {
   _output echo
 
   # if running in batch mode and there are backed up files - print path to backup:
-  [[ ( "${mode:-}" == "batch" ) && ( "${backup_files_present}" == "yes" ) ]] && echo "${path_to_backup}"
+  [[ "${mode:-}" == "batch" && "${backup_files_present}" == "yes" ]] && echo "${path_to_backup}"
 
   # exit without error, because script catches errors and exits on error with error-code:
   exit 0
@@ -1011,10 +1011,10 @@ load_default_values
 ###
 
 # if no option or only option -b/--batch given: configure script to read config file from script_dir
-[[ ( "${#}" == 0 ) || ( ( "${#}" == 1 ) && ( "${1}" =~ -b|--batch ) ) ]] && config_file="${script_dir}/calcardbackup.conf"
+[[ "${#}" == 0 || ( "${#}" == 1 && "${1}" =~ -b|--batch ) ]] && config_file="${script_dir}/calcardbackup.conf"
 
 # get nextcloud path, if first given argument doesn't start with a hyphen
-if [[ ( "${#}" > 0 ) && ( "${1}" != -* ) ]]; then
+if [[ "${#}" > 0 && "${1}" != -* ]]; then
   nextcloud_path="${1}"
   shift
 fi
@@ -1043,7 +1043,7 @@ do
     -d | --date )
       shift
       # make sure argument passed to --date does not clash with any other option:
-      if [[ ! -z "${1:-}" ]] && [[ ! "${1}" =~ -{1,2}[a-ehnorsuxz] ]]; then
+      if [[ ! -z "${1:-}" && ! "${1}" =~ -{1,2}[a-ehnorsuxz] ]]; then
         date_extension="${1}"
       else
         check_argument "${1:-}"
