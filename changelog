@@ -1,3 +1,10 @@
+vx.x.x (xx.xx.xxxx)
+- added: check for 'nextcloud.mysql-client' when run with -p|--snap or snap="yes"
+- improved: simplified handling of catching errors
+- improved: switch to datadirectory only when using SQLite3
+- improved: use brackets for conditional expressions to increase readability of code
+- fixed: some minor bugs
+
 v0.4.2 (27.05.2018)
 - added: option -p|--snap adds support for nextcloud-snap
 - fixed: quote passwords in mysql statement
