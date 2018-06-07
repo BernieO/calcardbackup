@@ -19,8 +19,10 @@
 #######################################################
 #######################################################
 
+set -euo pipefail
+
 # calcardbackup version:
-version="0.4.2-9 (07.06.2018), AGPL-3.0"
+version="0.4.2-10 (07.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -223,7 +225,7 @@ preparations() {
 
   # make sure nextcloud.mysql-client is available when configured to use nextcloud-snap:
   if [[ "${snap}" == "yes" ]]; then
-    which nextcloud.mysql-client || error_exit "ERROR: nextcloud-snaps cli-utility 'nextcloud.mysql-client' not found!" "To work with nextcloud-snap this script needs to be invoked  with sudo (even when root)." "If the script has been invoked with sudo: are you sure you are using nextcloud-snap?"
+    which nextcloud.mysql-client > /dev/null || error_exit "ERROR: nextcloud-snaps cli-utility 'nextcloud.mysql-client' not found!" "To work with nextcloud-snap this script needs to be invoked  with sudo (even when root)." "If the script has been invoked with sudo: are you sure you are using nextcloud-snap?"
   fi
 }
 
@@ -264,7 +266,7 @@ read_config_php() {
   minimumversion="5"
   davchangeversion="9"
   # error and exit, if $mainversion < 5 (because ownCloud < 5.0 is not supported by calcardbackup):
-  [[ "${mainversion}" -lt "${minimumversion}" ]] && error_exit "ERROR: This script only works with versions >= 5.0." "You are using Owncloud ${version_config_php}."
+  [[ "${mainversion}" -lt "${minimumversion}" ]] && error_exit "ERROR: This script only works with versions >= 5.0." "You are using ownCloud ${version_config_php}."
   if [[ "${mainversion}" -ge "${davchangeversion}" ]]; then
     # Values for ownCloud/Nextcloud >= 9.0:
     caldav="dav"
@@ -309,7 +311,7 @@ read_config_php() {
   if [[ "${nextcloud_url}" != "${nextcloud_url_default}" && "${nextcloud_url}" != "${nextcloud_url_overwrite}" && "${nextcloud_url_overwrite}" != "" ]]; then
     # use given URL but print notice, if $nextcloud_url has been configured to something other than default or overwrite.cli.url:
     # (last conditional expression in if statement above: make sure overwrite.cli.url is present and not empty):
-    _output echo "-- NOTICE: Configured Nextcloud-URL differs from 'overwrite.cli.url' in config.php"
+    _output echo "-- NOTICE: Configured URL differs from 'overwrite.cli.url' in config.php"
     _output echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
     _output echo "-- ${nextcloud_url}/   ==>   given with option -a/--address or found in config file."
   elif [[ "${nextcloud_url}" == "${nextcloud_url_default}" && "${nextcloud_url_overwrite}" == "" ]]; then
@@ -358,7 +360,7 @@ read_status_php() {
   # (due to options added in ownCloud 10.0: version(string) maybe hidden or hostname maybe present (see hide.version, show_server_hostname in config.php))
   regex='^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[^"]*","versionstring":"[^"]*","edition":"[^"]*"(,"productname":"[^"]*")?(,"hostname":"[^"]*")?\}$'
   # check status.php for valid installation of ownCloud/Nextcloud:
-  [[ ! "${status_php}" =~ ${regex} ]] && error_exit "ERROR: No Own-/Nextcloud Installation found at ${nextcloud_url} !"
+  [[ ! "${status_php}" =~ ${regex} ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !"
 
   # get version from status.php:
   version_status_php=${status_php#*version\":\"}
@@ -884,10 +886,8 @@ gpg_encrypt_backup() {
   # compose path to encrypted backup by adding ".gpg" to the path/filename of compressed backup:
   local path_encrypted_backup="${path_to_backup}.gpg"
   # encrypt compressed backup file:
-  gpg --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_to_backup}"
+  gpg --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_to_backup}" || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
   # command to decrypt: gpg --passphrase-file <(echo "${gpg_passphrase}") --batch --output decrypted_output_file --decrypt encrypted_file
-  # if exit code of gpg is different than 0 - print error message:
-  [[ "$?" == 0 ]] || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
 
   # delete passphrase from memory:
   unset -v gpg_passphrase
@@ -905,13 +905,9 @@ delete_old_backups() {
   # delete backups older than $delete_backups_older_than days
   # (use option -daystart to set beginning of day = 0:00 am in order
   # to satisfy probably by users expected behavior of this function):
-  local deleted="$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)"
+  local deleted="$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)" || error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
 
-  # check for error or for deleted files and print according messages:
-  if [[ "$?" -ne 0 ]]; then
-    # print error and exit, if find (-delete) produced an error:
-    error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
-  elif [[ "${deleted}" != "" ]]; then
+  if [[ "${deleted}" != "" ]]; then
     # if there have been files deleted:
     # print info about which older backups have been deleted:
     _output echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
