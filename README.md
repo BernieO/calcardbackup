@@ -44,8 +44,8 @@ Arguments in capital letters to options are mandatory.
 Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directory.
 
 -a | --address URL
-       Pass URL of Owncloud Installation to script.
-       Only required for Owncloud < 7.0
+       Pass URL of ownCloud Installation to script.
+       Only required for ownCloud < 7.0
 -b | --batch
        Batch mode: print nothing to stdout, except for path to backup.
        Depending on configuration this will be:
@@ -66,7 +66,7 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 -h | --help
        Print version number and a short help text 
 -i | --include-shares
-       backup shared addressbooks/calendars as well. Items will only be backed up once: e.g. a shared
+       Backup shared addressbooks/calendars as well. Items will only be backed up once: e.g. a shared
        calendar won't be backed up, if the same calendar was already backed up for another user.
 -na | --no-addressbooks
        Do not backup addressbooks
@@ -77,9 +77,9 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        If this option is not given, folder 'backups/' in script's directory is created and used.
 -p | --snap
        Use this option, if you are running nextcloud-snap (https://github.com/nextcloud/nextcloud-snap).
-       calcardbackup will then use the in the snap package included cli utility nextcloud.mysql-client
+       calcardbackup will then use the in the snap package included cli utility 'nextcloud.mysql-client'
        to read the needed values from the database. Note that in order for this to work, calcardbackup has
-       to be run with sudo. Running as root will fail.
+       to be run with sudo (even running as root without sudo will fail!).
 -r | --remove N
        Remove backups older than N days from backup folder (N needs to be a positive integer).
 -s | --selfsigned
@@ -90,16 +90,16 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        If this option is not given, calcardbackup will search for a file named
        'users.txt' in script's directory.
 -x | --uncompressed
-       don't compress backup folder
+       Do not compress backup folder
 -z | --zip
-       use zip to compress backup folder instead of creating a gzipped tarball (tar.gz)
+       Use zip to compress backup folder instead of creating a gzipped tarball (tar.gz)
 ```
 
 ## About option -i / -\-include-shares
 
 This option may be used as follows to keep passwords of the main users secret:
 - create a new user in your ownCloud/Nextcloud
-- share addressbooks/calendars (to be backed up)  with that new user
+- share addressbooks/calendars (to be backed up) with that new user
 - in `users.txt` give only the username and password of this new user
 - use calcardbackup with option `-i` to back up shared items as well
 
@@ -109,7 +109,7 @@ __Drawback:__ no automatic inclusion of newly created addressbooks/calendars. It
 ## nextcloud-snap users
 
 If you are running Nextcloud-snap (https://github.com/nextcloud/nextcloud-snap), you have to use option `-p|--snap` to tell calcardbackup to use the cli utility `nextcloud.mysql-client` from the snap package.  
-In order for this to work, calcardbackup has to be run with sudo (running as root will fail). As path to Nextcloud use the path to the configuration files of nextcloud. In a standard installation this would be `/var/snap/nextcloud/current/nextcloud`. See example no.6 below.
+In order for this to work, calcardbackup has to be run with `sudo` (even running as root without `sudo` will fail). As path to Nextcloud use the path to the configuration files of nextcloud. In a standard installation this would be `/var/snap/nextcloud/current/nextcloud`. See example no.6 below.
 
 ## Usage examples
 
