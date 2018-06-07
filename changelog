@@ -1,9 +1,11 @@
 vx.x.x (xx.xx.xxxx)
 - added: check for 'nextcloud.mysql-client' when run with -p|--snap or snap="yes"
+- improved: make script failsafe with 'set -euo pipefail'
 - improved: simplified handling of catching errors
 - improved: switch to datadirectory only when using SQLite3
 - improved: remove redundant brackets from conditional expressions
 - fixed: some minor bugs
+- fixed: some minor text corrections
 
 v0.4.2 (27.05.2018)
 - added: option -p|--snap adds support for nextcloud-snap
