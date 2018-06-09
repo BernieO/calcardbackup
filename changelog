@@ -1,4 +1,4 @@
-vx.x.x (xx.xx.xxxx)
+v0.5.0 (09.06.2018)
 - added: check for 'nextcloud.mysql-client' when run with -p|--snap or snap="yes"
 - improved: make script failsafe with 'set -euo pipefail'
 - improved: simplified handling of catching errors
