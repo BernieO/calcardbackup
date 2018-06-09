@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.4.2-11 (07.06.2018), AGPL-3.0"
+version="0.4.2-12 (09.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -104,7 +104,7 @@ read_config_file() {
   # check config file for correct syntax (only variable declarations, comments and empty lines allowed)
   regex='^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]*"[[:space:]]*)(#.*)?$'
   while read -r line; do
-    [[ ! "${line}" =~ ${regex} ]] && error_exit "ERROR: invalid config file! Only variable-declarations, comments and empty lines allowed." "Edit configuration file and run sript again."
+    [[ ! "${line}" =~ ${regex} ]] && error_exit "ERROR: invalid config file! Only variable-declarations, comments and empty lines allowed." "Invalid line: '${line}'" "Edit configuration file and run sript again."
   done <"${config_file}"
   # config file is readable and has correct syntax. So let's include it now (and overwrite default values):
   . "${config_file}"
@@ -817,7 +817,7 @@ get_icsvcf_files() {
 
   # there is no matching Nextcloud user, if there are calendars/addressbooks in database table but nothing has been exported:
   if [[ ${exported} == 0 ]]; then
-    _output echo "-- NOTICE: Found ${item}s in database, but none of them belongs to one of the users given in 'users.txt'."
+    _output echo "-- NOTICE: Found ${item}s in database, but none of them belongs to one of the users given in '${users_file}'."
     _output echo "-- NOTICE: You may want to check '${users_file}' for valid ${productname} users!"
   fi
 

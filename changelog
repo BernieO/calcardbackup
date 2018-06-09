@@ -4,6 +4,7 @@ vx.x.x (xx.xx.xxxx)
 - improved: simplified handling of catching errors
 - improved: switch to datadirectory only when using SQLite3
 - improved: remove redundant brackets from conditional expressions
+- improved: print invalid line if exiting because of invalid config file
 - fixed: some minor bugs
 - fixed: some minor text corrections
 
