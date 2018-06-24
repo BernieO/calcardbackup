@@ -2,6 +2,8 @@ vx.x.x (xx.xx.xx)
 - added: print notice if user running the script can't read the full path to necessary files
 - improved: use `read -r` to not let bash interpret special characters
 - fixed: detection of hidden version number in status.php (ownCloud)
+- fixed: don't use string comparison for numbers
+- fixed: use if-then-else to avoid missleading messages in case a function returns false
 
 v0.5.0 (09.06.2018)
 - added: check for 'nextcloud.mysql-client' when run with -p|--snap or snap="yes"

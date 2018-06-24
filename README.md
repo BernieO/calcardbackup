@@ -12,7 +12,7 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 ## Quick Installation Guide
 
 1. Clone the repository to your server (outside of webroot!) and enter the repo:  
-`cd /usr/local/bin`
+`cd /usr/local/bin`  
 `git clone https://github.com/BernieO/calcardbackup`  
 `cd calcardbackup`
 
