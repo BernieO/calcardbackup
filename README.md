@@ -7,10 +7,12 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 - local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
 - package `curl` and according database package (`mysql-server`/`mariadb-server`, `postgresql` or `sqlite3`)
 - optional: package `zip` to compress backup as zip-file  (instead of tar.gz)
+- the user running the script needs to be able to read the full path to all used configuration files and to the script itself
 
 ## Quick Installation Guide
 
 1. Clone the repository to your server (outside of webroot!) and enter the repo:  
+`cd /usr/local/bin`
 `git clone https://github.com/BernieO/calcardbackup`  
 `cd calcardbackup`
 
