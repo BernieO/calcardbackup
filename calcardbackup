@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.5.0-1 (24.06.2018), AGPL-3.0"
+version="0.5.0-2 (24.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -80,7 +80,7 @@ load_default_values() {
   compress="yes"
   compression_method="tar.gz"
   encrypt_backup="no"
-  passphrase="1234"
+  gpg_passphrase="1234"
   backup_addressbooks="yes"
   backup_calendars="yes"
   include_shares="no"
