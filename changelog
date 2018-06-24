@@ -1,4 +1,4 @@
-vx.x.x (xx.xx.xx)
+v0.5.1 (24.06.2018)
 - added: print notice if user running the script can't read the full path to necessary files
 - improved: use `read -r` to not let bash interpret special characters
 - fixed: detection of hidden version number in status.php (ownCloud)
