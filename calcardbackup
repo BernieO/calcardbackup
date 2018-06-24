@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.5.0-3 (24.06.2018), AGPL-3.0"
+version="0.5.0-4 (24.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -842,8 +842,9 @@ get_addressbooks() {
 
 check_for_backup_files() {
   # checks for files in backup-directory and prints warning, if there are no files (meaning absolutely nothing has been downloaded).
+  local backupfolder_content
 
-  local backupfolder_content="$(ls -A "${backupfolder_day}")"
+  backupfolder_content="$(ls -A "${backupfolder_day}")"
   if [[ -z "${backupfolder_content}" ]]; then
     echo "-- WARNING: No files in backup directory - meaning no backup created !!" >&2
     backup_files_present="no"
