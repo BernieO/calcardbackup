@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.5.1 (24.06.2018), AGPL-3.0"
+version="0.5.1-1 (24.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -677,8 +677,8 @@ include_shares() {
       # if share_resourceid matches calendar/addressbook-id, we need to add it to the temporary 'shares to be backed up'-arrays:
       if [[ "${share_resourceid[$s]}" == "${id[$i]}" && "${share_type[$s]}" == "${item}" ]]; then
         # make sure, principal of share is not a group (group will be treated below)
-        # first conditional expression in next line is for ownCloud/Nextcloud >= 9.0, the second one is for ownCloud < 9.0:
-        if [[ ! "${share_principal[$s]}" =~ principals\/groups\/ && ! "${share_type_group[$s]:-}" =~ ^1$ ]]; then
+        # first expression in next line is for ownCloud/Nextcloud >= 9.0, the second one (after &&) is for ownCloud < 9.0:
+        if [[ ! "${share_principal[$s]}" =~ principals/groups/ && ! "${share_type_group[$s]:-}" =~ ^1$ ]]; then
           # add identified dav-share (shared with a user!) to the temporary 'shares to be backed up'-arrays:
           temp_principal+=("${share_principal[$s]}")
           temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
