@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.5.0-2 (24.06.2018), AGPL-3.0"
+version="0.5.0-3 (24.06.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -372,7 +372,7 @@ read_status_php() {
   versionstring_status_php=${versionstring_status_php%%\"*}
 
   # check for missing version in status.php due to option in config.php introduced with ownCloud 10.0 ('hide.version' => true,):
-  [[ -z "${version_status_php:-}" || -z "$versionstring_status_php:-" ]] && {
+  [[ -z "${version_status_php:-}" || -z "${versionstring_status_php:-}" ]] && {
     # version number hidden (empty): print notice and use values from config.php:
     _output echo "-- NOTICE: version number hidden in status.php."
     version_status_php=${version_config_php}
@@ -565,7 +565,7 @@ query_database() {
     db_query='"select ${fields} from ${table} order by id"'
 
     # read required fields from table and assign values to arrays:
-    while read line; do
+    while read -r line; do
       # make sure empty lines are not processed (PostgreSQL prints as last line in the results an empty line - don't know how to suppress that):
       [[ "${line:-}" == "" ]] && continue
       if [[ "${include_shares}" == "yes" ]]; then
@@ -621,7 +621,7 @@ include_shares() {
       db_query='"select ${fields} from ${table_shares} order by id"'
 
       # read required fields from table and assign values to share-arrays:
-      while read line; do
+      while read -r line; do
         # don't process empty lines (PostgreSQL returns am empty line after the result):
         [[ "${line:-}" == "" ]] && continue
         if [[ "${mainversion}" -lt "${davchangeversion}" ]]; then
@@ -654,7 +654,7 @@ include_shares() {
         db_query='"select ${fields} from ${table_group_user} order by gid"'
 
         # read values from database and create array with list of groups and their users:
-        while read line; do
+        while read -r line; do
           # don't process empty lines (PostgreSQL returns am empty line after the result):
           [[ "${line:-}" == "" ]] && continue
           grouplist+=("${line}")
