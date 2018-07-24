@@ -1,4 +1,4 @@
-vx.x.x (xx.xx.xxxx)
+v0.5.2 (24.07.2018)
 - improved: remove unnecessary backslashes
 - fixed: avoid possible error in pqsql command, if no port/socket configured in config.php
 
