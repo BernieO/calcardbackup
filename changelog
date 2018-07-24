@@ -1,5 +1,6 @@
 vx.x.x (xx.xx.xxxx)
 - improved: remove unnecessary backslashes
+- fixed: avoid possible error in pqsql command, if no port/socket configured in config.php
 
 v0.5.1 (24.06.2018)
 - added: print notice if user running the script can't read the full path to necessary files
