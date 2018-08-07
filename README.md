@@ -65,6 +65,12 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Check 'man date' for more info about different formats and syntax.
 -e | --encrypt FILE
        Encrypt backup file with AES256 (gnupg). First line of FILE will be used as passphrase
+-f | --fetch-from-database
+       create addressbook backups by fetching the data from the database instead of
+       downloading the according files from the ownCloud/Nextcloud webinterface.
+       This speeds up the backup process for addressbooks significantly. Use this option
+       if you are having trouble backing up large addressbooks.
+       NOTE: only addressbooks will be fetched directly from the database, not calendars.
 -h | --help
        Print version number and a short help text 
 -i | --include-shares
@@ -107,6 +113,13 @@ This option may be used as follows to keep passwords of the main users secret:
 
 __Benefit of this approach:__ if the file `users.txt` gets in wrong hands, only this new user account is being compromised.  
 __Drawback:__ no automatic inclusion of newly created addressbooks/calendars. Items will not be backed up unless being shared with that new user account.
+
+## About option -f / -\-fetch-from-database
+
+calcardbackup is backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. However, with large addressbooks this can lead to timeouts resulting in calcardbackup not being able to backup large addressbooks.  
+calcardbackup version 0.6.0 brings the possibility to fetch contact cards directly from the database which speeds up the backup process for addressbooks significantly.  
+Use this option, if you are having trouble in backing up large addressbooks (or if you want to reduce server load).  
+NOTE: only addressbooks will be fetched directly from the database, not calendars.  
 
 ## nextcloud-snap users
 

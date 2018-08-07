@@ -1,3 +1,6 @@
+vX.X.X (XX.XX.XXXX)
+- added: option -f|--fetch-from-database to backup addressbooks direct from database
+
 v0.5.2 (24.07.2018)
 - improved: remove unnecessary backslashes
 - fixed: avoid possible error in pqsql command, if no port/socket configured in config.php

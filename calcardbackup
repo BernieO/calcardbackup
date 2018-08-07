@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.5.2 (24.07.2018), AGPL-3.0"
+version="0.5.2-1 (08.08.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -85,6 +85,7 @@ load_default_values() {
   backup_calendars="yes"
   include_shares="no"
   snap="no"
+  fetch_from_database="no"
 }
 
 read_config_file() {
@@ -229,6 +230,13 @@ preparations() {
   if [[ "${snap}" == "yes" ]]; then
     which nextcloud.mysql-client > /dev/null || error_exit "ERROR: nextcloud-snaps cli-utility 'nextcloud.mysql-client' not found!" "To work with nextcloud-snap this script needs to be invoked  with sudo (even when root)." "If the script has been invoked with sudo: are you sure you are using nextcloud-snap?"
   fi
+
+  # check $fetch_from_database for valid value (could only be invalid when using config-file):
+  if [[ ! "${fetch_from_database}" =~ ^(yes|no)$ ]]; then
+    _output echo "-- WARNING: Parameter 'fetch_from_database' is not valid (only \"yes\" or \"no\" allowed)."
+    _output echo "-- WARNING: Using default value instead: fetch_from_database=\"no\""
+    fetch_from_database="no"
+  fi
 }
 
 getvalue_from_configphp() {
@@ -282,6 +290,9 @@ read_config_php() {
       row_share_type="type"
       row_share_resourceid="resourceid"
     fi
+    if [[ "${fetch_from_database}" == "yes" ]]; then
+      table_cards="${dbtableprefix}cards"
+    fi
     # next line is needed for addressbook-export from ownCloud/Nextcloud >= 9.0:
     extra_users="users/"
   else
@@ -297,6 +308,9 @@ read_config_php() {
       row_share_type="item_type"
       row_share_type_group="share_type" # needed for ownCloud < 9.0 to identify, if shared with group (and not with user)
       row_share_resourceid="item_source"
+    fi
+    if [[ "${fetch_from_database}" == "yes" ]]; then
+      table_cards="${dbtableprefix}contacts_cards"
     fi
     # must be empty for ownCloud < 9.0:
     extra_users=""
@@ -463,10 +477,10 @@ get_database_details() {
         case "${snap}" in
           no )
             # Notice: no differentiation due to empty $dbprotocol necessary (like with pgsql, see below), because printf will just print empty line which won't lead to an error:
-            dbcommand='mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -se '
+            dbcommand='mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sre '
           ;;
           yes )
-            dbcommand='nextcloud.mysql-client --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -se '
+            dbcommand='nextcloud.mysql-client --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sre '
           ;;
         esac
         # store type of database for output of script:
@@ -477,10 +491,10 @@ get_database_details() {
         # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
         if [[ -z "${dbprotocol:-}" ]]; then
           # without port configured in config.php:
-          dbcommand='PGPASSWORD="${dbpassword}" psql "${dbhost}" -U "${dbuser}" -d "${dbname}" -qtc '
+          dbcommand='PGPASSWORD="${dbpassword}" psql "${dbhost}" -U "${dbuser}" -d "${dbname}" -Aqtc '
         else
           # with port configured in config.php:
-          dbcommand='PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -qtc '
+          dbcommand='PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -Aqtc '
         fi
         # store type of database for output of script:
         database="PostgreSQL"
@@ -564,8 +578,9 @@ query_database() {
     # prepare database query:
     # fields to be read from database table:
     fields="${row_principaluri}, ${row_displayname}, ${row_uri}"
+    # If we want to get addressbooks from the database (instead of downloading from ownCloud/Nextcloud) or
     # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
-    [[ "${include_shares}" == "yes" ]] && fields="${row_id}, ${fields}"
+    [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]] && fields="${row_id}, ${fields}"
     # adjust output format of MySQL/MariaDB/PostgreSQL to match output of SQLite3 (field|field|field):
     [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
     # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
@@ -575,7 +590,7 @@ query_database() {
     while read -r line; do
       # make sure empty lines are not processed (PostgreSQL prints as last line in the results an empty line - don't know how to suppress that):
       [[ "${line:-}" == "" ]] && continue
-      if [[ "${include_shares}" == "yes" ]]; then
+      if [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]]; then
         id+=("${line%%|*}")        # store id (first field) in array
         line="${line#*|}"          # cut first field (id)
       fi
@@ -754,6 +769,9 @@ get_icsvcf_files() {
     exported=1
   fi
 
+  # switch to datadirectory if we want to get addressbooks directly from database:
+  [[ "${dbtype}" == "sqlite3" && "${fetch_from_database}" == "yes" ]] && cd "${datadirectory}"
+
   # loop through array with addressbooks/calendars:
   for (( i=0; i<${#uri[@]}; i++ )); do
     # loop through array with usernames given in file with users credentials (users.txt):
@@ -784,13 +802,21 @@ get_icsvcf_files() {
           already_saved_as[$z]="${filename}"
         fi
 
-        _output printf "%s" "+  Saving ${item} ${filename}..."
-        # download item with curl (command uses export link provided by contacts/calendar app from ownCloud/Nextcloud):
-        # replace spaces in username or addressbook(/calendar)name with %20 (url encoding, to work more reliable with webserver)
-        # (OR (in case curl exits with error): store exit code of curl to be able to react on error in separate function)
-        curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]// /%20}/${uri[$i]// /%20}?export" || cerror=$?
-        # if error code is set, call function to examine curls exit code and print according message to stderr:
-        [[ -n "${cerror:-}" ]] && curl_error
+        if [[ "${item}" == "addressbook" && "${fetch_from_database}" == "yes" ]]; then
+          # create addressbook by reading cards directly from database (option -g | --get-from-database):
+          _output printf "%s" "+  saving ${item} ${filename} (from database)..."
+          [[ "${dbtype}" == "pgsql" ]] && convert="convert_from(carddata,'UTF8')"
+          db_query='"SELECT ${convert:-carddata} FROM ${table_cards} WHERE addressbookid=${id[$i]}"'
+          eval "${dbcommand}" "${db_query}" > "${backupfolder_day}/${filename}"
+        else
+          _output printf "%s" "+  Saving ${item} ${filename}..."
+          # download item with curl (command uses export link provided by contacts/calendar app from ownCloud/Nextcloud):
+          # replace spaces in username or addressbook(/calendar)name with %20 (url encoding, to work more reliable with webserver)
+          # (OR (in case curl exits with error): store exit code of curl to be able to react on error in separate function)
+          curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]// /%20}/${uri[$i]// /%20}?export" || cerror=$?
+          # if error code is set, call function to examine curls exit code and print according message to stderr:
+          [[ -n "${cerror:-}" ]] && curl_error
+        fi
 
         # an empty addressbook results in an empty file (or no file for curl < 7.42.0), so we need to check whether we received a file that is not empty:
         file_received="yes" # let's say for now that a file has been downloaded and change it below if no addressbook has been exported.
@@ -820,6 +846,9 @@ get_icsvcf_files() {
       fi
     done
   done
+
+  # switch back to original directory:
+  [[ "${dbtype}" == "sqlite3" && "${fetch_from_database}" == "yes" ]] && cd "${working_dir}"
 
   # there is no matching Nextcloud user, if there are calendars/addressbooks in database table but nothing has been exported:
   if [[ ${exported} == 0 ]]; then
@@ -1061,6 +1090,9 @@ do
       check_argument "${1:-}"
       encrypt_backup="yes"
       passphrase_file="${1}"
+    ;;
+    -f | --fetch-from-database )
+      fetch_from_database="yes"
     ;;
     -h | --help )
       print_help
