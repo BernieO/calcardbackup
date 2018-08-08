@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.6.0 (08.08.2018)
 - added: option -f|--fetch-from-database to backup addressbooks direct from database
 
 v0.5.2 (24.07.2018)
