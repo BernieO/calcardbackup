@@ -32,6 +32,8 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 
 7. Find your backup in directory `backups/`.
 
+There are many more options available. Have a look at sections "Usage examples" and "Options" 
+
 ## Advanced
 
 All options can be specified in a configuration file or as command line arguments. If started with no options at all or only `-b|--batch`, the script attempts to use files `calcardbackup.conf` and `users.txt` in the script's directory as configuration file and login information.
