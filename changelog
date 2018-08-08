@@ -1,6 +1,8 @@
 v0.6.0 (08.08.2018)
 - added: option -f|--fetch-from-database to backup addressbooks direct from database
 
+NOTE: It is recommended to always use this option. Have a look at README.md for further details.
+
 v0.5.2 (24.07.2018)
 - improved: remove unnecessary backslashes
 - fixed: avoid possible error in pqsql command, if no port/socket configured in config.php
