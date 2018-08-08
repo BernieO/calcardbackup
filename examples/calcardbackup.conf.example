@@ -112,7 +112,7 @@ backup_calendars="yes"
 # for addressbooks massively resulting in much less server load. This is why it is highly
 # recommended to change this value to "yes".
 # NOTE: only addressbooks will be fetched directly from the database, not calendars.
-# change to "yes" if you want to fetch addressbooks directly from the database (recommended).
+# change to "yes" if you want to fetch addressbooks directly from the database (recommended!).
 # correlates to option -f|--fetch-from-database
 
 fetch_from_database="no"
