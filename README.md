@@ -4,10 +4,10 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 
 ## Requirements
 
-- local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
-- package `curl` and according database package (`mysql-server`/`mariadb-server`, `postgresql` or `sqlite3`)
-- optional: package `zip` to compress backup as zip-file  (instead of tar.gz)
-- the user running the script needs to be able to read the full path to all used configuration files and to the script itself
+- working local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
+- the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, all used configuration files and to the script itself
+- package `curl`
+- *optional*: package `zip` to compress backup as zip-file  (instead of tar.gz)
 
 ## Quick Installation Guide
 
@@ -25,8 +25,8 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 `chown -R www-data:www-data .`  
 `chmod 600 users.txt`
 
-5. Run the script as user `www-data` and give as first argument the path to your ownCloud/Nextcloud instance (here `/var/www/nextcloud`). If you are using a self-signed certificate, you might have to use option `-s` as well:  
-`sudo -u www-data ./calcardbackup "/var/www/nextcloud"`
+5. Run the script as user `www-data` and give as first argument the path to your ownCloud/Nextcloud instance (here `/var/www/nextcloud`). It is recommended to always use option `-f` (see section "about option -f / -\-fetch-from-database" below for more information). If you are using a self-signed certificate, you might have to use option `-s` as well:  
+`sudo -u www-data ./calcardbackup "/var/www/nextcloud" -f`
 
 6. Check output of script - it will tell, if it needs any other options.
 
@@ -66,10 +66,9 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 -e | --encrypt FILE
        Encrypt backup file with AES256 (gnupg). First line of FILE will be used as passphrase
 -f | --fetch-from-database
-       create addressbook backups by fetching the data from the database instead of
+       Create addressbook backups by fetching the data directly from the database instead of
        downloading the according files from the ownCloud/Nextcloud webinterface.
-       This speeds up the backup process for addressbooks significantly. Use this option
-       if you are having trouble backing up large addressbooks.
+       It is recommended to always use this option.
        NOTE: only addressbooks will be fetched directly from the database, not calendars.
 -h | --help
        Print version number and a short help text 
@@ -103,6 +102,13 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Use zip to compress backup folder instead of creating a gzipped tarball (tar.gz)
 ```
 
+## About option -f / -\-fetch-from-database
+
+calcardbackup is traditionally backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. However, with large addressbooks, this can lead to timeouts resulting in calcardbackup not being able to backup large addressbooks.  
+With version 0.6.0 calcardbackup brings the possibility to create addressbook backups by fetching contact cards directly from the database which speeds up the backup process for addressbooks massively resulting in much less server load.  
+This is why __it is recommended to always use this option__ when using calcardbackup >= 0.6.0.  
+__NOTE:__ only addressbooks will be fetched directly from the database, not calendars.  
+
 ## About option -i / -\-include-shares
 
 This option may be used as follows to keep passwords of the main users secret:
@@ -114,13 +120,6 @@ This option may be used as follows to keep passwords of the main users secret:
 __Benefit of this approach:__ if the file `users.txt` gets in wrong hands, only this new user account is being compromised.  
 __Drawback:__ no automatic inclusion of newly created addressbooks/calendars. Items will not be backed up unless being shared with that new user account.
 
-## About option -f / -\-fetch-from-database
-
-calcardbackup is backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. However, with large addressbooks this can lead to timeouts resulting in calcardbackup not being able to backup large addressbooks.  
-calcardbackup version 0.6.0 brings the possibility to fetch contact cards directly from the database which speeds up the backup process for addressbooks significantly.  
-Use this option, if you are having trouble in backing up large addressbooks (or if you want to reduce server load).  
-NOTE: only addressbooks will be fetched directly from the database, not calendars.  
-
 ## nextcloud-snap users
 
 If you are running Nextcloud-snap (https://github.com/nextcloud/nextcloud-snap), you have to use option `-p|--snap` to tell calcardbackup to use the cli utility `nextcloud.mysql-client` from the snap package.  
@@ -128,23 +127,24 @@ In order for this to work, calcardbackup has to be run with `sudo` (even running
 
 ## Usage examples
 
-1. `./calcardbackup /var/www/nextcloud -s -na -i -x`  
-Ignore, that certificate is not trustful (`-s`), do not backup addressbooks (`-na`), include shared items (`-i`), use credentials given in ./users.txt (default) and store backed up files uncompressed (`-x`) in folder named `calcardbackup-YYYY-MM-DD` (default) under ./backups/ (default).
+1. `./calcardbackup /var/www/nextcloud -f -s -nc -i -x`  
+Fetch addressbooks from database (`-f`), ignore, that certificate is not trustful (`-s`), do not backup calendars (`-nc`), include shared items (`-i`), use credentials given in ./users.txt (default) and store backed up files uncompressed (`-x`) in folder named `calcardbackup-YYYY-MM-DD` (default) under ./backups/ (default).
 
-2. `./calcardbackup /var/www/nextcloud --selfsigned --no-addressbooks --include-shares --uncompressed`  
+2. `./calcardbackup /var/www/nextcloud --fetch-from-database --selfsigned --no-calendars --include-shares --uncompressed`  
 This is exactly the same command like in the first example but with using long options instead of short options.
 
 3. `./calcardbackup -c /etc/calcardbackup.conf`  
-Use configuration-file /etc/calcardbackup.conf (`-c /etc/calcardbackup.conf`). Parameters for desired behaviour have to be given in that file (see examples/calcardbackup.conf.example)  
+Use configuration-file /etc/calcardbackup.conf (`-c /etc/calcardbackup.conf`). Parameters for desired behaviour have to be given in that file (see examples/calcardbackup.conf.example).  
+It doesn't make any sense to give more options on command line in this case, because they will be ignored (except for `-b|--batch`).  
 
-4. `./calcardbackup /var/www/nextcloud -b -d .%d.%H -z -e /home/tom/key -o /media/data/backupfolder/ -u /etc/calcardbackupusers -r 15`  
-Supress output except for path to the backup (`-b`), use extension .DD.HH (`-d .%d.%H`), zip backup (`-z`), encrypt the zipped backup with using the first line in file /home/tom/key as encryption-key (`-e /home/tom/key`), save backup in folder /media/data/backupfolder/ (`-o /media/data/backupfolder/`), use credentials given in file /etc/calcardbackupusers (`-u /etc/calcardbackupusers`) and delete all backups older than 15 days (`-r 15`)  
+4. `./calcardbackup /var/www/nextcloud -b -d .%d.%H -z -e /home/tom/key -o /media/data/backupfolder/ -u /etc/calcardbackupusers -r 15 -f`  
+Supress output except for path to the backup (`-b`), use extension .DD.HH (`-d .%d.%H`), zip backup (`-z`), encrypt the zipped backup with using the first line in file /home/tom/key as encryption-key (`-e /home/tom/key`), save backup in folder /media/data/backupfolder/ (`-o /media/data/backupfolder/`), use credentials given in file /etc/calcardbackupusers (`-u /etc/calcardbackupusers`), delete all backups older than 15 days (`-r 15`) and fetch addressbooks from database (`-f`)  
 
 5. `./calcardbackup`  
 Use files calcardbackup.conf and users.txt in the script's directory as configuration file and login information.
 
 6. `sudo ./calcardbackup /var/snap/nextcloud/current/nextcloud -p`  
-This example is for nextcloud-snap users. calcardbackup will use the cli utility from nextcloud-snap to access the database.  
+This example is for nextcloud-snap users. calcardbackup will use the cli utility from nextcloud-snap to access the database (`-p`) and retrieves addressbooks from ownClouds/Nextclouds webinterface (missing option `-f`, not recommended).  
 
 ## Considerations about encryption
 
