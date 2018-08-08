@@ -32,7 +32,7 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 
 7. Find your backup in directory `backups/`.
 
-There are many more options available. Have a look at sections "Usage examples" and "Options" 
+There are many more options available: have a look at sections "Options" and "Usage examples" below.
 
 ## Advanced
 
@@ -106,9 +106,9 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 
 ## About option -f / -\-fetch-from-database
 
-calcardbackup is traditionally backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. However, with large addressbooks, this can lead to timeouts resulting in calcardbackup not being able to backup large addressbooks.  
-With version 0.6.0 calcardbackup brings the possibility to create addressbook backups by fetching contact cards directly from the database which speeds up the backup process for addressbooks massively resulting in much less server load.  
-This is why __it is recommended to always use this option__ when using calcardbackup >= 0.6.0.  
+*calcardbackup* is traditionally backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. However, with large addressbooks, this can lead to timeouts resulting in *calcardbackup* not being able to backup large addressbooks.  
+With version 0.6.0 *calcardbackup* brings the possibility to create addressbook backups by fetching contact cards directly from the database which speeds up the backup process for addressbooks massively resulting in much less server load.  
+This is why __it is recommended to always use this option__ when using *calcardbackup* >= 0.6.0.  
 __NOTE:__ only addressbooks will be fetched directly from the database, not calendars.  
 
 ## About option -i / -\-include-shares
