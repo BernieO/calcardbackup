@@ -1,3 +1,6 @@
+v0.6.1 (15.08.2018)
+- fixed: eliminate error if shared items shall be backed up, but no shared items are existing
+
 v0.6.0 (08.08.2018)
 - added: option -f|--fetch-from-database to backup addressbooks direct from database
 
