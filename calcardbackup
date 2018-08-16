@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.6.1 (15.08.2018), AGPL-3.0"
+version="0.6.1-1 (16.08.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -609,14 +609,14 @@ query_database() {
 include_shares() {
   # looks for shared items and adds them to arrays created in function query_database()
 
-  # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
-  # sqlite3 would then need "${dboptions}" to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
-  [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
-
   # database only needs to be queried once for table with infos about shares ($table_shares)
   # (because same table for shared calendars and shared addressbooks):
   if [[ "${read_shared:-}" == "" ]]; then
     read_shared=1
+
+    # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
+    # sqlite3 would then need "${dboptions}" to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
+    [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
     # check if table $table_shares exists:
     [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
@@ -685,6 +685,8 @@ include_shares() {
       fi
 
     fi
+    # switch back to original directory when using sqlite3 (use OR instead of AND to return true in any case - changed in 0.4.2-8):
+    [[ "${dbtype}" != "sqlite3" ]] || cd "${working_dir}"
   fi
 
   # declare local arrays and variables:
@@ -728,7 +730,8 @@ include_shares() {
     done
   done
 
-  # make sure, that temporary arrays are only read if not empty (v0.6.1):
+  # make sure, that temporary arrays are only read if not empty. This can be the case, if there
+  # are shared calendars, but no shared addressbooks (or vice versa) (v0.6.1):
   if [[ -n ${temp_principal:-} ]]; then
     # add values of temporary 'shares to be backed up'-arrays to arrays which will later be used to download the files:
     for (( i=0; i<${#temp_principal[@]}; i++ )); do
@@ -745,8 +748,6 @@ include_shares() {
   # set $read_shared to 2 for eventually second run of this function
   read_shared=2
 
-  # switch back to original directory when using sqlite3 (use OR instead of AND to return true in any case - changed in 0.4.2-8):
-  [[ "${dbtype}" != "sqlite3" ]] || cd "${working_dir}"
 }
 
 get_icsvcf_files() {
