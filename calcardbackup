@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.6.1-1 (16.08.2018), AGPL-3.0"
+version="0.6.1-2 (16.08.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -687,6 +687,12 @@ include_shares() {
     fi
     # switch back to original directory when using sqlite3 (use OR instead of AND to return true in any case - changed in 0.4.2-8):
     [[ "${dbtype}" != "sqlite3" ]] || cd "${working_dir}"
+  fi
+
+  # print notice, if no results were found (table $table_shares is empty) and return from this function (includ_shares):
+  if [[ -z ${share_principal:-} ]]; then
+    _output echo "-- NOTICE: Table '${table_shares}' is empty. There are no shared ${item}s in your ${productname}."
+    return
   fi
 
   # declare local arrays and variables:
