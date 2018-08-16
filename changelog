@@ -1,9 +1,10 @@
 vX.X.X (XX.XX.XXXX)
 - improved: only change directory, if database will be read
 - fixed: eliminate error, if run with option -i but no items are shared
+- fixed: correction of changelog for v0.6.1
 
 v0.6.1 (15.08.2018)
-- fixed: eliminate error if shared items shall be backed up, but no shared items are existing
+- fixed: eliminate error, if run with option -i but either only calendars or addressbooks are shared
 
 v0.6.0 (08.08.2018)
 - added: option -f|--fetch-from-database to backup addressbooks direct from database
