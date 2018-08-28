@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.6.2-3 (28.08.2018), AGPL-3.0"
+version="0.6.2-4 (28.08.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -319,6 +319,7 @@ read_config_php() {
   row_id="id"
   row_uri="uri"
   row_displayname="displayname"
+  row_calendarcolor="calendarcolor"
   table_group_user="${dbtableprefix}group_user"
 
   # get ownClouds/Nextclouds URL from config.php (overwrite.cli.url), compare to user given url ($nextcloud_url) and notice/error, if something is not as expected:
@@ -581,6 +582,7 @@ query_database() {
     # If we want to get addressbooks from the database (instead of downloading from ownCloud/Nextcloud) or
     # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
     [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]] && fields="${row_id}, ${fields}"
+    [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && fields="${row_calendarcolor}, ${fields}"
     # adjust output format of MySQL/MariaDB/PostgreSQL to match output of SQLite3 (field|field|field):
     [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
     # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
@@ -590,6 +592,9 @@ query_database() {
     while read -r line; do
       # make sure empty lines are not processed (PostgreSQL prints as last line in the results an empty line - don't know how to suppress that):
       [[ "${line:-}" == "" ]] && continue
+      if [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]]; then
+        calendarcolor+=("${line%%|*}") # store calendarcolor (first field) in array
+        line="${line#*|}"          # cut first field (calendarcolor)
       if [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]]; then
         id+=("${line%%|*}")        # store id (first field) in array
         line="${line#*|}"          # cut first field (id)
@@ -818,9 +823,12 @@ get_icsvcf_files() {
         if [[ "${item}" == "addressbook" && "${fetch_from_database}" == "yes" ]]; then
           # create addressbook by reading cards directly from database (option -f | --fetch-from-database):
           create_addressbook_from_db
+#        elif [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]]; then
+#          # create calendar by fetching according data directly from database (option -f | --fetch-from-database):
+#          create_calendar_from_db
         else
-          _output printf "%s" "+  Saving ${item} ${filename}..."
           # download item with curl (command uses export link provided by contacts/calendar app from ownCloud/Nextcloud):
+          _output printf "%s" "+  Saving ${item} ${filename}..."
           # replace spaces in username or addressbook(/calendar)name with %20 (url encoding, to work more reliable with webserver)
           # (OR (in case curl exits with error): store exit code of curl to be able to react on error in separate function)
           curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]// /%20}/${uri[$i]// /%20}?export" || cerror=$?
@@ -851,8 +859,15 @@ get_icsvcf_files() {
   unset -v id principal uri displayname already_saved_as
 }
 
+create_calendar_from_db() {
+  # create calendar (ics file) by reading cards directly from database (option -f | --fetch-from-database):
+
+  # on the way to be implemented...
+  :
+}
+
 create_addressbook_from_db() {
-  # create addressbook by reading cards directly from database (option -f | --fetch-from-database):
+  # create addressbook (vcf file) by reading cards directly from database (option -f | --fetch-from-database):
 
   _output printf "%s" "+  saving ${item} ${filename} (from database)..."
   db_query='"SELECT ${convert:-carddata} FROM ${table_cards} WHERE addressbookid=${id[$i]}"'
