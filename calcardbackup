@@ -595,6 +595,7 @@ query_database() {
       if [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]]; then
         calendarcolor+=("${line%%|*}") # store calendarcolor (first field) in array
         line="${line#*|}"          # cut first field (calendarcolor)
+      fi
       if [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]]; then
         id+=("${line%%|*}")        # store id (first field) in array
         line="${line#*|}"          # cut first field (id)
