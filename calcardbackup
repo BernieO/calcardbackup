@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.6.2 (17.08.2018), AGPL-3.0"
+version="0.6.2-1 (28.08.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -838,22 +838,22 @@ get_icsvcf_files() {
           touch "${backupfolder_day}/${filename}"
           _output printf "%s\n" "...empty file. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty."
           file_received="no" # because we have received an empty file and thus do not need to check whether it is a valid ics-/vcf-file
-          exported=$((exported + 1)) # increase $exported, because we don't want to print notice that nothing has been found
-          break # break the for-loop going through usernames to continue with next addressbook
         fi
 
         # check for valid ics-/vcf-header in received file:
-        read -r line <"${backupfolder_day}/${filename}"    # reads first line of received file
-        if [[ "${file_received}" == "yes" && ! "${line}" =~ ${item_header} ]]; then    # no valid file, if first line of file doesn't match item_header
-          # attach "-ERROR.txt" to filename:
-          mv "${backupfolder_day}/${filename}" "${backupfolder_day}/${filename}-ERROR.txt"
-          _output printf "%s\n" ""    # newline is needed for error-message to start on a separate line. Increases readability.
-          # print error message and exit:
-          error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${filename}-ERROR.txt"
+        if [[ "${file_received}" == "yes" ]]; then
+          read -r line <"${backupfolder_day}/${filename}"  # reads first line of received file
+          if [[ ! "${line}" =~ ${item_header} ]]; then     # no valid file, if first line of file doesn't match item_header
+            # attach "-ERROR.txt" to filename:
+            mv "${backupfolder_day}/${filename}" "${backupfolder_day}/${filename}-ERROR.txt"
+            _output printf "%s\n" ""    # newline is needed for error-message to start on a separate line. Increases readability.
+            # print error message and exit:
+            error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${filename}-ERROR.txt"
+          fi
+          _output printf "%s\n" "...success!"
         fi
-        # increase counter $exported, because at least one item has been downloaded successfully:
+        # increase counter $exported, because at least one item has been downloaded successfully (even if it was an empty addressbook):
         exported=$((exported + 1))
-        _output printf "%s\n" "...success!"
         break # break the for-loop going through usernames to continue with next addressbook/calendar.
       fi
     done
