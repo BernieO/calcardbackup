@@ -1,3 +1,7 @@
+vX.X.X (XX.XX.XXXX)
+- added: option -f|--fetch-from-database now also backups calendars direct from database
+- improved: passwords can be omitted in users.txt when using option -f|--fetch-from-database
+
 v0.6.2 (17.08.2018)
 - improved: only change directory, if database will be read
 - fixed: eliminate error, if run with option -i but no items are shared

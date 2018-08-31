@@ -19,7 +19,8 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 2. Copy the example file to `users.txt`:  
 `cp examples/users.txt.example users.txt`
 
-3. In `users.txt`, insert ownCloud/Nextcloud usernames and, separated by a colon, corresponding passwords, one user per line, of all users to be backed up. Be aware that other people with access to the server might be able to read the stored passwords (see section "about option -i / -\-include-shares" below).
+3. In `users.txt`, insert ownCloud/Nextcloud usernames and, separated by a colon, corresponding passwords, one user per line, of all users to be backed up. Be aware that other people with access to the server might be able to read the stored passwords (see section "about option -i / -\-include-shares" below).  
+__NOTE:__ there is no need to give the passwords anymore when using the option `-f|--fetch-from-database` (introduced with v0.6.3). It is enough to just enter the usernames in `users.txt`, one user per line.
 
 4. Change the ownership of repo to your webserver's user (here `www-data`) and restrict access to `users.txt`:  
 `chown -R www-data:www-data .`  
@@ -107,9 +108,8 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 ## About option -f / -\-fetch-from-database
 
 *calcardbackup* is traditionally backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. However, with large addressbooks, this can lead to timeouts resulting in *calcardbackup* not being able to backup large addressbooks.  
-With version 0.6.0 *calcardbackup* brings the possibility to create addressbook backups by fetching contact cards directly from the database which speeds up the backup process for addressbooks massively resulting in much less server load.  
-This is why __it is recommended to always use this option__ when using *calcardbackup* >= 0.6.0.  
-__NOTE:__ only addressbooks will be fetched directly from the database, not calendars.  
+With version 0.6.3 *calcardbackup* brings the possibility to create addressbook and calendar backups by fetching the according data directly from the database which speeds up the backup process for addressbooks massively resulting in much less server load.  
+Additionaly a big benefit is that  there is no need anymore to give passwords in the file with user `users.txt` when using option `-f`.  
 
 ## About option -i / -\-include-shares
 
@@ -121,6 +121,8 @@ This option may be used as follows to keep passwords of the main users secret:
 
 __Benefit of this approach:__ if the file `users.txt` gets in wrong hands, only this new user account is being compromised.  
 __Drawback:__ no automatic inclusion of newly created addressbooks/calendars. Items will not be backed up unless being shared with that new user account.
+
+__NOTE:__ with option `-f` there is a much more elegant way of using *calcardbackup* without passwords. Have a look at the section above this one!
 
 ## nextcloud-snap users
 
