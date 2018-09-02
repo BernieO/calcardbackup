@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.6.2-6 (02.09.2018), AGPL-3.0"
+version="0.6.2-7 (02.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -157,8 +157,22 @@ preparations() {
 
   # if $users_file is empty or not set: set it to 'users.txt' in script's dir
   [[ -z "${users_file:-}" ]] && users_file="${script_dir}/users.txt"
-  # check if users.txt is a file and readable:
-  check_readable_file "${users_file}" "file with usernames and passwords."
+  # if users.txt is not found when using option -f: fetch all available items from database:
+  if [[ "${fetch_from_database}" == "yes" ]]; then
+    [[ -f "${users_file}" && -r "${users_file}" ]] || complete_backup_from_database="yes"
+    if [[ "${complete_backup_from_database:-}" == "yes" ]]; then
+      _output echo "+  file with usernames and passwords not found:"
+      _output echo "+     - will fetch all available items from database"
+      if [[ "${include_shares}" == "yes" ]]; then
+        # don't include shared items - will backup everything anyway:
+        _output echo "+     - ignoring option to include shared items"
+        include_shares="no"
+      fi
+    fi
+  else
+    # check if users.txt is a file and readable:
+    check_readable_file "${users_file}" "file with usernames and passwords."
+  fi
 
   # if $backupfolder is empty or not set: set it to 'backups/' in script's dir
   [[ -z "${backupfolder:-}" ]] && backupfolder="${script_dir}/backups/"
@@ -798,6 +812,33 @@ get_icsvcf_files() {
 
   # loop through array with addressbooks/calendars:
   for (( i=0; i<${#uri[@]}; i++ )); do
+
+    if [[ "${complete_backup_from_database:-}" == "yes" ]]; then
+      # (exclude birthday calendar (contact_birthdays), because it is an automatically created calendar from ownCloud/Nextcloud) and system-addressbook:
+      if [[ "${uri[$i]}" != "contact_birthdays" && "${principal[$i]}" != "principals/system/system"  ]]; then
+
+        # create filename like: username-(calendar-/addressbook-)name-date:
+        filename="${principal[$i]}-${displayname[$i]}${item_extension}"
+        # remove funky characters from filename:
+        filename="${filename//[\/\\*? ]/_}"
+
+        # create addressbook or calendar by reading data directly from database (option -f | --fetch-from-database):
+        _output printf "%s" "+  saving ${item} ${filename} (from database)..."
+        [[ "${item}" == "calendar" ]] && create_calendar_from_db
+        [[ "${item}" == "addressbook" ]] && create_addressbook_from_db
+
+        # check whether first line of saved file is a valid iCalendar/vCard header:
+        check_for_valid_icsvcf
+
+        # increase counter $exported, because at least one item has been downloaded successfully (even if it was an empty addressbook):
+        exported=$((exported + 1))
+
+      fi
+      # continue for-loop with next item:
+      continue
+
+    fi
+
     # loop through array with usernames given in file with users credentials (users.txt):
     for index in "${!users[@]}"; do
       # compare prinicpal with username. If there is a match, we found an item to be downloaded
@@ -1331,7 +1372,7 @@ preparations
 read_config_php
 read_status_php
 get_database_details
-read_users_txt
+[[ "${complete_backup_from_database:-}" == "yes" ]] || read_users_txt
 create_backup_folder
 if [[ "${backup_calendars}" == "yes" ]]
   then get_calendars
