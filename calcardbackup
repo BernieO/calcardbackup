@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.6.2-9 (02.09.2018), AGPL-3.0"
+version="0.6.2-10 (02.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -154,6 +154,13 @@ preparations() {
   [[ "${trustful_certificate}" == "no" ]] && trust="--insecure"
   # variable $trustful_certificate is not needed anymore:
   unset -v trustful_certificate
+
+  # check $include_shares for valid value (could only be invalid when using config-file):
+  if [[ ! "${include_shares}" =~ ^(yes|no)$ ]]; then
+    _output echo "-- WARNING: Parameter 'include_shares' is not valid (only \"yes\" or \"no\" allowed)."
+    _output echo "-- WARNING: Using default value instead: include_shares=\"no\""
+    include_shares="no"
+  fi
 
   # check $fetch_from_database for valid value (could only be invalid when using config-file):
   if [[ ! "${fetch_from_database}" =~ ^(yes|no)$ ]]; then
