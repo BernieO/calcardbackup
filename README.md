@@ -16,22 +16,15 @@ This Bash script exports calendars and addressbooks of given users from ownCloud
 `git clone https://github.com/BernieO/calcardbackup`  
 `cd calcardbackup`
 
-2. Copy the example file to `users.txt`:  
-`cp examples/users.txt.example users.txt`
-
-3. In `users.txt`, insert ownCloud/Nextcloud usernames and, separated by a colon, corresponding passwords, one user per line, of all users to be backed up. Be aware that other people with access to the server might be able to read the stored passwords (see section "about option -i / -\-include-shares" below).  
-__NOTE:__ there is no need to give the passwords anymore when using the option `-f|--fetch-from-database` (introduced with v0.6.3). It is enough to just enter the usernames in `users.txt`, one user per line.
-
-4. Change the ownership of repo to your webserver's user (here `www-data`) and restrict access to `users.txt`:  
+2. Change the ownership of repo to your webserver's user (here `www-data`):  
 `chown -R www-data:www-data .`  
-`chmod 600 users.txt`
 
-5. Run the script as user `www-data` and give as first argument the path to your ownCloud/Nextcloud instance (here `/var/www/nextcloud`). It is recommended to always use option `-f` (see section "about option -f / -\-fetch-from-database" below for more information). If you are using a self-signed certificate, you might have to use option `-s` as well:  
+3. Run the script as user `www-data` and give as first argument the path to your ownCloud/Nextcloud instance (here `/var/www/nextcloud`) and use option `-f`, which will become the default in the next version of this script (see section "about option -f / -\-fetch-from-database" below for more information). If you are using a self-signed certificate, you might have to use option `-s` as well:  
 `sudo -u www-data ./calcardbackup "/var/www/nextcloud" -f`
 
-6. Check output of script - it will tell, if it needs any other options.
+4. Check output of script - it will tell, if it needs any other options.
 
-7. Find your backup in directory `backups/`.
+5. Find your backup in directory `backups/`.
 
 There are many more options available: have a look at sections "Options" and "Usage examples" below.
 
@@ -69,15 +62,15 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 -e | --encrypt FILE
        Encrypt backup file with AES256 (gnupg). First line of FILE will be used as passphrase
 -f | --fetch-from-database
-       Create addressbook backups by fetching the data directly from the database instead of
-       downloading the according files from the ownCloud/Nextcloud webinterface.
-       It is recommended to always use this option.
-       NOTE: only addressbooks will be fetched directly from the database, not calendars.
+       Create calendar/addressbook backups by fetching the data directly from the database
+       instead of downloading the according files from the ownCloud/Nextcloud webinterface.
+       It is recommended to always use this option as it will become the default in calcardbackup 0.8.0
 -h | --help
        Print version number and a short help text 
 -i | --include-shares
        Backup shared addressbooks/calendars as well. Items will only be backed up once: e.g. a shared
        calendar won't be backed up, if the same calendar was already backed up for another user.
+       NOTE: this option will be ignored when using option -f and missing file with user credentials.
 -na | --no-addressbooks
        Do not backup addressbooks
 -nc | --no-calendars
@@ -99,6 +92,7 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        password separated by a colon. See 'examples/users.txt.example'
        If this option is not given, calcardbackup will search for a file named
        'users.txt' in script's directory.
+       NOTE: this file is not needed anymore when using option -f|--fetch-from-database
 -x | --uncompressed
        Do not compress backup folder
 -z | --zip
@@ -108,8 +102,10 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 ## About option -f / -\-fetch-from-database
 
 *calcardbackup* is traditionally backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. However, with large addressbooks, this can lead to timeouts resulting in *calcardbackup* not being able to backup large addressbooks.  
-With version 0.6.3 *calcardbackup* brings the possibility to create addressbook and calendar backups by fetching the according data directly from the database which speeds up the backup process for addressbooks massively resulting in much less server load.  
-Additionaly a big benefit is that  there is no need anymore to give passwords in the file with user `users.txt` when using option `-f`.  
+With version 0.7.0 *calcardbackup* brings the possibility to create calendar and addressbook backups by fetching the according data directly from the database which speeds up the backup process for addressbooks massively resulting in much less server load.  
+Additionaly the file with user credentials is not needed anymore: if *calcardbackup* doesn't find `users.txt`, all available calendars/addressbooks from the database will be backed up (option `-i|--include-shares` will then be ignored).  
+If only calendars/addressbooks of certain users shall be backed up, `users.txt` may still be used, but there is no need anymore to give passwords in this file when using option `-f`.  
+_NOTE:_ Due to the many benefits, option `-f|--fetch-from-database` will be used as default in the next version of this script (v0.8.0).
 
 ## About option -i / -\-include-shares
 
