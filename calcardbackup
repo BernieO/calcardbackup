@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.6.2-5 (30.08.2018), AGPL-3.0"
+version="0.6.2-6 (02.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -584,7 +584,7 @@ query_database() {
     # If we want to get addressbooks from the database (instead of downloading from ownCloud/Nextcloud) or
     # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
     [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]] && fields="${row_id}, ${fields}"
-    [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && fields="${row_calendarcolor}, ${fields}"
+    [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && fields="coalesce(${row_calendarcolor},'NULL'), ${fields}"
     # adjust output format of MySQL/MariaDB/PostgreSQL to match output of SQLite3 (field|field|field):
     [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
     # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
@@ -887,10 +887,8 @@ create_calendar_from_db() {
   printf "%s\r\n" "BEGIN:VCALENDAR" "VERSION:2.0" "PRODID:https://github.com/BernieO/calcardbackup v${version%% *}" "CALSCALE:GREGORIAN" > "${backupfolder_day}/${filename}"
 
   # also calendarname and calendarcolor (if existent in database):
-  if [[ "${displayname[$i]}" != "" ]]; then
-    printf "%s\r\n" "X-WR-CALNAME:${displayname[$i]}" >> "${backupfolder_day}/${filename}"
-  fi
-  if [[ "${calendarcolor[$i]}" != "" ]]; then
+  printf "%s\r\n" "X-WR-CALNAME:${displayname[$i]}" >> "${backupfolder_day}/${filename}"
+  if [[ "${calendarcolor[$i]}" != "NULL" ]]; then
     printf "%s\r\n" "X-APPLE-CALENDAR-COLOR:${calendarcolor[$i]}" >> "${backupfolder_day}/${filename}"
   fi
 
