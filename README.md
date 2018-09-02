@@ -105,7 +105,7 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 With version 0.7.0 *calcardbackup* brings the possibility to create calendar and addressbook backups by fetching the according data directly from the database which speeds up the backup process for addressbooks massively resulting in much less server load.  
 Additionaly the file with user credentials is not needed anymore: if *calcardbackup* doesn't find `users.txt`, all available calendars/addressbooks from the database will be backed up (option `-i|--include-shares` will then be ignored).  
 If only calendars/addressbooks of certain users shall be backed up, `users.txt` may still be used, but there is no need anymore to give passwords in this file when using option `-f`.  
-_NOTE:_ Due to the many benefits, option `-f|--fetch-from-database` will be used as default in the next version of this script (v0.8.0).
+__NOTE:__ Due to the many benefits, option `-f|--fetch-from-database` will be used as default in the next version of this script (v0.8.0).
 
 ## About option -i / -\-include-shares
 
