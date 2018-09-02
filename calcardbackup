@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.6.2-10 (02.09.2018), AGPL-3.0"
+version="0.6.2-11 (02.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -995,7 +995,7 @@ create_calendar_from_db() {
         if [[ -n ${tz_ids:-} ]]; then
           # yes, so loop through array with collected timezone-ids and check whether TZID is already stored in $tz_ids:
           for (( k=0; k<${#tz_ids[@]}; k++ )); do
-            if [[ ${tz_ids[$k]} == ${line/%[[:space:]]/} ]]; then
+            if [[ "${tz_ids[$k]}" == "${line/%[[:space:]]/}" ]]; then
               # match: TZID is already present in array: remember that timezone is already saved (set vtime indicator to 2):
               vtime=2
               # unset temporary array filled with already collected timezone-data and end the for-loop:
