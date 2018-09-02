@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.6.2-8 (02.09.2018), AGPL-3.0"
+version="0.6.2-9 (02.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -155,6 +155,13 @@ preparations() {
   # variable $trustful_certificate is not needed anymore:
   unset -v trustful_certificate
 
+  # check $fetch_from_database for valid value (could only be invalid when using config-file):
+  if [[ ! "${fetch_from_database}" =~ ^(yes|no)$ ]]; then
+    _output echo "-- WARNING: Parameter 'fetch_from_database' is not valid (only \"yes\" or \"no\" allowed)."
+    _output echo "-- WARNING: Using default value instead: fetch_from_database=\"no\""
+    fetch_from_database="no"
+  fi
+
   # if $users_file is empty or not set: set it to 'users.txt' in script's dir
   [[ -z "${users_file:-}" ]] && users_file="${script_dir}/users.txt"
   # if users.txt is not found when using option -f: fetch all available items from database:
@@ -243,13 +250,6 @@ preparations() {
   # make sure nextcloud.mysql-client is available when configured to use nextcloud-snap:
   if [[ "${snap}" == "yes" ]]; then
     which nextcloud.mysql-client > /dev/null || error_exit "ERROR: nextcloud-snaps cli-utility 'nextcloud.mysql-client' not found!" "To work with nextcloud-snap this script needs to be invoked  with sudo (even when root)." "If the script has been invoked with sudo: are you sure you are using nextcloud-snap?"
-  fi
-
-  # check $fetch_from_database for valid value (could only be invalid when using config-file):
-  if [[ ! "${fetch_from_database}" =~ ^(yes|no)$ ]]; then
-    _output echo "-- WARNING: Parameter 'fetch_from_database' is not valid (only \"yes\" or \"no\" allowed)."
-    _output echo "-- WARNING: Using default value instead: fetch_from_database=\"no\""
-    fetch_from_database="no"
   fi
 }
 
