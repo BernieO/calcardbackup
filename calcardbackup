@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.6.2-7 (02.09.2018), AGPL-3.0"
+version="0.6.2-8 (02.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1374,11 +1374,11 @@ read_status_php
 get_database_details
 [[ "${complete_backup_from_database:-}" == "yes" ]] || read_users_txt
 create_backup_folder
-if [[ "${backup_calendars}" == "yes" ]]
+if [[ "${backup_calendars}" != "no" ]]
   then get_calendars
   else _output echo "+  Not backing up calenders as configured."
 fi
-if [[ "${backup_addressbooks}" == "yes" ]]
+if [[ "${backup_addressbooks}" != "no" ]]
   then get_addressbooks
   else _output echo "+  Not backing up addressbooks as configured."
 fi

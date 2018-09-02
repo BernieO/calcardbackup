@@ -2,6 +2,7 @@ vX.X.X (XX.XX.XXXX)
 - added: option -f|--fetch-from-database now also backups calendars direct from database
 - added: if no users.txt is found when using option -f, all available items will be backed up
 - improved: passwords can be omitted in users.txt when using option -f|--fetch-from-database
+- improved: be safer: do backup items, if backup_calendars(addressbooks) is invalid in config file
 
 v0.6.2 (17.08.2018)
 - improved: only change directory, if database will be read
