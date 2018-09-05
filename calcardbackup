@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0 (03.09.2018), AGPL-3.0"
+version="0.7.0-1 (05.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -449,10 +449,14 @@ read_status_php() {
   # check for installed=true in status.php and exit if ownCloud/Nextcloud report installed:false:
   regex='"installed":"?true"?'
   [[ "${status_php}" =~ ${regex} ]] || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
+
   # check for maintenance=false for versions >= 8.0 in status.php and exit if ownCloud/Nextcloud in maintenance mode:
   if [[ "$mainversion" -ge 8 ]]; then
-    regex='"maintenance":"?false"?'
-    [[ "${status_php}" =~ ${regex} ]] || error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again"
+    regex='"maintenance":"?true"?'
+    if [[ "${status_php}" =~ ${regex} && "${fetch_from_database}" == "no" ]]; then
+      [[ -z "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "Another possibility is to use option -f."
+      [[ -n "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "Another possibility is to set 'fetch_from_database=\"yes\"' in the configuration file."
+    fi
   fi
 }
 

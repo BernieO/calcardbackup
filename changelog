@@ -1,3 +1,6 @@
+vX.X.X (XX.XX.XXXX)
+- improved: don't error and exit with option -f|--fetch-from-database, if mainentance mode is active
+
 v0.7.0 (03.09.2018)
 - added: also backup calendars directly from database when using option -f|--fetch-from-database
 - added: if no users.txt is found when using option -f, all available items will be backed up
