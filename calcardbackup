@@ -121,22 +121,13 @@ create_occ_command() {
   # checks for user who is running this script and for owner of config.php and creates according command
   # for using occ (needed for enabling and disabling maintenance mode when using option -f)
 
-  local htuser my_identity
+  local my_identity
 
-  # assign webserver user depending on owner of ownClouds/Nextclouds occ command:
-  htuser="$(stat --printf="%U" "${nextcloud_path}/occ")"
   # which user is running this script?
   my_identity="$(whoami)"
 
-  # check, if script is running as webserver user:
-  if [[ "${my_identity}" == "${htuser}" ]]; then
-    # I seem to be the webserver user, so assign occ_command:
-    occ_command="php ${nextcloud_path}/occ "
-  else
-    # if I am neither root nor webserver user, this script can't enable maintenance mode without user
-    # interaction (password required for other users than root for sudo) - print warning:
-    echo "-- WARNING: can't enable maintenance-mode because not running as webserver user '${htuser}'"
-  fi
+  # either script is not running as webserver user OR assign occ_command:
+  [[ "${my_identity}" != "${htuser}" ]] || occ_command="php ${nextcloud_path}/occ "
 }
 
 maintenance_mode() {
@@ -211,6 +202,12 @@ preparations() {
 
   # if $users_file is empty or not set: set it to 'users.txt' in script's dir
   [[ -z "${users_file:-}" ]] && users_file="${script_dir}/users.txt"
+
+  # assign webserver user depending on owner of ownClouds/Nextclouds occ command
+  # (needed for proper warning message, if maintenance mode cant be enabled when not
+  #     running as webserver user):
+  htuser="$(stat --printf="%U" "${nextcloud_path}/occ")"
+
   # when using option -f: check for users.txt
   if [[ "${fetch_from_database}" == "yes" ]]; then
     # either users.txt is found and readable OR do a complete backup from database:
@@ -1432,7 +1429,13 @@ read_status_php
 get_database_details
 [[ "${complete_backup_from_database:-}" == "yes" ]] || read_users_txt
 create_backup_folder
-[[ "${occ_command:-}" ]] && maintenance_mode "on"
+if [[ "${fetch_from_database}" == "yes" ]]; then
+  if [[ "${occ_command:-}" ]]; then
+    maintenance_mode "on"
+  else
+    echo "-- WARNING: can't enable maintenance-mode because not running as webserver user '${htuser}'"
+  fi
+fi
 if [[ "${backup_calendars}" != "no" ]]
   then get_calendars
   else _output echo "+  Not backing up calenders as configured."
