@@ -64,6 +64,8 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 -f | --fetch-from-database
        Create calendar/addressbook backups by fetching the data directly from the database
        instead of downloading the according files from the ownCloud/Nextcloud webinterface.
+       When run as webserver user ownClouds/Nextclouds maintenance mode will be switched on
+       during backup to prevent data corruption.
        It is recommended to always use this option as it will become the default in calcardbackup 0.8.0
 -h | --help
        Print version number and a short help text 
@@ -105,6 +107,7 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 With version 0.7.0 *calcardbackup* brings the possibility to create calendar and addressbook backups by fetching the according data directly from the database which speeds up the backup process for addressbooks massively resulting in much less server load.  
 Additionaly the file with user credentials is not needed anymore: if *calcardbackup* doesn't find `users.txt`, all available calendars/addressbooks from the database will be backed up (option `-i|--include-shares` will then be ignored).  
 If only calendars/addressbooks of certain users shall be backed up, `users.txt` may still be used, but there is no need anymore to give passwords in this file when using option `-f`.  
+To prevent data corruption ownClouds/Nextclouds maintenance mode will be switched on during backup when using option `-f|--fetch-from-database`.
 __NOTE:__ Due to the many benefits, option `-f|--fetch-from-database` will be used as default in the next version of this script (v0.8.0).
 
 ## About option -i / -\-include-shares

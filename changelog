@@ -1,5 +1,6 @@
 vX.X.X (XX.XX.XXXX)
 - improved: don't error and exit with option -f|--fetch-from-database, if mainentance mode is active
+- changed: to prevent data corruption maintenance mode is enabled during backup when using option -f
 
 v0.7.0 (03.09.2018)
 - added: also backup calendars directly from database when using option -f|--fetch-from-database
