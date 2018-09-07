@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0-4 (07.09.2018), AGPL-3.0"
+version="0.7.0-5 (07.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -171,14 +171,16 @@ preparations() {
 
   # if $users_file is empty or not set: set it to 'users.txt' in script's dir
   [[ -z "${users_file:-}" ]] && users_file="${script_dir}/users.txt"
-  # if users.txt is not found when using option -f: fetch all available items from database:
+
+  # when using option -f: check for users.txt
   if [[ "${fetch_from_database}" == "yes" ]]; then
+    # either users.txt is found and readable OR do a complete backup from database:
     [[ -f "${users_file}" && -r "${users_file}" ]] || complete_backup_from_database="yes"
     if [[ "${complete_backup_from_database:-}" == "yes" ]]; then
       _output echo "+  file with usernames and passwords not found:"
       _output echo "+     - will fetch all available items from database"
       if [[ "${include_shares}" == "yes" ]]; then
-        # don't include shared items - will backup everything anyway:
+        # don't include shared items when doing a complete backup - will backup everything anyway:
         _output echo "+     - ignoring option to include shared items"
         include_shares="no"
       fi

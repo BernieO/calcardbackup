@@ -1,6 +1,6 @@
 # calcardbackup
 
-This Bash script exports calendars and addressbooks of given users from ownCloud/Nextcloud to .ics and .vcf files and saves them as a compressed file. Additional options are available.  
+This Bash script exports calendars and addressbooks from ownCloud/Nextcloud to .ics and .vcf files and saves them as a compressed file. Additional options are available.  
 
 ## Requirements
 
@@ -90,6 +90,7 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 -u | --usersfile FILE
        Give location of FILE, which contains users to be backed up. One user per line, with corresponding
        password separated by a colon. See 'examples/users.txt.example'
+       When using option -f (calcardbackup >= v0.7.0) there is no need to give passwords in this file.
        If this option is not given, calcardbackup will search for a file named
        'users.txt' in script's directory.
        NOTE: this file is not needed anymore when using option -f|--fetch-from-database
