@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0-3 (06.09.2018), AGPL-3.0"
+version="0.7.0-4 (07.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -117,37 +117,6 @@ read_config_file() {
   [[ -z "${backupfolder:-}" ]] || backupfolder="$(get_absolute_path "${config_file_dir}" "${backupfolder}")"
 }
 
-create_occ_command() {
-  # checks for user who is running this script and for owner of config.php and creates according command
-  # for using occ (needed for enabling and disabling maintenance mode when using option -f)
-
-  local my_identity
-
-  # which user is running this script?
-  my_identity="$(whoami)"
-
-  # either script is not running as webserver user OR assign occ_command:
-  [[ "${my_identity}" != "${htuser}" ]] || occ_command="php ${nextcloud_path}/occ "
-}
-
-maintenance_mode() {
-  # enables or disables ownClouds/Nextclouds maintenance mode (depending on $1: on|off)
-
-  local text
-
-  if [[ "${1}" == "on" ]]; then
-    text="enabl"
-    # to know whether it is necessary/possible to disable maintenance mode if an error occurs:
-    disable_maintenance_possible="yes"
-  elif [[ "${1}" == "off" ]]; then
-    text="disabl"
-    # to know whether it is necessary/possible to disable maintenance mode if an error occurs:
-    disable_maintenance_possible="no"
-  fi
-  printf "%s" "+  ${text}ing maintenance mode... "
-  ${occ_command} --no-warnings maintenance:mode --"${1}"
-}
-
 preparations() {
   # checks for needed packages, reads config-file and validates user given values:
 
@@ -202,15 +171,8 @@ preparations() {
 
   # if $users_file is empty or not set: set it to 'users.txt' in script's dir
   [[ -z "${users_file:-}" ]] && users_file="${script_dir}/users.txt"
-
-  # assign webserver user depending on owner of ownClouds/Nextclouds occ command
-  # (needed for proper warning message, if maintenance mode cant be enabled when not
-  #     running as webserver user):
-  htuser="$(stat --printf="%U" "${nextcloud_path}/occ")"
-
-  # when using option -f: check for users.txt
+  # if users.txt is not found when using option -f: fetch all available items from database:
   if [[ "${fetch_from_database}" == "yes" ]]; then
-    # either users.txt is found and readable OR do a complete backup from database:
     [[ -f "${users_file}" && -r "${users_file}" ]] || complete_backup_from_database="yes"
     if [[ "${complete_backup_from_database:-}" == "yes" ]]; then
       _output echo "+  file with usernames and passwords not found:"
@@ -221,7 +183,6 @@ preparations() {
         include_shares="no"
       fi
     fi
-    create_occ_command
   else
     # check if users.txt is a file and readable:
     check_readable_file "${users_file}" "file with usernames and passwords."
@@ -1279,10 +1240,6 @@ error_exit() {
   for message in "$@"; do
     echo "-- ${message}" >&2
   done
-
-  # disable maintenance mode if possible:
-  [[ "${disable_maintenance_possible:-}" == "yes" ]] && maintenance_mode "off"
-
   echo "-- calcardbackup: Exiting." >&2
 
   # exit with error code 64, because I read somewhere that 1 is reserved.
@@ -1429,13 +1386,6 @@ read_status_php
 get_database_details
 [[ "${complete_backup_from_database:-}" == "yes" ]] || read_users_txt
 create_backup_folder
-if [[ "${fetch_from_database}" == "yes" ]]; then
-  if [[ "${occ_command:-}" ]]; then
-    maintenance_mode "on"
-  else
-    echo "-- WARNING: can't enable maintenance-mode because not running as webserver user '${htuser}'"
-  fi
-fi
 if [[ "${backup_calendars}" != "no" ]]
   then get_calendars
   else _output echo "+  Not backing up calenders as configured."
@@ -1444,7 +1394,6 @@ if [[ "${backup_addressbooks}" != "no" ]]
   then get_addressbooks
   else _output echo "+  Not backing up addressbooks as configured."
 fi
-[[ "${occ_command:-}" ]] && maintenance_mode "off"
 check_for_backup_files
 if [[ "${backup_files_present}" == "yes" ]]; then
   if [[ "${compress}" == "no" ]]
