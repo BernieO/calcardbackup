@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0-6 (12.09.2018), AGPL-3.0"
+version="0.7.0-7 (12.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1010,15 +1010,13 @@ create_calendar_from_db() {
             if [[ "${tz_ids[$k]}" == "${line/%[[:space:]]/}" ]]; then
               # match: TZID is already present in array: remember that timezone is already saved (set vtime indicator to 2):
               vtime=2
-              # unset temporary array filled with already collected timezone-data and end the for-loop:
+              # unset temporary array (filled with partially collected timezone-data):
               unset tz_temp
-              break
+              # current VTIMEZONE component is already collected, so let's continue with the next line from database:
+              continue 2
             fi
           done
         fi
-
-        # VTIMEZONE already collected? if yes: continue with the next line:
-        [[ ${vtime:-} -eq 2 ]] && continue
 
         # save timezone_id, since it is not yet in the array for comparing timezone_ids:
         tz_ids+=("${line/%[[:space:]]/}")
