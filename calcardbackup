@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0-7 (12.09.2018), AGPL-3.0"
+version="0.7.0-8 (12.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -972,7 +972,9 @@ create_calendar_from_db() {
 
     # if looping within an iCalendar component which is not a VTIMEZONE (vtime not set) and that has not ended yet: print line to ics-file and continue with next line:
     [[ -z ${vtime:-} && ${line} != END:* && -n ${component:-} ]] && {
-      printf "%s\r\n" "${line/%[[:space:]]/}" >> "${backupfolder_day}/${filename}"
+      # (replace LF (linefeed) with CRLF (carriage-return + linefeed) according to RFC5545
+      #       with parameter expansion "${line/%[[:space:]]}")
+      printf "%s\r\n" "${line/%[[:space:]]}" >> "${backupfolder_day}/${filename}"
       continue
     }
 
@@ -1007,7 +1009,7 @@ create_calendar_from_db() {
         if [[ -n ${tz_ids:-} ]]; then
           # yes, so loop through array with collected timezone-ids and check whether TZID is already stored in $tz_ids:
           for (( k=0; k<${#tz_ids[@]}; k++ )); do
-            if [[ "${tz_ids[$k]}" == "${line/%[[:space:]]/}" ]]; then
+            if [[ "${tz_ids[$k]}" == "${line/%[[:space:]]}" ]]; then
               # match: TZID is already present in array: remember that timezone is already saved (set vtime indicator to 2):
               vtime=2
               # unset temporary array (filled with partially collected timezone-data):
@@ -1019,11 +1021,11 @@ create_calendar_from_db() {
         fi
 
         # save timezone_id, since it is not yet in the array for comparing timezone_ids:
-        tz_ids+=("${line/%[[:space:]]/}")
+        tz_ids+=("${line/%[[:space:]]}")
       fi
 
       # add line to temporary tz-array:
-      tz_temp+=("${line/%[[:space:]]/}")
+      tz_temp+=("${line/%[[:space:]]}")
 
       # check for END:VTIMEZONE:
       if [[ ${line} == END:VTI* ]]; then
@@ -1041,7 +1043,7 @@ create_calendar_from_db() {
     # END VTIMEZONE collect and compare
 
     # output line:
-    printf "%s\r\n" "${line/%[[:space:]]/}" >> "${backupfolder_day}/${filename}"
+    printf "%s\r\n" "${line/%[[:space:]]}" >> "${backupfolder_day}/${filename}"
 
   done< <(eval "${dbcommand}" "${db_query}")
 
