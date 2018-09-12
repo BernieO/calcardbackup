@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0-5 (07.09.2018), AGPL-3.0"
+version="0.7.0-6 (12.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -950,8 +950,13 @@ create_calendar_from_db() {
   # property names and property parameters are case insensitive, so let's switch on nocasematch for comparing strings:
   shopt -s nocasematch
 
+  # store IFS (Intenal Field Separator) and set it to the null string (to prevent read from stripping leading and trailing whitespace from the line)
+  # of course it is much more performant to do this outside of the loop (instead of 'while IFS= read -r line; do' as suggested often):
+  ifs_original="${IFS}"
+  IFS=
+
   # read calendardata line by line and collect components:
-  while IFS= read -r line; do
+  while read -r line; do
 
     # vtime: is indicator for VTIMEZONE
     #   vtime unset means: no VTIMEZONE component (yet) detected
@@ -1041,6 +1046,9 @@ create_calendar_from_db() {
     printf "%s\r\n" "${line/%[[:space:]]/}" >> "${backupfolder_day}/${filename}"
 
   done< <(eval "${dbcommand}" "${db_query}")
+
+  # reset IFS to its original value (was set to null string before to prevent read from stripping leading and trailing whitespace from the line):
+  IFS="${ifs_original}"
 
   # at this point of stage  all components (except for VTIMEZONES) are saved in $backupfolder_day/$filename
   # loop through array containing all VTIMEZONES and save the VTIMEZONE components at the end of the iCalendar object $backupfolder_day/$filename:
