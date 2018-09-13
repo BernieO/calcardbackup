@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0-9 (12.09.2018), AGPL-3.0"
+version="0.7.0-10 (13.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -955,11 +955,14 @@ create_calendar_from_db() {
   ifs_original="${IFS}"
   IFS=
 
+  # prepare variables:
+  vtime=0
+
   # read calendardata line by line and collect components:
   while read -r line; do
 
     # vtime: is indicator for VTIMEZONE
-    #   vtime unset means: no VTIMEZONE component (yet) detected
+    #   vtime=0 means: no VTIMEZONE component (yet) detected
     #   vtime=1 means: loop is within VTIMEZONE component, lines are collected to temp array tz_temp
     #   vtime=2 means: loop is within VTIMEZONE component, but VTIMEZONE was already collected before so this time it will be ignored
 
@@ -967,13 +970,13 @@ create_calendar_from_db() {
     #   component unset: not looping inside an iCalendar component
     #   component defined: components value is name of iCalendar component (e.g. VEVENT, VTODO, VJOURNAL, ..., iana-component or x-component which must also not be ignored)
 
-    case ${vtime:-} in
+    case ${vtime} in
       2 )
         # looping within  VTIMEZONE and VTIMEZONE was already collected before and VTIMEZONE doesn't end yet: ignore line and continue with next line:
         [[ ${line} != END:VTI* ]] && continue
         ;;
       0 )
-        # looping within an iCalendar component which is not a VTIMEZONE (vtime unset) and that has not ended yet: print line to ics-file and continue with next line:
+        # looping within an iCalendar component which is not a VTIMEZONE (vtime==0) and that has not ended yet: print line to ics-file and continue with next line:
         [[ ${line} != END:* && -n ${component:-} ]] && {
           # (replace LF (linefeed) with CRLF (carriage-return + linefeed) according to RFC5545
           #       with parameter expansion "${line/%[[:space:]]}")
@@ -998,8 +1001,8 @@ create_calendar_from_db() {
       END:${component:-} )
         # if line ends an iCalendar component: unset the component-variable:
         unset component
-        # additionally unset vtime indicator and continue with next line if we are ending an VTIMEZONE component that was collected before:
-        [[ ${vtime:-} -eq 2 ]] && { unset vtime; continue; }
+        # additionally reset vtime indicator (to 0) and continue with next line if we are ending an VTIMEZONE component that was collected before:
+        [[ ${vtime} -eq 2 ]] && { vtime=0; continue; }
         ;;
       * )
         # not looping in an iCalendar component and line doesn't begin a component: ignore line and continue with next line:
@@ -1010,7 +1013,7 @@ create_calendar_from_db() {
     # BEGIN VTIMEZONE collect and compare:
 
     # we don't know yet? So let us check:
-    if [[ ${vtime:-} -eq 1 ]]; then
+    if [[ ${vtime} -eq 1 ]]; then
 
       # does this line define an timezone-id (TZID)?
       if [[ ${line} == TZID:* ]]; then
@@ -1042,8 +1045,10 @@ create_calendar_from_db() {
         for (( k=0; k<${#tz_temp[@]}; k++ )); do
           tz_data+=("${tz_temp[$k]}")
         done
-        # unset variables, so there wont be any old data when collecting the next found timezone:
-        unset vtime tz_temp
+        # reset vtime indicator to 0:
+        vtime=0
+        # unset tz_temp, so there wont be any old data when collecting the next found timezone:
+        unset tz_temp
       fi
       # line was already stored in tz_temp array, let us get the next line from database:
       continue
