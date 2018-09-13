@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0-13 (13.09.2018), AGPL-3.0"
+version="0.7.0-14 (13.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -927,7 +927,7 @@ create_calendar_from_db() {
   # create iCalendar (.ics file) by reading calendardata directly from database (option -f | --fetch-from-database):
   # according to: https://tools.ietf.org/html/rfc5545
 
-  local line vtime component k
+  local line vtime component k ifs_original
   local -a tz_temp tz_data tz_ids
 
   # an iCalender file consists of calendar properties and calendar components.
