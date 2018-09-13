@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0-10 (13.09.2018), AGPL-3.0"
+version="0.7.0-11 (13.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -957,6 +957,7 @@ create_calendar_from_db() {
 
   # prepare variables:
   vtime=0
+  tz_ids[0]="dummy"
 
   # read calendardata line by line and collect components:
   while read -r line; do
@@ -1012,25 +1013,23 @@ create_calendar_from_db() {
 
     # BEGIN VTIMEZONE collect and compare:
 
-    # we don't know yet? So let us check:
+    # if we are looping through a VTIMEZONE, we need to check whether we collected the VTIMEZONE with this TZID already:
     if [[ ${vtime} -eq 1 ]]; then
 
       # does this line define an timezone-id (TZID)?
       if [[ ${line} == TZID:* ]]; then
-        # is there already a record in the array with already collected timezone-ids?
-        if [[ -n ${tz_ids:-} ]]; then
-          # yes, so loop through array with collected timezone-ids and check whether TZID is already stored in $tz_ids:
-          for (( k=0; k<${#tz_ids[@]}; k++ )); do
-            if [[ "${tz_ids[$k]}" == "${line/%[[:space:]]}" ]]; then
-              # match: TZID is already present in array: remember that timezone is already saved (set vtime indicator to 2):
-              vtime=2
-              # unset temporary array (filled with partially collected timezone-data):
-              unset tz_temp
-              # current VTIMEZONE component is already collected, so let's continue with the next line from database:
-              continue 2
-            fi
-          done
-        fi
+        # loop through array with collected timezone-ids and check whether TZID is already stored in $tz_ids
+        # (start with second array item, because 1st is dummy to avoid check for unset array (changed in 0.7.0-11)):
+        for (( k=1; k<${#tz_ids[@]}; k++ )); do
+          if [[ "${tz_ids[$k]}" == "${line/%[[:space:]]}" ]]; then
+            # match: TZID is already present in array: remember that timezone is already saved (set vtime indicator to 2):
+            vtime=2
+            # unset temporary array (filled with partially collected timezone-data):
+            unset tz_temp
+            # current VTIMEZONE component is already collected, so let's continue with the next line from database:
+            continue 2
+          fi
+        done
 
         # save timezone_id, since it is not yet in the array for comparing timezone_ids:
         tz_ids+=("${line/%[[:space:]]}")
