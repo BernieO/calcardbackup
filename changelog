@@ -1,5 +1,5 @@
 vX.X.X (XX.XX.XXXX)
-- improved: various code optimizations to speed up option -f exporting calendars
+- improved: various code optimizations to speed up exporting calendars with option -f
 - improved: don't error and exit with option -f, if mainentance mode is active
 - verified: compatible with Nextcloud 14.0
 

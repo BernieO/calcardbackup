@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0-12 (13.09.2018), AGPL-3.0"
+version="0.7.0-13 (13.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -989,17 +989,20 @@ create_calendar_from_db() {
 
     case "${line}" in
       BEGIN:VCALENDAR* )
-        # we don't need the begin of the VCALENDAR, because thats only needed once for an iCalender object:
+        # we need to filter out BEGIN:VCALENDAR to catch beginnings of components (it's not needed anyway):
         continue
         ;;
       BEGIN:* )
-        # if $component is unset an iCalendar component begins with this line: store component name in component variable:
+        # something is beginning here!
+        # it might be an alarm-component which resides inside an VEVENT or VTODO component
+        # if $component is unset: an iCalendar component begins with this line, so store component name in component variable:
         [[ -z ${component:-} ]] && component="${line#*:}"
-        # is this the beginning of a VTIMEZONE component? If yes:
-        #     set vtime indicator to 1 (we are now within a VTIMEZONE, but don't know yet whether this VTIMEZONE has been already collected):
+        # if this is the beginning of a VTIMEZONE component, set vtime indicator to 1
+        # (we are now within a VTIMEZONE, but don't know yet whether this VTIMEZONE has been already collected):
         [[ ${component} == VTI* ]] && vtime=1
         ;;
       END:${component:-} )
+        # something is ending here!
         # if line ends an iCalendar component: unset the component-variable:
         unset component
         # additionally reset vtime indicator (to 0) and continue with next line if we are ending an VTIMEZONE component that was collected before:
