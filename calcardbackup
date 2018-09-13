@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.0-8 (12.09.2018), AGPL-3.0"
+version="0.7.0-9 (12.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -967,36 +967,45 @@ create_calendar_from_db() {
     #   component unset: not looping inside an iCalendar component
     #   component defined: components value is name of iCalendar component (e.g. VEVENT, VTODO, VJOURNAL, ..., iana-component or x-component which must also not be ignored)
 
-    # if looping within  VTIMEZONE and VTIMEZONE was already collected before and VTIMEZONE doesn't end yet: ignore line and continue with next line:
-    [[ ${vtime:-} -eq 2 && ${line} != END:VTI* ]] && continue
+    case ${vtime:-} in
+      2 )
+        # looping within  VTIMEZONE and VTIMEZONE was already collected before and VTIMEZONE doesn't end yet: ignore line and continue with next line:
+        [[ ${line} != END:VTI* ]] && continue
+        ;;
+      0 )
+        # looping within an iCalendar component which is not a VTIMEZONE (vtime unset) and that has not ended yet: print line to ics-file and continue with next line:
+        [[ ${line} != END:* && -n ${component:-} ]] && {
+          # (replace LF (linefeed) with CRLF (carriage-return + linefeed) according to RFC5545
+          #       with parameter expansion "${line/%[[:space:]]}")
+          printf "%s\r\n" "${line/%[[:space:]]}" >> "${backupfolder_day}/${filename}"
+          continue
+        }
+        ;;
+    esac
 
-    # if looping within an iCalendar component which is not a VTIMEZONE (vtime not set) and that has not ended yet: print line to ics-file and continue with next line:
-    [[ -z ${vtime:-} && ${line} != END:* && -n ${component:-} ]] && {
-      # (replace LF (linefeed) with CRLF (carriage-return + linefeed) according to RFC5545
-      #       with parameter expansion "${line/%[[:space:]]}")
-      printf "%s\r\n" "${line/%[[:space:]]}" >> "${backupfolder_day}/${filename}"
-      continue
-    }
-
-    # if not looping in an iCalendar component and line doesn't begin a component: ignore line and continue with next line:
-    [[ ${line} != BEGIN:* && -z ${component:-} ]] && continue
-
-    # we also don't need the begin of the VCALENDAR, because thats only needed once for an iCalender object:
-    [[ ${line} == BEGIN:VCALENDAR* ]] && continue
-
-    # if an iCalendar component begins with this line: store component name in component variable:
-    if [[ ${line} == BEGIN:* && -z ${component:-} ]]; then
-      component="${line#*:}"
-    # if line ends an iCalendar component: unset the component-variable:
-    elif [[ ${line} == END:${component:-} ]]; then
-      unset component
-      # additionally unset vtime indicator and continue with next line if we are ending an VTIMEZONE component that was collected before:
-      [[ ${vtime:-} -eq 2 ]] && { unset vtime; continue; }
-    fi
-
-    # is this the beginning of a VTIMEZONE component: set vtime indicator to 1 (we are now within a VTIMEZONE,
-    #     but don't know yet whether this VTIMEZONE has been already collected):
-    [[ ${line} == BEGIN:VTI* ]] && vtime=1
+    case "${line}" in
+      BEGIN:VCALENDAR* )
+        # we don't need the begin of the VCALENDAR, because thats only needed once for an iCalender object:
+        continue
+        ;;
+      BEGIN:* )
+        # if $component is unset an iCalendar component begins with this line: store component name in component variable:
+        [[ -z ${component:-} ]] && component="${line#*:}"
+        # is this the beginning of a VTIMEZONE component? If yes:
+        #     set vtime indicator to 1 (we are now within a VTIMEZONE, but don't know yet whether this VTIMEZONE has been already collected):
+        [[ ${component} == VTI* ]] && vtime=1
+        ;;
+      END:${component:-} )
+        # if line ends an iCalendar component: unset the component-variable:
+        unset component
+        # additionally unset vtime indicator and continue with next line if we are ending an VTIMEZONE component that was collected before:
+        [[ ${vtime:-} -eq 2 ]] && { unset vtime; continue; }
+        ;;
+      * )
+        # not looping in an iCalendar component and line doesn't begin a component: ignore line and continue with next line:
+        [[ -z ${component:-} ]] && continue
+        ;;
+    esac
 
     # BEGIN VTIMEZONE collect and compare:
 
