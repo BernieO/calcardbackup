@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.7.2 (19.09.2018)
 - improved: don't suppress error messages from PostgreSQLs interactive terminal `psql`
 - fixed: don't error and exit, if there are no calendars or addressbooks existing
 
