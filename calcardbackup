@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.1-1 (19.09.2018), AGPL-3.0"
+version="0.7.1-2 (19.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -805,16 +805,18 @@ get_icsvcf_files() {
   local -i exported i z index
   local line filename item_name file_received convert
 
+  # check whether database returned 0 entries (meaning there is not a single calendar/addressbook in the database):
+  if [[ -z ${uri:-} ]]; then
+    _output echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
+    # unset arrays (to not include calendardata for addressbook export):
+    unset -v id principal uri displayname already_saved_as
+    # there is not a single item to export, let's exit this function and proceed:
+    return
+  fi
+
   # counter for exported items:
   # (to be able to print message that there is no valid user in users.txt, if no calendar/addressbook was exported)
   exported=0
-
-  # check whether database returned 0 entries (meaning there is not a single calendar/addressbook in the database):
-  if [[ ${#uri[@]} == 0 ]]; then
-    _output echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
-    # in this case: exported=1 though nothing exported, because different from no user match (see end of this function)
-    exported=1
-  fi
 
   # switch to datadirectory if we want to get addressbooks directly from database:
   [[ "${dbtype}" == "sqlite3" && "${fetch_from_database}" == "yes" ]] && cd "${datadirectory}"
