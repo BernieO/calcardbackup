@@ -1,3 +1,7 @@
+vX.X.X (XX.XX.XXXX)
+- improved: don't suppress error messages from PostgreSQLs interactive terminal `psql`
+- fixed: don't error and exit, if there are no calendars or addressbooks existing
+
 v0.7.1 (13.09.2018)
 - improved: various code optimizations to speed up exporting calendars with option -f
 - improved: don't error and exit with option -f, if mainentance mode is active
