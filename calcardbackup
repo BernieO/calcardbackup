@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2 (19.09.2018), AGPL-3.0"
+version="0.7.2-1 (24.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -439,7 +439,9 @@ read_status_php() {
 
   # check for "needsDbUpgrade":true in status.php and exit if ownCloud/Nextcloud needs a DbUpgrade:
   regex='"needsDbUpgrade":"?true"?'
-  [[ "${status_php}" =~ ${regex} ]] && error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your ${productname} Installation before running this script again!"
+  if [[ "${status_php}" =~ ${regex} && "${fetch_from_database}" == "no" ]]; then
+    error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your ${productname} Installation before running this script again!"
+  fi
 
   # check whether version of config.php is the same than version of status.php:
   if [[ "${version_status_php}" != "${version_config_php}" ]]; then
