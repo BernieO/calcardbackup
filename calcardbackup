@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-1 (24.09.2018), AGPL-3.0"
+version="0.7.2-2 (24.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -598,7 +598,7 @@ query_database() {
   [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
   [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
   [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")"
-  [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table}")"
+  [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table} LIMIT 1;")"
 
   if [[ "${check_table:-}" == "" ]]; then
     # print notice, if table doesn't exist:
@@ -660,7 +660,7 @@ include_shares() {
     [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
     [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
     [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}'")"
-    [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table_shares}")"
+    [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table_shares} LIMIT 1;")"
 
     if [[ "${check_table:-}" == "" ]]; then
       # print notice, if $table_shares doesn't exist:
@@ -702,7 +702,7 @@ include_shares() {
       [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_group_user}'")"
       [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_group_user}'")"
       [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}'")"
-      [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table_group_user}")"
+      [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table_group_user} LIMIT 1;")"
 
       if [[ "${check_table:-}" != "" ]]; then
         # table group_user exists -> read values in array grouplist:
