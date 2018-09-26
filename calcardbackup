@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-4 (26.09.2018), AGPL-3.0"
+version="0.7.2-5 (26.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -380,8 +380,8 @@ read_config_php() {
     # if overwrite.cli.url is found (and $nextcloud_url is on default value): use it as $nextcloud_url
     nextcloud_url="${nextcloud_url_overwrite}"
   fi
-  # Print url which will be used:
-  _output echo "+  Using URL ${nextcloud_url}"
+  # Print url which will be used (only if it differs from default value):
+  [[ ${nextcloud_url} == ${nextcloud_url_default} ]] || _output echo "+  Configured URL: ${nextcloud_url}"
 }
 
 read_status_php() {
