@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-2 (24.09.2018), AGPL-3.0"
+version="0.7.2-3 (26.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -126,9 +126,6 @@ preparations() {
   _output echo "+  $(date) --> START calcardbackup ver. ${version}"
   _output echo "+  Checking dependencies and preparing..."
 
-  # check for package curl
-  which curl > /dev/null || error_exit "ERROR: Package 'curl' is needed for running this script." "Install with 'apt-get install curl' and run script again"
-
   # if option -c|--configfile or nothing at all or only -b is given - read config file (and overwrite default values):
   [[ ! -z "${config_file:-}" ]] && read_config_file
   # if neither configfile nor path to ownCloud/Nextcloud is given - error and exit:
@@ -167,6 +164,15 @@ preparations() {
     _output echo "-- WARNING: Parameter 'fetch_from_database' is not valid (only \"yes\" or \"no\" allowed)."
     _output echo "-- WARNING: Using default value instead: fetch_from_database=\"no\""
     fetch_from_database="no"
+  fi
+
+  # check for package curl
+  curl_installed="yes"
+  which curl > /dev/null || curl_installed="no"
+  if [[ ${curl_installed} == "no" ]]; then
+    # cURL is not necessarily needed for fetching data from database, but cURL is indeed needed to get
+    # calendars/addressbooks via http. So error and exit, if fetch_from_database="no":
+    [[ ${fetch_from_database} == "yes" ]] || error_exit "ERROR: Package 'curl' is needed for running this script without option -f." "Run script again with option '-f' or install cURL with 'apt-get install curl' and run script again."
   fi
 
   # if $users_file is empty or not set: set it to 'users.txt' in script's dir
@@ -357,8 +363,18 @@ read_config_php() {
     _output echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
     _output echo "-- ${nextcloud_url}/   ==>   given with option -a/--address or found in config file."
   elif [[ "${nextcloud_url}" == "${nextcloud_url_default}" && "${nextcloud_url_overwrite}" == "" ]]; then
-    # Error, if $nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
-    error_exit "ERROR: Can't retrieve url from ${configphp}" "In your case the URL needs to be passed to the script (via -a/--address or config file)"
+    if [[ ${fetch_from_database} == "no" ]]; then
+      # we want do download addressbooks/calendars - therefore the URL to ownCloud/Nextcloud server is required.
+      # Error, if $nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
+      error_exit "ERROR: Can't retrieve url from ${configphp}" "In your case the URL needs to be passed to the script (via -a/--address or config file)"
+    else
+      # if we fetch everything from database, we do not need the url of the ownCloud/Nextcloud server,
+      # so avoid requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no"
+      _output echo "-- NOTICE: Can't retrieve url from ${configphp}."
+      _output echo "-- NOTICE: Continuing anyway, because fetching everything from database."
+      # For this scenario this variable name is a bit misleading, but the script needs to act as if curl wasn't installed:
+      curl_installed="no"
+    fi
   elif [[ "${nextcloud_url_overwrite}" != "" ]]; then
     # if overwrite.cli.url is found (and $nextcloud_url is on default value): use it as $nextcloud_url
     nextcloud_url="${nextcloud_url_overwrite}"
@@ -433,7 +449,7 @@ read_status_php() {
     productname="ownCloud"
   else {
     _output echo "-- Notice: can't detect vendor."
-    productname="server"
+    productname="Server"
   }
   fi
 
@@ -1412,7 +1428,17 @@ done
 
 preparations
 read_config_php
-read_status_php
+case ${curl_installed} in
+  yes )
+    # read status.php only if cURL is installed:
+    read_status_php
+    ;;
+  no )
+    # cURL is not installed - don't read status.php and assign a default value to productname:
+    productname="Server"
+    _output echo "+  Nextcloud/ownCloud ${productname} version ${version_config_php} detected."
+    ;;
+esac
 get_database_details
 [[ "${complete_backup_from_database:-}" == "yes" ]] || read_users_txt
 create_backup_folder

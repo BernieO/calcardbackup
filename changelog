@@ -1,4 +1,5 @@
 vX.X.X (XX.XX.XXXX)
+- improved: cURL is not a requirement anymore when using option -f
 - improved: don't error and exit with option -f, if Nextcloud/ownCloud need to upgrade the database
 - improved: downscale of checks for existing tables in PostgreSQL
 

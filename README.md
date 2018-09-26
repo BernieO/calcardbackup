@@ -6,7 +6,7 @@ This Bash script exports calendars and addressbooks from ownCloud/Nextcloud to .
 
 - working local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
 - the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, all used configuration files and to the script itself
-- package `curl`
+- package `curl` (not required when run with option -f)
 - *optional*: package `zip` to compress backup as zip-file  (instead of tar.gz)
 
 ## Quick Installation Guide
