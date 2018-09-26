@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-3 (26.09.2018), AGPL-3.0"
+version="0.7.2-4 (26.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -140,18 +140,6 @@ preparations() {
   # location of ownClouds/Nextclouds config.php:
   configphp="${nextcloud_path}/config/config.php"
 
-  # check $trustful_certificate for valid value (could only be invalid when using config-file):
-  if [[ ! "${trustful_certificate}" =~ ^(yes|no)$ ]]; then
-    _output echo "-- NOTICE: Parameter 'trustful_certificate' is not valid (allowed is only \"yes\" or \"no\")."
-    _output echo "-- NOTICE: Using default value instead: trustful_certificate=\"yes\""
-    trustful_certificate="yes"
-  fi
-  # assign insecure option for curl (depending on value given by user):
-  [[ "${trustful_certificate}" == "yes" ]] && trust=""
-  [[ "${trustful_certificate}" == "no" ]] && trust="--insecure"
-  # variable $trustful_certificate is not needed anymore:
-  unset -v trustful_certificate
-
   # check $include_shares for valid value (could only be invalid when using config-file):
   if [[ ! "${include_shares}" =~ ^(yes|no)$ ]]; then
     _output echo "-- WARNING: Parameter 'include_shares' is not valid (only \"yes\" or \"no\" allowed)."
@@ -173,7 +161,20 @@ preparations() {
     # cURL is not necessarily needed for fetching data from database, but cURL is indeed needed to get
     # calendars/addressbooks via http. So error and exit, if fetch_from_database="no":
     [[ ${fetch_from_database} == "yes" ]] || error_exit "ERROR: Package 'curl' is needed for running this script without option -f." "Run script again with option '-f' or install cURL with 'apt-get install curl' and run script again."
+  else
+    # this is only needed, if curl is installed:
+    # check $trustful_certificate for valid value (could only be invalid when using config-file):
+    if [[ ! "${trustful_certificate}" =~ ^(yes|no)$ ]]; then
+      _output echo "-- NOTICE: Parameter 'trustful_certificate' is not valid (allowed is only \"yes\" or \"no\")."
+      _output echo "-- NOTICE: Using default value instead: trustful_certificate=\"yes\""
+      trustful_certificate="yes"
+    fi
+    # assign insecure option for curl (depending on value given by user):
+    [[ "${trustful_certificate}" == "yes" ]] && trust=""
+    [[ "${trustful_certificate}" == "no" ]] && trust="--insecure"
   fi
+  # variable $trustful_certificate is not needed anymore:
+  unset -v trustful_certificate
 
   # if $users_file is empty or not set: set it to 'users.txt' in script's dir
   [[ -z "${users_file:-}" ]] && users_file="${script_dir}/users.txt"
