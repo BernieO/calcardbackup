@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-7 (27.09.2018), AGPL-3.0"
+version="0.7.2-8 (27.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -155,13 +155,14 @@ preparations() {
   fi
 
   # check for package curl
-  curl_installed="yes"
   which curl > /dev/null || curl_installed="no"
-  if [[ ${curl_installed} == "no" ]]; then
+  if [[ ${curl_installed:-} == "no" ]]; then
     # cURL is not necessarily needed for fetching data from database, but cURL is indeed needed to get
     # calendars/addressbooks via http. So error and exit, if fetch_from_database="no":
-    [[ ${fetch_from_database} == "yes" ]] || error_exit "ERROR: Package 'curl' is needed for running this script without option -f." "Run script again with option '-f' or install cURL with 'apt-get install curl' and run script again."
+    [[ ${fetch_from_database} == "yes" ]] && _output echo "+  Info: cURL not installed. Can't detect vendor."
+    [[ ${fetch_from_database} == "no" ]] && error_exit "ERROR: Package 'curl' is needed for running this script without option -f." "Run script again with option '-f' or install cURL with 'apt-get install curl' and run script again."
   else
+    curl_installed="yes"
     # this is only needed, if curl is installed:
     # check $trustful_certificate for valid value (could only be invalid when using config-file):
     if [[ ! "${trustful_certificate}" =~ ^(yes|no)$ ]]; then
@@ -380,8 +381,10 @@ read_config_php() {
     # if overwrite.cli.url is found (and $nextcloud_url is on default value): use it as $nextcloud_url
     nextcloud_url="${nextcloud_url_overwrite}"
   fi
-  # Print url which will be used (only if it differs from default value):
-  [[ ${nextcloud_url} == ${nextcloud_url_default} ]] || _output echo "+  Configured URL: ${nextcloud_url}"
+  # Print url which will be used (only if curl is installed and if it differs from default value):
+  if  [[ ${curl_installed} == "yes" ]]; then
+    [[ ${nextcloud_url} == ${nextcloud_url_default} ]] || _output echo "+  Configured URL: ${nextcloud_url}"
+  fi
 }
 
 read_status_php() {
