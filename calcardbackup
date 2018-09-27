@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-6 (26.09.2018), AGPL-3.0"
+version="0.7.2-7 (27.09.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -367,7 +367,7 @@ read_config_php() {
     if [[ ${fetch_from_database} == "no" ]]; then
       # we want do download addressbooks/calendars - therefore the URL to ownCloud/Nextcloud server is required.
       # Error, if $nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
-      error_exit "ERROR: Can't retrieve url from ${configphp}" "In your case the URL needs to be passed to the script (via -a/--address or config file)"
+      error_exit "ERROR: Can't retrieve url from ${configphp}" "Either use option '-f|--fetch-from-database' or pass URL to the script (via -a/--address or config file)"
     else
       # if we fetch everything from database, we do not need the url of the ownCloud/Nextcloud server,
       # so avoid requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no"
@@ -393,8 +393,6 @@ read_status_php() {
 
   # store output of status.php in variable OR store curls exit code if it returns an empty string (which is in case of an error):
   status_php="$(curl -s ${trust} "${nextcloud_url}/status.php")" || cerror=$?
-  # if error code is set, call function to examine curls exit code and print according message to stderr:
-  [[ -n "${cerror:-}" ]] && curl_error
 
   # Output of status.php of the different ownCloud/Nextcloud versions:
   # ownCloud 5.0.9   {"installed":"true","version":"5.0.38","versionstring":"5.0.19","edition":""}
@@ -420,7 +418,23 @@ read_status_php() {
   # (due to options added in ownCloud 10.0: version(string) maybe hidden or hostname maybe present (see hide.version, show_server_hostname in config.php))
   regex='^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[^"]*","versionstring":"[^"]*","edition":"[^"]*"(,"productname":"[^"]*")?(,"hostname":"[^"]*")?\}$'
   # check status.php for valid installation of ownCloud/Nextcloud:
-  [[ ! "${status_php}" =~ ${regex} ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !"
+  if [[ ! "${status_php}" =~ ${regex} || -n ${cerror:-} ]]; then
+    if [[ ${fetch_from_database} == "yes" ]]; then
+      # if we fetch everything from database, this script can run anyway, even if ownCloud/Nextcloud is not online,
+      # requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no" and return from this function:
+      [[ -n ${cerror:-} ]] && _output echo "-- NOTICE: requesting status.php failed with cURL error '${cerror}'."
+      [[ -z ${cerror:-} ]] && _output echo "-- NOTICE: no valid status.php found at ${nextcloud_url}."
+      _output echo "-- NOTICE: Continuing anyway, because fetching everything from database."
+      curl_installed="no"
+      productname="Server"
+      return
+    else
+      # if error code is set and we don't fetch things from database, call function to examine
+      # curls exit code and print according message to stderr:
+      [[ -n ${cerror:-} ]] && curl_error
+      [[ -z ${cerror:-} ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again with using option '-f|--fetch-from-database'"
+    fi
+  fi
 
   # get version from status.php:
   version_status_php=${status_php#*version\":\"}
