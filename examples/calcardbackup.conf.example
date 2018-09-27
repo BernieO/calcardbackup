@@ -12,12 +12,6 @@
 #
 # All paths in this config file need to be relative to this files location or absolute paths!
 #
-# Don't forget to create file 'users.txt' with username and corresponding password,
-# separated by a colon, one user per line.
-# See files 'README.md' and 'users.txt.example'
-# NOTE: file 'users.txt' is not necessarily needed anymore, if parameter fetch_from_database
-# is being set to "yes" (see below)
-#
 # For clarification, the associated command line options are given in comments.
 #
 #######################################################
@@ -46,12 +40,12 @@ trustful_certificate="yes"
 
 
 # path to file with usernames and passwords (see 'README.md' and 'users.txt.example')
-# if not declared, file 'users.txt' in script's directory will be used.
-# NOTE: this file is not needed anymore if parameter 'fetch_from_database' is
-#       set to "yes" below!
+# NOTE: starting with calcardackup version 0.7.0 this file is not needed anymore.
+# if this is unset, or the file is not found, calcardbackup will create a backup of all
+# calendars/addressbooks by fetching the data directly from the database.
 # correlates to option -u|--usersfile
 
-users_file="users.txt"
+users_file=""
 
 
 # path to folder where backed up files will be saved.
@@ -107,32 +101,31 @@ backup_addressbooks="yes"
 backup_calendars="yes"
 
 
-# calcardbackup is traditionally backing up calendars and addressbooks by downloading
-# the according files from the ownCloud/Nextcloud webinterface. However, with large
-# addressbooks, this can lead to timeouts resulting in calcardbackup not being able to
-# backup large addressbooks.
-# calcardbackup version 0.7.0 brings the possibility to create calendar and addressbook
-# backups by fetching the data directly from the database which speeds up the backup
-# process for addressbooks massively resulting in much less server load. This is why it
-# is highly recommended to change this value to "yes".
-# NOTE 1: there is no need anymore to specify passwords in users.txt when using this option.
-# NOTE 2: it gets even better: there is no need anymore to use a file with user credentials
-#         because calcardbackup doesn't need anymore to authenticate against ownCloud/Nextcloud
-#         server since data is fetched from the database. So if calcardbackup doesn't find
-#         the file with user credentials it just will backup all calendars/addressbooks
-#         from the database.
-# NOTE 3: In the next version of this script the default will be "yes" for this option.
-# change to "yes" if you want to create backups of calendars/addressbooks by fetching data
-# directly from the database (recommended!)
-# correlates to option -f|--fetch-from-database
+# until v0.6.2 calcardbackup was traditionally backing up calendars and addressbooks
+# by downloading the according files from the ownCloud/Nextcloud webinterface. However,
+# with large addressbooks, this could lead to timeouts resulting in calcardbackup not
+# being able to backup large addressbooks. Also a file with user credentials of all
+# users whose calendars/addressbooks should be backed up was mandatory.
+# calcardbackup version 0.7.0 brought the possibility to create calendar and addressbook
+# backups by fetching the data directly from the database which makes the file with user
+# credentials obsolete. Also the time needed for backing up addressbooks is massively
+# reduced resulting in much less server load.
+# The file users.txt may still be used, if only items of some users shall be backed up, in which
+# case passwords don't have to be given anymore.
+#
+# NOTE: starting with calcardbackup version 0.8.0 the default is "yes" for this option.
+#
+# change to "no" if you want use the old behaviour of this script and download the vcf/ics
+# files via http request from your ownCloud/Nextcloud server (not recommended!)
+# a value of "yes" correlates to option -f|--fetch-from-database
+# a value of "no" correlates to option  -g|--get-via-http
 
-fetch_from_database="no"
+fetch_from_database="yes"
 
 
 # change to "yes" if you want to backup shared addressbooks/calendars as well.
-# This may be used to provide just one username with according password in 'users.txt',
-# to whom all items, needed to be backed up, are shared. With that approach, only
-# this user's password will be compromised in case 'users.txt' gets in wrong hands.
+# This may be used to provide just one username in 'users.txt', to whom
+# all items, needed to be backed up, are shared.
 # NOTE: if fetch_from_database is set to "yes" and file users.txt is missing, this
 #       option will be ignored.
 # correlates to option -i|--include-shares

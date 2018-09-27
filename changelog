@@ -1,8 +1,11 @@
 vX.X.X (XX.XX.XXXX)
+- added: new option -g|--get-via-http for old behaviour to get files via http request
 - improved: don't error and exit with option -f, if Server is offline
 - improved: cURL is not a requirement anymore when using option -f
 - improved: don't error and exit with option -f, if Nextcloud/ownCloud need to upgrade the database
 - improved: downscale of checks for existing tables in PostgreSQL
+- changed: option -f|--fetch-from-dataase is now the default
+- changed: calcardbackup will not look for file users.txt in scripts directory, if not declared
 
 v0.7.2 (19.09.2018)
 - improved: don't suppress error messages from PostgreSQLs interactive terminal `psql`
