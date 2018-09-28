@@ -6,8 +6,8 @@ This Bash script exports calendars and addressbooks from ownCloud/Nextcloud to .
 
 - local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
 - the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, all used configuration files and to the script itself
-- *optional*: package `curl` when using option `-g` to get calendars/addressbooks via http(s) request (instead of fetching data from the database)
 - *optional*: package `zip` to compress backup as zip-file  (instead of tar.gz)
+- *optional*: package `curl` when using option `-g` to get calendars/addressbooks via http(s) request (not recommended)
 
 ## Quick Installation Guide
 
@@ -19,7 +19,7 @@ This Bash script exports calendars and addressbooks from ownCloud/Nextcloud to .
 2. Change the ownership of repo to your webserver's user (here `www-data`):  
 `chown -R www-data:www-data .`  
 
-3. Run the script as user `www-data` and give as first argument the path to your ownCloud/Nextcloud instance (here `/var/www/nextcloud`). If you are using a self-signed certificate, you might have to use option `-s` as well:  
+3. Run the script as user `www-data` and give as first argument the path to your ownCloud/Nextcloud instance (here `/var/www/nextcloud`):  
 `sudo -u www-data ./calcardbackup "/var/www/nextcloud"`
 
 4. Check output of script - it will tell, if it needs any other options.
@@ -30,7 +30,7 @@ There are many more options available: have a look at sections "Options" and "Us
 
 ## Advanced
 
-All options can be specified in a configuration file or as command line arguments. If started with no options at all or only `-b|--batch`, the script attempts to use files `calcardbackup.conf` in the script's directory as configuration file.  
+All options can be specified in a configuration file or as command line arguments. If started with no options at all or only `-b|--batch`, the script attempts to use file `calcardbackup.conf` in the script's directory as configuration file.  
 If no configuration file via option `-c|--config` is given, the path to your ownCloud/Nextcloud instance must be the very first argument. Find detailed description of all available options below.
 
 ## Options
@@ -43,16 +43,16 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 
 -a | --address URL
        Pass URL of ownCloud Installation to script.
-       Only required for ownCloud < 7.0 when using option -g
+       Only required when using option '-g|--get-via-http' for ownCloud < 7.0
 -b | --batch
        Batch mode: print nothing to stdout, except for path to backup.
        Depending on configuration this will be:
          - absolute path of compressed backup file
-       or if run with option -x|--uncompressed (see below)
+       or if run with option '-x|--uncompressed' (see below)
          - absolute path of directory containing uncompressed files
 -c | --configfile FILE
        Read configuration from FILE. See 'examples/calcardbackup.conf.example'
-       All other options except for -b|--batch will be ignored!
+       All other options except for '-b|--batch' will be ignored!
 -d | --date FORMAT
        Use FORMAT as file name extension for backup directory or compressed backup file.
        FORMAT needs to be a format descriptor of the command date().
@@ -64,17 +64,18 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 -f | --fetch-from-database
        Create calendar/addressbook backups by fetching the data directly from the database
        instead of downloading the according files from the ownCloud/Nextcloud webinterface.
-       Due to many benefits this is the default for calcardbackup >= 0.8.0
+       It is not required to give this option as this is the default for calcardbackup >= 0.8.0
 -g | --get-via-http
        Get calendar/addressbooks via http request from the ownCloud/Nextcloud server. This used to
-       be the default behaviour until calcardbackup <= 0.7.2, but is now not recommended anymore.
-       When using this option, a file with user credentials (see option -u) is mandatory.
+       be the default behaviour until calcardbackup <= 0.7.2, but is not recommended anymore.
+       When using this option, a file with usernames and according cleartext passwords (see option
+       '-u|--users-file') is mandatory.
 -h | --help
        Print version number and a short help text 
 -i | --include-shares
        Backup shared addressbooks/calendars as well. Items will only be backed up once: e.g. a shared
        calendar won't be backed up, if the same calendar was already backed up for another user.
-       NOTE: this option will be ignored, if not used together with option -u.
+       NOTE: this option will be ignored, if not used together with option '-u|--users-file'.
 -na | --no-addressbooks
        Do not backup addressbooks
 -nc | --no-calendars
@@ -91,12 +92,13 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Remove backups older than N days from backup folder (N needs to be a positive integer).
 -s | --selfsigned
        Needs to be given if certificate is selfsigned or for any other reason not trustful to curl.
+       This option might only be needed when using option '-g|--get-via-http'
 -u | --usersfile FILE
        Give location of FILE, which contains users to be backed up. One user per line.
        See 'examples/users.txt.example'
-       Due to option '-f|--fetch-from-database' being the new default for calcardbackup >= 0.8.0
+       Due to option '-f|--fetch-from-database' being the default for calcardbackup >= 0.8.0
        there is no need anymore to give passwords in this file or to use this file at all.
-       NOTE: this file is mandatory when run with option '-g|--get-via-http' (not recommended)
+       NOTE: this file is mandatory when run with option '-g|--get-via-http'
 -x | --uncompressed
        Do not compress backup folder
 -z | --zip
