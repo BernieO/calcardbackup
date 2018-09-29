@@ -2,12 +2,14 @@
 
 This Bash script exports calendars and addressbooks from ownCloud/Nextcloud to .ics and .vcf files and saves them as a compressed file. Additional options are available.  
 
+__IMPORTANT__: starting with version 0.8.0 there is no need anymore for a file with user credentials because *calcardbackup* creates backups by fetching the relevant data directly from the database. All users upgrading calcardbackup from a previous version to version 0.8.0 are advised to delete the file with users credentials - or at least remove the cleartext passwords from this file!  
+
 ## Requirements
 
 - local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
 - the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, all used configuration files and to the script itself
 - *optional*: package `zip` to compress backup as zip-file  (instead of tar.gz)
-- *optional*: package `curl` when using option `-g` to get calendars/addressbooks via http(s) request (not recommended)
+- *optional*: package `curl` when using option `-g` (which is not recommended!) to get calendars/addressbooks via http(s)
 
 ## Quick Installation Guide
 
@@ -66,6 +68,7 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        instead of downloading the according files from the ownCloud/Nextcloud webinterface.
        It is not required to give this option as this is the default for calcardbackup >= 0.8.0
 -g | --get-via-http
+       NOTE: this option is deprecated. It is only available due to backwards compatibility.
        Get calendar/addressbooks via http request from the ownCloud/Nextcloud server. This used to
        be the default behaviour until calcardbackup <= 0.7.2, but is not recommended anymore.
        When using this option, a file with usernames and according cleartext passwords (see option
@@ -107,6 +110,7 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
 
 ## About option -f / -\-fetch-from-database (default)
 
+__NOTE__: startin with version 0.8.0 this option is the default and does not have to be passed to the script.  
 *calcardbackup* was traditionally backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. However, with large addressbooks, this could lead to timeouts resulting in *calcardbackup* not being able to backup large addressbooks. Also there was a file with user credentials needed.  
 With version 0.8.0 *calcardbackup* creates calendar and addressbook backups as default by fetching the according data directly from the database which speeds up the backup process for addressbooks massively resulting in much less server load.  
 Additionaly the file with user credentials is not needed anymore: all available calendars/addressbooks from the database will be backed up (option `-i|--include-shares` will be ignored).  
@@ -119,10 +123,10 @@ In order for this to work, calcardbackup has to be run with `sudo` (even running
 
 ## Usage examples
 
-1. `./calcardbackup /var/www/nextcloud -s -nc -x`  
-Ignore, that certificate is not trustful (`-s`), do not backup calendars (`-nc`) and store backed up files uncompressed (`-x`) in folder named `calcardbackup-YYYY-MM-DD` (default) under ./backups/ (default).
+1. `./calcardbackup /var/www/nextcloud -nc -x`  
+Do not backup calendars (`-nc`) and store backed up files uncompressed (`-x`) in folder named `calcardbackup-YYYY-MM-DD` (default) under ./backups/ (default).
 
-2. `./calcardbackup /var/www/nextcloud --selfsigned --no-calendars --uncompressed`  
+2. `./calcardbackup /var/www/nextcloud --no-calendars --uncompressed`  
 This is exactly the same command like in the first example but with using long options instead of short options.
 
 3. `./calcardbackup -c /etc/calcardbackup.conf`  
@@ -133,10 +137,14 @@ It doesn't make any sense to give more options on command line in this case, bec
 Supress output except for path to the backup (`-b`), use extension .DD.HH (`-d .%d.%H`), zip backup (`-z`), encrypt the zipped backup with using the first line in file /home/tom/key as encryption-key (`-e /home/tom/key`), save backup in folder /media/data/backupfolder/ (`-o /media/data/backupfolder/`), only backup items of usernames given in file /etc/calcardbackupusers (`-u /etc/calcardbackupusers`), include shared items (`-i`) and delete all backups older than 15 days (`-r 15`)  
 
 5. `./calcardbackup`  
-Use file calcardbackup.conf in the script's directory as configuration file.
+Use file calcardbackup.conf in the script's directory as configuration file. This is basically the same as example no.3, but with a different location of the configuration file.
 
 6. `sudo ./calcardbackup /var/snap/nextcloud/current/nextcloud -p`  
 This example is for nextcloud-snap users. calcardbackup will use the cli utility from nextcloud-snap to access the database (`-p`) and backup all calendars/addressbooks found in the database.  
+
+7. `./calcardbackup /var/www/nextcloud -g -u /etc/calcardbackupusers -s -i`  
+Use the deprecated method and get the addressbook/calendar files via https-request from the ownCloud/Nextcloud webinterface (`-g`, deprecated), find usernames and according cleartext passwords of users to be backed up in file /etc/calcardbackupusers (`-u calcardbackupusers`, mandatory with option -g), tell calcardbackup, that the server is using a selfsigned certificate (`-s`, only needed with option -g) and include shared items (`-i`). The Backup will be saved as compressed `*-tar.gz` file in folder named `calcardbackup-YYYY-MM-DD` (default) under `./backups/` (default).  
+__NOTE__: using option `-g` is deprecated and not recommended anymore, due to the mandatory file with user credentials and other drawbacks!  
 
 ## Considerations about encryption
 
