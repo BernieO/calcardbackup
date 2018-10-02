@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-11 (02.10.2018), AGPL-3.0"
+version="0.7.2-12 (02.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -397,7 +397,7 @@ read_config_php() {
   fi
   # Print url which will be used (only if curl is installed and if it differs from default value):
   if  [[ ${curl_installed} == "yes" ]]; then
-    [[ ${nextcloud_url} == ${nextcloud_url_default} ]] || _output echo "+  Configured URL: ${nextcloud_url}"
+    [[ ${nextcloud_url} == "${nextcloud_url_default}" ]] || _output echo "+  Configured URL: ${nextcloud_url}"
   fi
 }
 
