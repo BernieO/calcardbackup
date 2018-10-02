@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-9 (27.09.2018), AGPL-3.0"
+version="0.7.2-10 (02.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -189,7 +189,7 @@ preparations() {
       unset ignore
       complete_backup_from_database="yes"
     elif [[ ${fetch_from_database} == "no" ]]; then
-      error_exit "file with username and credentials mussed be passed to this script when using option -g!"
+      error_exit "file with usernames and according passwords must be passed to this script when using option '-g'!"
     fi
   fi
   # if $users_file is set: check for file with usernames (+passwords)
@@ -1405,12 +1405,16 @@ do
       passphrase_file="${1}"
     ;;
     -f | --fetch-from-database )
-      # this is the default for calcardbackup >= 0.8.0
+      # not mentioned in README.md as this is the default for calcardbackup >= 0.8.0
       fetch_from_database="yes"
+      # make sure -f overrides -g, if both (-f and -g) is given (see below):
+      f=1
     ;;
     -g | --get-via-http )
+      # deprecated
       # this used to be the defaut for calcardbackup <= v0.7.2
-      fetch_from_database="no"
+      # make sure -f overrides -g, if both (-f and -g) is given (see above):
+      [[ ${f:-} -eq 1 ]] || fetch_from_database="no"
     ;;
     -h | --help )
       print_help
