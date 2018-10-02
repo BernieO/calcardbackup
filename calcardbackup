@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-10 (02.10.2018), AGPL-3.0"
+version="0.7.2-11 (02.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -182,10 +182,10 @@ preparations() {
   if [[ -z ${users_file} ]]; then
     if [[ ${fetch_from_database} == "yes" ]]; then
       if [[ ${include_shares} == "yes" ]]; then
-        ignore=" and ignore option to include shared items"
+        ignore=", but ignore shared ones."
         include_shares="no"
       fi
-      _output echo "+  will fetch all available items from database${ignore:-}"
+      _output echo "+  no usersfile given: will backup all available items${ignore:-.}"
       unset ignore
       complete_backup_from_database="yes"
     elif [[ ${fetch_from_database} == "no" ]]; then
