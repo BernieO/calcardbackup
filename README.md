@@ -3,7 +3,8 @@
 This Bash script exports calendars and addressbooks from ownCloud/Nextcloud to .ics and .vcf files and saves them as a compressed file. Additional options are available.
 
 __IMPORTANT__: starting with version 0.8.0 there is no need anymore for a file with user credentials because *calcardbackup* creates backups by fetching the relevant data directly from the database.  
-If only calendars/addressbooks of certain users shall be backed up, `users.txt` may still be used, but there is no need anymore to give passwords in this file.  
+If only calendars/addressbooks of certain users shall be backed up, `users.txt` may still be used, but there is no need anymore to give passwords in this file.
+
 __All users upgrading calcardbackup from a previous version to version 0.8.0 or above are strongly advised to delete the file with users credentials - or at least to remove the cleartext passwords from this file!__
 
 ## Requirements
@@ -11,7 +12,7 @@ __All users upgrading calcardbackup from a previous version to version 0.8.0 or 
 - local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
 - the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, all used configuration files and to the script itself
 - *optional*: package `zip` to compress backup as zip-file  (instead of tar.gz)
-- *optional*: package `curl` when using deprecated option `-g`
+- *optional*: package `curl` when using deprecated option `-g|--get-via-http`
 
 ## Quick Installation Guide
 
@@ -151,8 +152,9 @@ __NOTE__: using option `-g` is deprecated and not recommended anymore, due to th
 
 __NOTE__: this option (which used to be the default until *calcardbackup v0.7.2*) is deprecated and not recommended anymore due to the necessity to give cleartext passwords in a separate file.  
 
-As default *calcardbackup* creates calendar and addressbook backups by fetching the according data directly from the database. However, invoked with option `-g|--get-via-http`, *calcardbackup* is using the legacy method of backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. Mandatory for that to work is a file with usernames and according cleartext passwords passed to the script via option `-u|--usersfile`. Using this option also carries a risk of timeouts resulting in *calcardbackup* not being able to backup large addressbooks.  
-To make a long story short: all you need to know about option `-g|--get-via-http` is to __never__ use it, unless you have a good reason to expose the passwords of the users to be backed up.
+As default *calcardbackup* creates calendar and addressbook backups by fetching the according data directly from the database. However, invoked with option `-g|--get-via-http`, *calcardbackup* is using the legacy method of backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. Mandatory for that to work is a file with usernames and according cleartext passwords passed to the script via option `-u|--usersfile`. Using this option also carries a risk of timeouts resulting in *calcardbackup* not being able to backup large addressbooks.
+
+__To make a long story short__: all you need to know about option `-g|--get-via-http` is to __never__ use it, unless you have a good reason to expose passwords of the users to be backed up.
 
 ## About option -i / -\-include-shares
 
@@ -167,7 +169,7 @@ If for whatever reason calcardbackup is being run with option `-g|--get-via-http
 __Benefit of this approach:__ if the file `users.txt` gets in wrong hands, only this new user account is being compromised.  
 __Drawback:__ no automatic inclusion of newly created addressbooks/calendars. Items will not be backed up unless being shared with that new user account.  
 
-Due to the default behaviour of calcardbackup >= 0.8.0 (creating calendars/addressbooks by fetching data from the database), this option is basically not needed anymore.
+Due to the new default behaviour of calcardbackup >= 0.8.0 (creating calendars/addressbooks by fetching data from the database), this option basically became pointless. If for whatever reason you do want to use this option without option `-g`, then there is no need to give passwords in the file with usernames. If no file with usernames is passed to the script via option `-u`, option `-i` will be ignored.
 
 ## Want to read some of that in german?
 
