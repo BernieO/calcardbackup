@@ -4,7 +4,7 @@ vX.X.X (XX.XX.XXXX)
 - improved: cURL is not a requirement anymore unless using deprecated option -g
 - improved: error and exit only when using option -g, if Nextcloud/ownCloud need to upgrade the database
 - improved: downscale of checks for existing tables in PostgreSQL
-- changed: option -f|--fetch-from-dataase is now the default
+- changed: option -f|--fetch-from-database is now the default (does not have to be given anymore)
 - changed: don't look for file users.txt in scripts directory, if not given via option -u
 
 v0.7.2 (19.09.2018)
