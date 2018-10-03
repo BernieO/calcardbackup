@@ -40,9 +40,10 @@ trustful_certificate="yes"
 
 
 # path to file with usernames and passwords (see 'README.md' and 'users.txt.example')
-# NOTE: starting with calcardackup version 0.7.0 this file is not needed anymore.
-# if this is unset, or the file is not found, calcardbackup will create a backup of all
+# If this is unset, or the file is not found, calcardbackup will create a backup of all
 # calendars/addressbooks by fetching the data directly from the database.
+# NOTE: starting with calcardackup version 0.8.0 this file is only mandatory when
+#       using the deprecated option 'fetch_from_database="no"' (see below).
 # correlates to option -u|--usersfile
 
 users_file=""
@@ -115,10 +116,13 @@ backup_calendars="yes"
 #
 # NOTE: starting with calcardbackup version 0.8.0 the default is "yes" for this option.
 #
-# change to "no" if you want use the old behaviour of this script and download the vcf/ics
+# change to "no" if you want use deprecated behaviour of this script and download the vcf/ics
 # files via http request from your ownCloud/Nextcloud server (not recommended!)
-# a value of "yes" correlates to option -f|--fetch-from-database
-# a value of "no" correlates to option  -g|--get-via-http
+#
+# NOTE: all you need to know about this is to NEVER change this to "no", unless you have a good
+#       reason to expose cleartext passwords of your ownCloud/Nextcloud users!
+#
+# setting this to "no" correlates to deprecated option -g|--get-via-http
 
 fetch_from_database="yes"
 
@@ -126,8 +130,8 @@ fetch_from_database="yes"
 # change to "yes" if you want to backup shared addressbooks/calendars as well.
 # This may be used to provide just one username in 'users.txt', to whom
 # all items, needed to be backed up, are shared.
-# NOTE: if fetch_from_database is set to "yes" and file users.txt is missing, this
-#       option will be ignored.
+# NOTE: with the default 'fetch_from_database="yes"' and no file with usernames
+#       is passed the script (see 'users_file=""' above), this option will be ignored.
 # correlates to option -i|--include-shares
 
 include_shares="no"

@@ -3,7 +3,7 @@
 Thomas
 Emma
 
-# when using option '-g|--get-via-http' (not recommended!)
+# when using deprecated option '-g|--get-via-http' (not recommended!)
 # give usernames and passwords separated by a colon:
 Thomas:PA55W0RD
 Emma:98765453
