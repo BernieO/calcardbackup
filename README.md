@@ -106,6 +106,9 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Do not compress backup folder
 -z | --zip
        Use zip to compress backup folder instead of creating a gzipped tarball (tar.gz)
+
+NOTE:  Option '-f|--fetch-from-database' (introduced with calcardbackup 0.6.0) is set as
+       default for calcardbackup >= 0.8.0 and does not have to be passed to the script.
 ```
 
 ## nextcloud-snap users
