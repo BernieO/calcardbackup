@@ -151,6 +151,30 @@ This example is for nextcloud-snap users. calcardbackup will use the cli utility
 Use the deprecated method and get the addressbook/calendar files via https-request from the ownCloud/Nextcloud webinterface (`-g`, deprecated), find usernames and according cleartext passwords of users to be backed up in file /etc/calcardbackupusers (`-u calcardbackupusers`, mandatory with option -g), tell calcardbackup, that the server is using a selfsigned certificate (`-s`, only needed with option -g) and include shared items (`-i`). The Backup will be saved as compressed `*.tar.gz` file in folder named `calcardbackup-YYYY-MM-DD` (default) under `./backups/` (default).  
 __NOTE__: using option `-g` is deprecated and not recommended anymore, due to the mandatory file with user credentials and other drawbacks (see below)!
 
+## Does this also work with a broken ownCloud/Nextcloud instance?
+
+Yes, it does!  
+*calcardbackup* only needs the database (and access to it) from an ownCloud/Nextcloud installation to be able to extract calendars/addressbooks from the database and save them as .ics and .vcf files. Here is how this can be accomplished:
+
+1. create a dummy Nextcloud directory structure:  
+`mkdir -p /usr/local/bin/nextcloud-dummy/config`
+
+2. create and edit file `config.php` to fit your needs as follows:  
+`nano /usr/local/bin/nextcloud-dummy/config/config.php`
+
+   - add database type according to [config.sample.php](https://github.com/nextcloud/server/blob/master/config/config.sample.php#L90-L101)
+
+   - for MySQL/MariaDB/PostgreSQL:
+     - add according database values according to [config.sample.php](https://github.com/nextcloud/server/blob/master/config/config.sample.php#L103-L135)
+
+   - for SQLite3:
+     - add path to the nextcloud-dummy folder as 'datadirectory' according to [config.sample.php](https://github.com/nextcloud/server/blob/master/config/config.sample.php#L76-L82)
+     - copy the SQLite3 database to the nexcloud-dummy directory (filename of the SQLite3 database must be `owncloud.db`):  
+     `cp /path/to/owncloud.db /usr/local/bin/nextcloud-dummy/owncloud.db`
+
+3. run calcardbackup and give as first argument the path to the in step 1 created dummy Nextcloud directory:  
+`/path/to/calcardbackup /usr/local/bin/nextcloud-dummy`
+
 ## About option -g / -\-get-via-http
 
 __NOTE__: this option (which used to be the default until *calcardbackup v0.7.2*) is deprecated and not recommended anymore due to the necessity to give cleartext passwords in a separate file.  
