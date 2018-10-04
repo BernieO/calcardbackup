@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-12 (02.10.2018), AGPL-3.0"
+version="0.7.2-13 (04.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -438,10 +438,9 @@ read_status_php() {
   if [[ ! "${status_php}" =~ ${regex} || -n ${cerror:-} ]]; then
     if [[ ${fetch_from_database} == "yes" ]]; then
       # if we fetch everything from database, this script can run anyway, even if ownCloud/Nextcloud is not online,
-      # requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no" and return from this function:
-      [[ -n ${cerror:-} ]] && _output echo "-- NOTICE: requesting status.php failed with cURL error '${cerror}'."
-      [[ -z ${cerror:-} ]] && _output echo "-- NOTICE: no valid status.php found at ${nextcloud_url}."
-      _output echo "-- NOTICE: Continuing anyway, because fetching items from database."
+      # no further requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no" and return from this function:
+      [[ -n ${cerror:-} ]] && _output echo "+  can't read status.php (cURL code '${cerror}'). Proceeding without cURL."
+      [[ -z ${cerror:-} ]] && _output echo "+  no valid status.php found at ${nextcloud_url}. Proceeding without cURL."
       curl_installed="no"
       productname="Server"
       return
