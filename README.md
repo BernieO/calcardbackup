@@ -33,12 +33,10 @@ __All users upgrading calcardbackup from a previous version to version 0.8.0 or 
 
 There are many more options available: have a look at sections "Options" and "Usage examples" below.
 
-## Advanced
+## Options
 
 All options can be specified in a configuration file or as command line arguments. If started with no options at all or only `-b|--batch`, the script attempts to use file `calcardbackup.conf` in the script's directory as configuration file.  
 If no configuration file via option `-c|--config` is given, the path to your ownCloud/Nextcloud instance must be the very first argument. Find detailed description of all available options below.
-
-## Options
 
 ```
 Usage: ./calcardbackup [DIRECTORY] [option [argument]] [option [argument]] [option [argument]] ...
@@ -111,21 +109,6 @@ NOTE:  Option '-f|--fetch-from-database' (introduced with calcardbackup 0.6.0) i
        default for calcardbackup >= 0.8.0 and does not have to be passed to the script.
 ```
 
-## nextcloud-snap users
-
-If you are running Nextcloud-snap (https://github.com/nextcloud/nextcloud-snap), you have to use option `-p|--snap` to tell calcardbackup to use the cli utility `nextcloud.mysql-client` from the snap package.  
-In order for this to work, calcardbackup has to be run with `sudo` (even running as root without `sudo` will fail). As path to Nextcloud use the path to the configuration files of nextcloud. In a standard installation this would be `/var/snap/nextcloud/current/nextcloud`. See example no.6 below.
-
-## Considerations about encryption
-
-If you want to use the included encryption possibility, be aware that:
-- the files are encrypted by GnuPG, AES256 with the passphrase given in a separate file
-- the passphrase is stored in a file. Other users with access to the server might be able to see the passphrase.
-- `calcardbackup` is designed to run without user interaction, so there can't be a rock solid encryption. I consider the offered one as sufficient in most cases though.
-- if you need rock solid encryption, don't let `calcardbackup` encrypt the backup. Instead, encrypt it yourself.
-- command to decrypt (you will be prompted to enter the passphrase):  
-`gpg -o OUTPUT_FILE -d FILE_TO_DECRYPT.GPG`
-
 ## Usage examples
 
 1. `./calcardbackup /var/www/nextcloud -nc -x`  
@@ -150,6 +133,21 @@ This example is for nextcloud-snap users. calcardbackup will use the cli utility
 7. `./calcardbackup /var/www/nextcloud -g -u /etc/calcardbackupusers -s -i`  
 Use the deprecated method and get the addressbook/calendar files via https-request from the ownCloud/Nextcloud webinterface (`-g`, deprecated), find usernames and according cleartext passwords of users to be backed up in file /etc/calcardbackupusers (`-u calcardbackupusers`, mandatory with option -g), tell calcardbackup, that the server is using a selfsigned certificate (`-s`, only needed with option -g) and include shared items (`-i`). The Backup will be saved as compressed `*.tar.gz` file in folder named `calcardbackup-YYYY-MM-DD` (default) under `./backups/` (default).  
 __NOTE__: using option `-g` is deprecated and not recommended anymore, due to the mandatory file with user credentials and other drawbacks (see below)!
+
+## nextcloud-snap users
+
+If you are running Nextcloud-snap (https://github.com/nextcloud/nextcloud-snap), you have to use option `-p|--snap` to tell calcardbackup to use the cli utility `nextcloud.mysql-client` from the snap package.  
+In order for this to work, calcardbackup has to be run with `sudo` (even running as root without `sudo` will fail). As path to Nextcloud use the path to the configuration files of nextcloud. In a standard installation this would be `/var/snap/nextcloud/current/nextcloud`. See example no.6 below.
+
+## Considerations about encryption
+
+If you want to use the included encryption possibility, be aware that:
+- the files are encrypted by GnuPG, AES256 with the passphrase given in a separate file
+- the passphrase is stored in a file. Other users with access to the server might be able to see the passphrase.
+- `calcardbackup` is designed to run without user interaction, so there can't be a rock solid encryption. I consider the offered one as sufficient in most cases though.
+- if you need rock solid encryption, don't let `calcardbackup` encrypt the backup. Instead, encrypt it yourself.
+- command to decrypt (you will be prompted to enter the passphrase):  
+`gpg -o OUTPUT_FILE -d FILE_TO_DECRYPT.GPG`
 
 ## Does this also work with a broken ownCloud/Nextcloud instance?
 
