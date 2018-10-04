@@ -31,7 +31,7 @@ __All users upgrading calcardbackup from a previous version to version 0.8.0 or 
 
 5. Find your backup in directory `backups/`.
 
-There are many more options available: have a look at sections "Options" and "Usage examples" below.
+There are many more options available: have a look at sections __Options__ and __Usage examples__ below.
 
 ## Options
 
