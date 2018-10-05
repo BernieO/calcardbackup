@@ -33,7 +33,9 @@ nextcloud_url="https://www.my_nextcloud.net/"
 
 
 # Will cURL trust the servers certificate?
-# If you have a self signed certificate you might have to change this to "no"
+# In normal use, there is no need to change this. However:
+# if you use 'fetch_from_database="no"' (see below) and have a self signed certificate,
+# you might have to change this as well to "no"
 # correlates to option -s|--selfsigned
 
 trustful_certificate="yes"

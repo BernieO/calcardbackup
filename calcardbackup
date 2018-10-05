@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-13 (04.10.2018), AGPL-3.0"
+version="0.7.2-14 (05.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -408,6 +408,9 @@ read_status_php() {
   # declare local variables:
   local status_php version_status_php versionstring_status_php regex line
 
+  # set productname to dummy value - might be changed later:
+  productname="Server"
+
   # store output of status.php in variable OR store curls exit code if it returns an empty string (which is in case of an error):
   status_php="$(curl -s ${trust} "${nextcloud_url}/status.php")" || cerror=$?
 
@@ -434,38 +437,73 @@ read_status_php() {
   # regex matching versions mentioned above (tested with regex101.com):
   # (due to options added in ownCloud 10.0: version(string) maybe hidden or hostname maybe present (see hide.version, show_server_hostname in config.php))
   regex='^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[^"]*","versionstring":"[^"]*","edition":"[^"]*"(,"productname":"[^"]*")?(,"hostname":"[^"]*")?\}$'
+
   # check status.php for valid installation of ownCloud/Nextcloud:
-  if [[ ! "${status_php}" =~ ${regex} || -n ${cerror:-} ]]; then
-    if [[ ${fetch_from_database} == "yes" ]]; then
-      # if we fetch everything from database, this script can run anyway, even if ownCloud/Nextcloud is not online,
-      # no further requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no" and return from this function:
-      [[ -n ${cerror:-} ]] && _output echo "+  can't read status.php (cURL code '${cerror}'). Proceeding without cURL."
-      [[ -z ${cerror:-} ]] && _output echo "+  no valid status.php found at ${nextcloud_url}. Proceeding without cURL."
-      curl_installed="no"
-      productname="Server"
-      return
-    else
-      # if error code is set and we don't fetch things from database, call function to examine
-      # curls exit code and print according message to stderr:
-      [[ -n ${cerror:-} ]] && curl_error
-      [[ -z ${cerror:-} ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again without using option '-g|--get-via-http'"
-    fi
-  fi
+  case ${fetch_from_database} in
 
-  # get version from status.php:
-  version_status_php=${status_php#*version\":\"}
-  version_status_php=${version_status_php%%\"*}
-  # get versionstring from status_php (needed for proper versioning (ownloud 5.0 has in version also only 3 numbers)):
-  versionstring_status_php=${status_php#*versionstring\":\"}
-  versionstring_status_php=${versionstring_status_php%%\"*}
+    yes )
+      if [[ ! "${status_php}" =~ ${regex} || -n ${cerror:-} ]]; then
+        # if we fetch everything from database, this script can run anyway, even if ownCloud/Nextcloud is not online,
+        # no further requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no" and return from this function:
+        [[ -n ${cerror:-} ]] && _output echo "+  can't read status.php (cURL code '${cerror}')."
+        [[ -z ${cerror:-} ]] && _output echo "+  no valid status.php found at ${nextcloud_url}."
+      fi
+      versionstring_status_php=${version_config_php%.*}
+    ;;
 
-  # check for missing version in status.php due to option in config.php introduced with ownCloud 10.0 ('hide.version' => true,):
-  [[ -z "${version_status_php:-}" || -z "${versionstring_status_php:-}" ]] && {
-    # version number hidden (empty): print notice and use values from config.php:
-    _output echo "-- NOTICE: version number hidden in status.php."
-    version_status_php=${version_config_php}
-    versionstring_status_php=${version_config_php%.*}
-  }
+    no )
+      # perform some additional checks, because we are going to get calendars/addressbooks via https(s) from the server:
+
+      if [[ ! "${status_php}" =~ ${regex} || -n ${cerror:-} ]]; then
+        # if error code is set and we don't fetch things from database, call function to examine
+        # curls exit code and print according message to stderr:
+        [[ -n ${cerror:-} ]] && curl_error
+        [[ -z ${cerror:-} ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again without using option '-g|--get-via-http'"
+      fi
+
+      # get version from status.php:
+      version_status_php=${status_php#*version\":\"}
+      version_status_php=${version_status_php%%\"*}
+      # get versionstring from status_php (needed for proper versioning (ownloud 5.0 has in version also only 3 numbers)):
+      versionstring_status_php=${status_php#*versionstring\":\"}
+      versionstring_status_php=${versionstring_status_php%%\"*}
+
+      # check for missing version in status.php due to option in config.php introduced with ownCloud 10.0 ('hide.version' => true,):
+      [[ -z "${version_status_php:-}" || -z "${versionstring_status_php:-}" ]] && {
+        # version number hidden (empty): print notice and use values from config.php:
+        _output echo "-- NOTICE: version number hidden in status.php."
+        version_status_php=${version_config_php}
+        versionstring_status_php=${version_config_php%.*}
+      }
+
+      # check for "needsDbUpgrade":true in status.php and exit if ownCloud/Nextcloud needs a DbUpgrade:
+      regex='"needsDbUpgrade":"?true"?'
+      if [[ "${status_php}" =~ ${regex} ]]; then
+        [[ -z "${config_file:-}" ]] && error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your ${productname} Installation before running this script again!" "Or run script again without option '-g|--get-via-http'"
+        [[ -n "${config_file:-}" ]] && error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your ${productname} Installation before running this script again!" "Or run script again with the default value 'fetch-from-database=\"yes\"' in config file '${config_file}'."
+      fi
+
+      # check whether version of config.php is the same than version of status.php:
+      if [[ "${version_status_php}" != "${version_config_php}" ]]; then
+         [[ -z "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check given path and given url (option -a)"
+         [[ -n "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check configured path and url in config file '${config_file}'"
+      fi
+
+      # check for installed=true in status.php and exit if ownCloud/Nextcloud report installed:false:
+      regex='"installed":"?true"?'
+      [[ "${status_php}" =~ ${regex} ]] || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
+
+      # check for maintenance=false for versions >= 8.0 in status.php and exit if ownCloud/Nextcloud in maintenance mode:
+      if [[ "$mainversion" -ge 8 ]]; then
+        regex='"maintenance":"?true"?'
+        if [[ "${status_php}" =~ ${regex} ]]; then
+          [[ -z "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "Another possibility is to not use option '-g|--get-via-http'."
+          [[ -n "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "Another possibility is to set the default 'fetch_from_database=\"yes\"' in the configuration file."
+        fi
+      fi
+    ;;
+
+  esac
 
   # detect whether Installation is Nextcloud or ownCloud (look in user documentation for productname):
   regex="(Nextcloud|ownCloud)"
@@ -480,37 +518,11 @@ read_status_php() {
     productname="ownCloud"
   else {
     _output echo "-- Notice: can't detect vendor."
-    productname="Server"
   }
-  fi
-
-  # check for "needsDbUpgrade":true in status.php and exit if ownCloud/Nextcloud needs a DbUpgrade:
-  regex='"needsDbUpgrade":"?true"?'
-  if [[ "${status_php}" =~ ${regex} && "${fetch_from_database}" == "no" ]]; then
-    [[ -z "${config_file:-}" ]] && error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your ${productname} Installation before running this script again!" "Or run script again without option '-g|--get-via-http'"
-    [[ -n "${config_file:-}" ]] && error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your ${productname} Installation before running this script again!" "Or run script again with the default value 'fetch-from-database=\"yes\"' in config file '${config_file}'."
-  fi
-
-  # check whether version of config.php is the same than version of status.php:
-  if [[ "${version_status_php}" != "${version_config_php}" ]]; then
-     [[ -z "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check given path and given url (option -a)"
-     [[ -n "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check configured path and url in config file '${config_file}'"
   fi
 
   _output echo "+  ${productname} ${versionstring_status_php} detected."
 
-  # check for installed=true in status.php and exit if ownCloud/Nextcloud report installed:false:
-  regex='"installed":"?true"?'
-  [[ "${status_php}" =~ ${regex} ]] || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
-
-  # check for maintenance=false for versions >= 8.0 in status.php and exit if ownCloud/Nextcloud in maintenance mode:
-  if [[ "$mainversion" -ge 8 ]]; then
-    regex='"maintenance":"?true"?'
-    if [[ "${status_php}" =~ ${regex} && "${fetch_from_database}" == "no" ]]; then
-      [[ -z "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "Another possibility is to not use option '-g|--get-via-http'."
-      [[ -n "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "Another possibility is to set the default 'fetch_from_database=\"yes\"' in the configuration file."
-    fi
-  fi
 }
 
 get_database_details() {
