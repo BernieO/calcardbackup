@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-14 (05.10.2018), AGPL-3.0"
+version="0.7.2-15 (08.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -161,7 +161,10 @@ preparations() {
     # cURL is not necessarily needed for fetching data from database, but cURL is indeed needed to get
     # calendars/addressbooks via http. So error and exit, if fetch_from_database="no":
     [[ ${fetch_from_database} == "yes" ]] && _output echo "+  Info: cURL not installed. Can't detect vendor."
-    [[ ${fetch_from_database} == "no" ]] && error_exit "ERROR: Package 'curl' is needed for running this script with option -g." "Run script again without option '-g' or install cURL with 'apt-get install curl'."
+    if [[ ${fetch_from_database} == "no" ]]; then
+      [[ -z "${config_file:-}" ]] && error_exit "ERROR: Package 'curl' is needed for running this script with option -g." "Run script again without option '-g' or install cURL with 'apt-get install curl'."
+      [[ -n "${config_file:-}" ]] && error_exit "ERROR: Package 'curl' is needed for running this script with 'fetch_from_database=\"no\"'." "Run script again with 'fetch_from_database=\"yes\"' or install cURL with 'apt-get install curl'."
+    fi
   else
     curl_installed="yes"
     # this is only needed, if curl is installed:
@@ -189,7 +192,8 @@ preparations() {
       unset ignore
       complete_backup_from_database="yes"
     elif [[ ${fetch_from_database} == "no" ]]; then
-      error_exit "file with usernames and according passwords must be passed to this script when using option '-g'!"
+      [[ -z "${config_file:-}" ]] && error_exit "file with usernames and according passwords must be passed to this script when using option '-g'!"
+      [[ -n "${config_file:-}" ]] && error_exit "file with usernames and according passwords not configured!" "Declare path in configuration file under 'users_file'"
     fi
   fi
   # if $users_file is set: check for file with usernames (+passwords)
@@ -382,7 +386,8 @@ read_config_php() {
     if [[ ${fetch_from_database} == "no" ]]; then
       # we want do download addressbooks/calendars - therefore the URL to ownCloud/Nextcloud server is required.
       # Error, if $nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
-      error_exit "ERROR: Can't retrieve url from ${configphp}" "Either don't use option '-g|--get-via-http' or pass URL to the script (via -a/--address or config file)"
+      [[ -z "${config_file:-}" ]] && error_exit "ERROR: Can't retrieve url from ${configphp}" "Either don't use option '-g' or use option '-a' to pass URL to the script."
+      [[ -n "${config_file:-}" ]] && error_exit "ERROR: Can't retrieve url from ${configphp}" "Either use 'fetch_from_database=\"yes\"' or give URL to 'nextcloud_url' in config file."
     else
       # if we fetch everything from database, we do not need the url of the ownCloud/Nextcloud server,
       # so avoid requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no"
@@ -397,7 +402,7 @@ read_config_php() {
   fi
   # Print url which will be used (only if curl is installed and if it differs from default value):
   if  [[ ${curl_installed} == "yes" ]]; then
-    [[ ${nextcloud_url} == "${nextcloud_url_default}" ]] || _output echo "+  Configured URL: ${nextcloud_url}"
+    [[ ${nextcloud_url} == "${nextcloud_url_default}" ]] || _output echo "+  Using URL: ${nextcloud_url}"
   fi
 }
 
@@ -458,7 +463,10 @@ read_status_php() {
         # if error code is set and we don't fetch things from database, call function to examine
         # curls exit code and print according message to stderr:
         [[ -n ${cerror:-} ]] && curl_error
-        [[ -z ${cerror:-} ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again without using option '-g|--get-via-http'"
+        if [[ -z ${cerror:-} ]]; then
+          [[ -z "${config_file:-}" ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again without using option '-g|--get-via-http'"
+          [[ -n "${config_file:-}" ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again using 'fetch_from_database=\"yes\"' in config file."
+        fi
       fi
 
       # get version from status.php:
@@ -498,7 +506,7 @@ read_status_php() {
         regex='"maintenance":"?true"?'
         if [[ "${status_php}" =~ ${regex} ]]; then
           [[ -z "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "Another possibility is to not use option '-g|--get-via-http'."
-          [[ -n "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "Another possibility is to set the default 'fetch_from_database=\"yes\"' in the configuration file."
+          [[ -n "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "More recommended is to set the default 'fetch_from_database=\"yes\"' in the configuration file."
         fi
       fi
     ;;
@@ -631,7 +639,7 @@ create_backup_folder() {
   # create backup folder:
   mkdir -p "${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
 
-  # check if backupfolder is writable:
+  # check if backupfolder is writable (could happen, if backupfolder was already existing created from another user):
   [[ -w "${backupfolder}" ]] || error_exit "ERROR: Backupfolder is not writable."
 
   day="$(date +"${date_extension}")"
