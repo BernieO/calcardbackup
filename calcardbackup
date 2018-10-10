@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-20 (10.10.2018), AGPL-3.0"
+version="0.7.2-21 (10.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -129,7 +129,7 @@ preparations() {
   _output echo "+  Checking dependencies and preparing..."
 
   # if option -c|--configfile or nothing at all or only -b is given - read config file (and overwrite default values):
-  [[ ! -z "${config_file:-}" ]] && read_config_file
+  [[ -n "${config_file:-}" ]] && read_config_file
   # if neither configfile nor path to ownCloud/Nextcloud is given - error and exit:
   [[ -z "${config_file:-}" && -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
 
@@ -1424,7 +1424,7 @@ do
     -d | --date )
       shift
       # make sure argument passed to --date does not clash with any other option:
-      if [[ ! -z "${1:-}" && ! "${1}" =~ -{1,2}[a-ehnorsuxz] ]]; then
+      if [[ -n "${1:-}" && ! "${1}" =~ -{1,2}[a-ehnorsuxz] ]]; then
         date_extension="${1}"
       else
         check_argument "${1:-}"
