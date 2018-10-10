@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-18 (10.10.2018), AGPL-3.0"
+version="0.7.2-19 (10.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -157,7 +157,7 @@ preparations() {
   fi
 
   # check for package curl
-  which curl > /dev/null || curl_installed="no"
+  command -v curl > /dev/null || curl_installed="no"
   if [[ ${curl_installed:-} == "no" ]]; then
     # cURL is not necessarily needed for fetching data from database, but cURL is indeed needed to get
     # calendars/addressbooks via http. So error and exit, if fetch_from_database="no":
@@ -241,7 +241,7 @@ preparations() {
   # check value $compression_method:
   if [[ "${compression_method}" == "zip" ]]; then
     # check for package zip:
-    which zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
+    command -v zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
   elif [[ "${compression_method}" != "tar.gz" ]]; then
     # if $compression_method is set to something else than "zip" or "tar.gz" - use "tar.gz":
     _output echo "-- NOTICE: Parameter 'compression_method' is set to unsupported format. Using default value 'tar.gz'."
@@ -255,7 +255,7 @@ preparations() {
     encrypt_backup="no"
   elif [[ "${encrypt_backup}" == "yes" ]]; then
     # check for package gpg:
-    which gpg > /dev/null || error_exit "ERROR: You chose to encrypt your backup." "Therefore package 'gnupg' is needed. Install with 'apt-get install gnupg' and run script again"
+    command -v gpg > /dev/null || error_exit "ERROR: You chose to encrypt your backup." "Therefore package 'gnupg' is needed. Install with 'apt-get install gnupg' and run script again"
     if [[ "${compress}" == "no" ]]; then
       _output echo "-- WARNING: Can't encrypt uncompressed backup."
       _output echo "-- WARNING: Changing from uncompress to compress backup"
@@ -285,7 +285,7 @@ preparations() {
 
   # make sure nextcloud.mysql-client is available when configured to use nextcloud-snap:
   if [[ "${snap}" == "yes" ]]; then
-    which nextcloud.mysql-client > /dev/null || error_exit "ERROR: nextcloud-snaps cli-utility 'nextcloud.mysql-client' not found!" "To work with nextcloud-snap this script needs to be invoked  with sudo (even when root)." "If the script has been invoked with sudo: are you sure you are using nextcloud-snap?"
+    command -v nextcloud.mysql-client > /dev/null || error_exit "ERROR: nextcloud-snaps cli-utility 'nextcloud.mysql-client' not found!" "To work with nextcloud-snap this script needs to be invoked  with sudo (even when root)." "If the script has been invoked with sudo: are you sure you are using nextcloud-snap?"
   fi
 }
 
@@ -610,7 +610,7 @@ get_database_details() {
     ;;
     sqlite3)
       # check if command-line-interface of sqlite3 is installed:
-      which sqlite3 > /dev/null || error_exit "ERROR: ${productname} database is sqlite3. Therefore this script requires package 'sqlite3'." "Install with 'apt-get install sqlite3' and run script again"
+      command -v sqlite3 > /dev/null || error_exit "ERROR: ${productname} database is sqlite3. Therefore this script requires package 'sqlite3'." "Install with 'apt-get install sqlite3' and run script again"
       datadirectory="$(getvalue_from_configphp "datadirectory")" # has to be absolute path for working Own-/Nextcloud, so no need to get absolute path
       sqlite3_database="${datadirectory}/owncloud.db"
       # use options '-list' and '-separator "|"' for sqlite3 command, to override eventually existing user-specific config-file '~/.sqlite3rc':
