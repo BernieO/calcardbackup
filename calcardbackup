@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-16 (10.10.2018), AGPL-3.0"
+version="0.7.2-17 (10.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -108,6 +108,7 @@ read_config_file() {
     [[ ! "${line}" =~ ${regex} ]] && error_exit "ERROR: invalid config file! Only variable-declarations, comments and empty lines allowed." "Invalid line: '${line}'" "Edit configuration file and run sript again."
   done <"${config_file}"
   # config file is readable and has correct syntax. So let's include it now (and overwrite default values):
+  # shellcheck source=examples/calcardbackup.conf.example
   . "${config_file}"
   # make sure $nextcloud_path is set - otherwise print error and exit:
   [[ -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud to be configured." "Check value of variable 'nextcloud_path' in ${config_file}"
