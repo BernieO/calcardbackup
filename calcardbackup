@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-17 (10.10.2018), AGPL-3.0"
+version="0.7.2-18 (10.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -581,9 +581,11 @@ get_database_details() {
         case "${snap}" in
           no )
             # Notice: no differentiation due to empty $dbprotocol necessary (like with pgsql, see below), because printf will just print empty line which won't lead to an error:
+            # shellcheck disable=SC2016
             dbcommand='mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sre '
           ;;
           yes )
+            # shellcheck disable=SC2016
             dbcommand='nextcloud.mysql-client --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sre '
           ;;
         esac
@@ -595,9 +597,11 @@ get_database_details() {
         # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
         if [[ -z "${dbprotocol:-}" ]]; then
           # without port configured in config.php:
+          # shellcheck disable=SC2016
           dbcommand='PGPASSWORD="${dbpassword}" psql "${dbhost}" -U "${dbuser}" -d "${dbname}" -Aqtc '
         else
           # with port configured in config.php:
+          # shellcheck disable=SC2016
           dbcommand='PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -Aqtc '
         fi
         # store type of database for output of script:
@@ -689,6 +693,7 @@ query_database() {
     # adjust output format of MySQL/MariaDB/PostgreSQL to match output of SQLite3 (field|field|field):
     [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
     # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
+    # shellcheck disable=SC2016
     db_query='"select ${fields} from ${table} order by id"'
 
     # read required fields from table and assign values to arrays:
@@ -749,6 +754,7 @@ include_shares() {
       # adjust output format of MySQL/MariaDB/PostgreSQL to match output of SQLite3 (field|field|field):
       [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
       # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
+      # shellcheck disable=SC2016
       db_query='"select ${fields} from ${table_shares} order by id"'
 
       # read required fields from table and assign values to share-arrays:
@@ -782,6 +788,7 @@ include_shares() {
         # adjust output format of MySQL/MariaDB/PostgreSQL to match output of SQLite3 (field|field|field):
         [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
         # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
+        # shellcheck disable=SC2016
         db_query='"select ${fields} from ${table_group_user} order by gid"'
 
         # read values from database and create array with list of groups and their users:
@@ -1012,6 +1019,7 @@ create_calendar_from_db() {
   # event contains the according timezone-components. They are unique for each timezone, so we only need to collect each timezone once.
 
   # prepare database query (variable convert is needed for PostgreSQL) to collect all events from according calendarid:
+  # shellcheck disable=SC2016
   db_query='"SELECT ${convert:-calendardata} FROM ${table_calendarobjects} WHERE calendarid=${id[$i]}"'
 
   # print generic iCalendar properties (BEGIN, VERSION, PRODID, CALSCALE):
@@ -1161,6 +1169,7 @@ create_addressbook_from_db() {
   # create vCard addressbook (.vcf file) by reading cards directly from database (option -f | --fetch-from-database):
 
   # prepare database query (variable convert is needed for PostgreSQL) to collect all cards belonging to addressbookid:
+  # shellcheck disable=SC2016
   db_query='"SELECT ${convert:-carddata} FROM ${table_cards} WHERE addressbookid=${id[$i]}"'
 
   # this is much less complex than iCalendar: a vCard addressbook is just single vCards stuck together one after the other.
