@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-19 (10.10.2018), AGPL-3.0"
+version="0.7.2-20 (10.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -123,7 +123,7 @@ preparations() {
   # checks for needed packages, reads config-file and validates user given values:
 
   # print timestamp
-  _output printf "\n%s\n" "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  _output printf '\n%s\n' "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   _output echo "+"
   _output echo "+  $(date) --> START calcardbackup ver. ${version}"
   _output echo "+  Checking dependencies and preparing..."
@@ -670,8 +670,8 @@ query_database() {
   [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
   # check if table exists:
-  [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
-  [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
+  [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
+  [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
   [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")"
   [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table} LIMIT 1;")"
 
@@ -733,8 +733,8 @@ include_shares() {
     [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
     # check if table $table_shares exists:
-    [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
-    [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
+    [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
+    [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
     [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}'")"
     [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table_shares} LIMIT 1;")"
 
@@ -776,8 +776,8 @@ include_shares() {
 
       # we also need to get info about group members to be able to backup calendars/addressbooks which are shared to groups:
       # check if table group_user ($table_group_user) exists:
-      [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_group_user}'")"
-      [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_group_user}'")"
+      [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_group_user}'")"
+      [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_group_user}'")"
       [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}'")"
       [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql "${dbhost}" "${dbprotocol}" -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table_group_user} LIMIT 1;")"
 
@@ -920,7 +920,7 @@ get_icsvcf_files() {
         filename="${filename//[\/\\*? ]/_}"
 
         # create addressbook or calendar by reading data directly from database (option -f | --fetch-from-database):
-        _output printf "%s" "+  saving ${item} ${filename} (from database)..."
+        _output printf '%s' "+  saving ${item} ${filename} (from database)..."
         [[ "${item}" == "calendar" ]] && create_calendar_from_db
         [[ "${item}" == "addressbook" ]] && create_addressbook_from_db
 
@@ -967,14 +967,14 @@ get_icsvcf_files() {
         if [[ "${fetch_from_database}" == "yes" ]]; then
 
           # create addressbook or calendar by reading data directly from database (option -f | --fetch-from-database):
-          _output printf "%s" "+  saving ${item} ${filename} (from database)..."
+          _output printf '%s' "+  saving ${item} ${filename} (from database)..."
           [[ "${item}" == "calendar" ]] && create_calendar_from_db
           [[ "${item}" == "addressbook" ]] && create_addressbook_from_db
 
         else
 
           # download item with curl (command uses export link provided by contacts/calendar app from ownCloud/Nextcloud):
-          _output printf "%s" "+  Saving ${item} ${filename}..."
+          _output printf '%s' "+  Saving ${item} ${filename}..."
           # replace spaces in username or addressbook(/calendar)name with %20 (url encoding, to work more reliable with webserver)
           # (OR (in case curl exits with error): store exit code of curl to be able to react on error in separate function)
           curl -s ${trust} -o "${backupfolder_day}/${filename}" -u "${user[$index]}":"${pass[$index]}" "${nextcloud_url}/remote.php/${calcarddav}/${item}s/${ex_users}${user[$index]// /%20}/${uri[$i]// /%20}?export" || cerror=$?
@@ -1023,12 +1023,12 @@ create_calendar_from_db() {
   db_query='"SELECT ${convert:-calendardata} FROM ${table_calendarobjects} WHERE calendarid=${id[$i]}"'
 
   # print generic iCalendar properties (BEGIN, VERSION, PRODID, CALSCALE):
-  printf "%s\r\n" "BEGIN:VCALENDAR" "VERSION:2.0" "PRODID:https://github.com/BernieO/calcardbackup v${version%% *}" "CALSCALE:GREGORIAN" > "${backupfolder_day}/${filename}"
+  printf '%s\r\n' "BEGIN:VCALENDAR" "VERSION:2.0" "PRODID:https://github.com/BernieO/calcardbackup v${version%% *}" "CALSCALE:GREGORIAN" > "${backupfolder_day}/${filename}"
 
   # also calendarname and calendarcolor (if existent in database):
-  printf "%s\r\n" "X-WR-CALNAME:${displayname[$i]}" >> "${backupfolder_day}/${filename}"
+  printf '%s\r\n' "X-WR-CALNAME:${displayname[$i]}" >> "${backupfolder_day}/${filename}"
   if [[ "${calendarcolor[$i]}" != "NULL" ]]; then
-    printf "%s\r\n" "X-APPLE-CALENDAR-COLOR:${calendarcolor[$i]}" >> "${backupfolder_day}/${filename}"
+    printf '%s\r\n' "X-APPLE-CALENDAR-COLOR:${calendarcolor[$i]}" >> "${backupfolder_day}/${filename}"
   fi
 
   # property names and property parameters are case insensitive, so let's switch on nocasematch for comparing strings:
@@ -1065,7 +1065,7 @@ create_calendar_from_db() {
         [[ ${line} != END:* && -n ${component:-} ]] && {
           # (replace LF (linefeed) with CRLF (carriage-return + linefeed) according to RFC5545
           #       with parameter expansion "${line/%[[:space:]]}")
-          printf "%s\r\n" "${line/%[[:space:]]}" >> "${backupfolder_day}/${filename}"
+          printf '%s\r\n' "${line/%[[:space:]]}" >> "${backupfolder_day}/${filename}"
           continue
         }
         ;;
@@ -1143,7 +1143,7 @@ create_calendar_from_db() {
     # END VTIMEZONE collect and compare
 
     # output line:
-    printf "%s\r\n" "${line/%[[:space:]]}" >> "${backupfolder_day}/${filename}"
+    printf '%s\r\n' "${line/%[[:space:]]}" >> "${backupfolder_day}/${filename}"
 
   done< <(eval "${dbcommand}" "${db_query}")
 
@@ -1154,12 +1154,12 @@ create_calendar_from_db() {
   # loop through array containing all VTIMEZONES and save the VTIMEZONE components at the end of the iCalendar object $backupfolder_day/$filename:
   if [[ -n ${tz_data:-} ]]; then
     for (( k=0; k<${#tz_data[@]}; k++ )); do
-      printf "%s\r\n" "${tz_data[$k]}" >> "${backupfolder_day}/${filename}"
+      printf '%s\r\n' "${tz_data[$k]}" >> "${backupfolder_day}/${filename}"
     done
   fi
 
   # important: add END:VCALENDAR as last line to the iCalendar file:
-  printf "%s\r\n" "END:VCALENDAR" >> "${backupfolder_day}/${filename}"
+  printf '%s\r\n' "END:VCALENDAR" >> "${backupfolder_day}/${filename}"
 
   # reset matching case sensitive:
   shopt -u nocasematch
@@ -1187,7 +1187,7 @@ check_for_valid_icsvcf() {
   if [[ "${item}" == "addressbook" && ! -s "${backupfolder_day}/${filename}" ]]; then
     # touch file to create empty file, if it was not created by curl on successful download of empty addressbook (which is the case for curl < 7.42.0)
     touch "${backupfolder_day}/${filename}"
-    _output printf "%s\n" "...empty file. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty."
+    _output printf '%s\n' "...empty file. Addressbook '${displayname[$i]}' of user '${principal[$i]}' is empty."
     file_received="no" # because we have received an empty file and thus do not need to check whether it is a valid ics-/vcf-file
   fi
 
@@ -1197,11 +1197,11 @@ check_for_valid_icsvcf() {
     if [[ ! "${line}" =~ ${item_header} ]]; then     # no valid file, if first line of file doesn't match item_header
       # attach "-ERROR.txt" to filename:
       mv "${backupfolder_day}/${filename}" "${backupfolder_day}/${filename}-ERROR.txt"
-      _output printf "%s\n" ""    # newline is needed for error-message to start on a separate line. Increases readability.
+      _output printf '%s\n' ""    # newline is needed for error-message to start on a separate line. Increases readability.
       # print error message and exit:
       error_exit "ERROR: the saved file is not a valid ${item}-file. Something went wrong." "My guess: either wrong configured URL to ${productname} or a wrong combination of username/password in users.txt." "You may want to check the saved file for any hints what went wrong: ${backupfolder_day}/${filename}-ERROR.txt"
     fi
-    _output printf "%s\n" "...success!"
+    _output printf '%s\n' "...success!"
   fi
 }
 
