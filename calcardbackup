@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-15 (08.10.2018), AGPL-3.0"
+version="0.7.2-16 (10.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -360,7 +360,9 @@ read_config_php() {
       row_share_resourceid="item_source"
     fi
     if [[ "${fetch_from_database}" == "yes" ]]; then
+      # shellcheck disable=SC2034
       table_cards="${dbtableprefix}contacts_cards"
+      # shellcheck disable=SC2034
       table_calendarobjects="${dbtableprefix}clndr_objects"
     fi
     # must be empty for ownCloud < 9.0:
@@ -893,6 +895,7 @@ get_icsvcf_files() {
   # set convert variable for PostgreSQL if we want to get addressbooks directly from database:
   if [[ "${dbtype}" == "pgsql" && "${fetch_from_database}" == "yes" ]]; then
     [[ "${item}" == "addressbook" ]] && convert="convert_from(carddata,'UTF8')"
+    # shellcheck disable=SC2034
     [[ "${item}" == "calendar" ]] && convert="convert_from(calendardata,'UTF8')"
   fi
 
