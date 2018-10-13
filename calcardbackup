@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-23 (12.10.2018), AGPL-3.0"
+version="0.7.2-24 (13.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -139,8 +139,29 @@ preparations() {
   while [[ "${nextcloud_url}" =~ /$ ]]; do
     nextcloud_url="${nextcloud_url%/}"
   done
+
   # location of ownClouds/Nextclouds config.php:
-  configphp="${nextcloud_path}/config/config.php"
+  # take account of env-variables ${NEXTCLOUD_CONFIG_DIR} and ${OWNCLOUD_CONFIG_DIR}
+  # for ${NEXTCLOUD_CONFIG_DIR} see: https://github.com/nextcloud/server/issues/300
+  # for ${OWNCLOUD_CONFIG_DIR} see:  https://github.com/owncloud/core/pull/27874
+  if [[ -n "${NEXTCLOUD_CONFIG_DIR:-}" && -n "${OWNCLOUD_CONFIG_DIR:-}" ]]; then
+    # if both environment variables are set: error and exit, because this script does not now which one to use:
+    error_exit "ERROR: both environment variables are set: NEXTCLOUD_CONFIG_DIR and OWNCLOUD_CONFIG_DIR" "Unset one of the two and run script again."
+  elif [[ -z "${NEXTCLOUD_CONFIG_DIR:-}" && -z "${OWNCLOUD_CONFIG_DIR:-}" ]]; then
+    # if both environment variables are empty or unset - use the standard as path to config.php:
+    configphp="${nextcloud_path}/config/config.php"
+  else
+    # if ${NEXTCLOUD_CONFIG_DIR} is not empty, use it as pathname to config directory:
+    [[ -n "${NEXTCLOUD_CONFIG_DIR:-}" ]] && configphp="${NEXTCLOUD_CONFIG_DIR}"
+    # if ${OWNCLOUD_CONFIG_DIR} is not empty, use it as pathname to config directory:
+    [[ -n "${OWNCLOUD_CONFIG_DIR:-}" ]] && configphp="${OWNCLOUD_CONFIG_DIR}"
+    # remove trailing slashes from pathname to config directory:
+    while [[ "${configphp}" =~ /$ ]]; do
+      configphp="${configphp%/}"
+    done
+    # add filename (config.php) to pathname:
+    configphp="${configphp}/config.php"
+  fi
 
   # check $include_shares for valid value (could only be invalid when using config-file):
   if [[ ! "${include_shares}" =~ ^(yes|no)$ ]]; then

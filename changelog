@@ -1,10 +1,12 @@
 vX.X.X (XX.XX.XXXX)
 - added: new option -g|--get-via-http for deprecated behaviour to get files via http request
+- added: support environment variables OWNCLOUD_CONFIG_DIR and NEXTCLOUD_CONFIG_DIR
 - improved: error and exit only when using option -g, if Server is offline
 - improved: cURL is not a requirement anymore unless using deprecated option -g
 - improved: error and exit only when using option -g, if Nextcloud/ownCloud need to upgrade the database
 - improved: downscale of checks for existing tables in PostgreSQL
 - improved: all error messages take into account if script is run with options or config file
+- fixed: also pass --host assignment to psql, if dbhost contains neither socket nor port
 - changed: option -f|--fetch-from-database is now the default (does not have to be given anymore)
 - changed: don't look for file users.txt in scripts directory, if not given via option -u
 
