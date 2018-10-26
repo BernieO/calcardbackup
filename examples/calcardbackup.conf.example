@@ -23,29 +23,38 @@
 nextcloud_path="/usr/share/nginx/www/"
 
 
-# The script tries to automatically detect the URL of ownCloud/Nextcloud,
-# which should work in most cases for versions >= 7.0
-# For versions < 7.0 this is mandatory to be changed to suit your setup!
+# URL of Own-/Nextcloud Login-page
+# The script tries to automatically detect the URL of ownCloud/Nextcloud.
+# If the URL autodetection fails, the script will run anyway, but omit some
+# additional checks.
+# The URL is only mandatory to be changed to suit your setup, if you use
+# 'fetch_from_database="no"' (see below) together with ownCloud < 7.0
 # correlates to option -a|--address
-# URL of Own-/Nextcloud Login-page:
 
 nextcloud_url="https://www.my_nextcloud.net/"
 
 
 # Will cURL trust the servers certificate?
-# In normal use, there is no need to change this. However:
-# if you use 'fetch_from_database="no"' (see below) and have a self signed certificate,
-# you might have to change this as well to "no"
+# cURL is used to retrieve status.php and the vendor of your ownCloud/Nextcloud to
+# perform some additional checks. If cURL can't access the URL due to an
+# untrustful certificate, calcardbackup will omit this checks, but still work.
+# So, in normal use, there is no need to change this.
+# However, if you use the deprecated option 'fetch_from_database="no"' (see below),
+# it is mandatory to change this to "no", if your server uses a self signed certificate.
 # correlates to option -s|--selfsigned
 
 trustful_certificate="yes"
 
 
 # path to file with usernames and passwords (see 'README.md' and 'users.txt.example')
-# If this is unset, or the file is not found, calcardbackup will create a backup of all
-# calendars/addressbooks by fetching the data directly from the database.
-# NOTE: starting with calcardackup version 0.8.0 this file is only mandatory when
-#       using the deprecated option 'fetch_from_database="no"' (see below).
+# As default calcardbackup will create a backup of all existing calendars/addressbooks
+# by fetching the data directly from the database.
+# If you only want to backup items of certain users, then give location of file, which
+# contains usernames of users to be backed up. One user per line.
+# Due to fetching the data from the database passwords don't have to be given in this
+# file, unless the deprecated option 'fetch_from_database="no"' is used.
+# NOTE: this file is only mandatory when using the deprecated
+#       option 'fetch_from_database="no"' (see below).
 # correlates to option -u|--usersfile
 
 users_file=""
@@ -90,8 +99,8 @@ compression_method="tar.gz"
 
 # change first line to "yes" and give a passphrase in the second line to encrypt
 # compressed backup with given passphrase by GnuPG (symmetric AES256).
-# correlates to option -e|--encrypt
 # pay attention to the comments about encryption in 'README.md'!
+# correlates to option -e|--encrypt
 
 encrypt_backup="no"
 gpg_passphrase="1234"
@@ -104,46 +113,38 @@ backup_addressbooks="yes"
 backup_calendars="yes"
 
 
-# until v0.6.2 calcardbackup was traditionally backing up calendars and addressbooks
-# by downloading the according files from the ownCloud/Nextcloud webinterface. However,
-# with large addressbooks, this could lead to timeouts resulting in calcardbackup not
-# being able to backup large addressbooks. Also a file with user credentials of all
-# users whose calendars/addressbooks should be backed up was mandatory.
-# calcardbackup version 0.7.0 brought the possibility to create calendar and addressbook
-# backups by fetching the data directly from the database which makes the file with user
-# credentials obsolete. Also the time needed for backing up addressbooks is massively
-# reduced resulting in much less server load.
-# The file users.txt may still be used, if only items of some users shall be backed up, in which
-# case passwords don't have to be given anymore.
-#
-# NOTE: starting with calcardbackup version 0.8.0 the default is "yes" for this option.
-#
-# change to "no" if you want use deprecated behaviour of this script and download the vcf/ics
-# files via http request from your ownCloud/Nextcloud server (not recommended!)
-#
-# NOTE: all you need to know about this is to NEVER change this to "no", unless you have a good
+# create backup by fetching data from database?
+# NOTE: changing this to "no" is deprecated and only available to provide backwards
+# compatibility. If set to "no", calcardbackup will get the calendars/addressbooks via
+# http request from the ownCloud/Nextcloud server - a file with usernames and according
+# cleartext passwords (see 'usersfile') is then mandatory (set 'users_file="yes"').
+# Getting files via http request used to be the default behaviour until
+# calcardbackup <= 0.7.2, but is not recommended anymore due to the security issue
+# of cleartext passwords in a separate file
+# NOTE: all you need to know about this is to NEVER change this to "no", unless you have a
 #       reason to expose cleartext passwords of your ownCloud/Nextcloud users!
-#
-# setting this to "no" correlates to deprecated option -g|--get-via-http
+## setting this to "no" correlates to deprecated option -g|--get-via-http
 
 fetch_from_database="yes"
 
 
+# Backup shared addressbooks/calendars, too?
 # change to "yes" if you want to backup shared addressbooks/calendars as well.
 # This may be used to provide just one username in 'users.txt', to whom
-# all items, needed to be backed up, are shared.
-# NOTE: with the default 'fetch_from_database="yes"' and no file with usernames
-#       is passed the script (see 'users_file=""' above), this option will be ignored.
+# all items, needed to be backed up, are shared. Items will only be backed
+# up once: e.g a shared calendar won't be backed up if the same calendar was already
+# backed up for another user.
+# NOTE: this option will be ignored if 'users_file' is not declared nor found
 # correlates to option -i|--include-shares
 
 include_shares="no"
 
 
 # if you are running nextcloud-snap (https://github.com/nextcloud/nextcloud-snap),
-# you need to change this value to "yes" and use as path to nextcloud
+# this value is mandatory to be changed to "yes". Use as path to nextcloud
 # the path to the nextcloud configuration files. If you haven't changed anything, this
-# will be: /var/snap/nextcloud/current/nextcloud/
-# Note that calcardbackup needs to be run with sudo when used with snap installations.
+# should be: /var/snap/nextcloud/current/nextcloud/
+# Note that calcardbackup has to be run with sudo in order to work with snap installations.
 # See example No.6 in README.md
 # correlates to option -p|--snap
 
