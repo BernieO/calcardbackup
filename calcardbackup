@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # calcardbackup by BernieO - extracts ownCloud/Nextcloud calendars and addressbooks
 # Source: https://github.com/BernieO/calcardbackup
@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-25 (22.10.2018), AGPL-3.0"
+version="0.7.2-26 (29.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
