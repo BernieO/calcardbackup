@@ -96,6 +96,7 @@ compression_method="tar.gz"
 # Encryption
 # Change "no" to "yes" and give a passphrase in the second line to encrypt
 # compressed backup with given passphrase by GnuPG (symmetric AES256).
+# Will automatically activate compression.
 # Pay attention to the comments about encryption in 'README.md'.
 # correlates to option -e|--encrypt
 
@@ -103,7 +104,7 @@ encrypt_backup="no"
 gpg_passphrase="1234"
 
 
-In-/exclude addressbooks or calendars
+# In-/exclude addressbooks or calendars
 # Change to "no" if you do not want to back up the according category.
 # correlates to options -na|--no-addressbooks, -nc|--no-calendars
 
@@ -121,7 +122,7 @@ backup_calendars="yes"
 # of cleartext passwords in a separate file.
 # NOTE: all you need to know about this is to NEVER change this to "no", unless you have a
 #       reason to expose cleartext passwords of your ownCloud/Nextcloud users!
-## setting this to "no" correlates to deprecated option -g|--get-via-http
+# setting this to "no" correlates to deprecated option -g|--get-via-http
 
 fetch_from_database="yes"
 
