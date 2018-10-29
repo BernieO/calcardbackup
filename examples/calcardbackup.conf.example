@@ -5,12 +5,13 @@
 #
 # This file is only needed if you don't want to use command line options.
 #
-# You can copy this file to any location, then use option -c|--configfile PATH_TO_FILE,
-# or place this file in script's directory and don't pass ownCloud/Nextcloud path to script.
-# If calcardbackup is being run with using a configfile like this, all options given on
-# command line except for -b|--batch are being ignored.
+# You can either place this file in script's directory, or 
+# place this file in any location and use option -c|--configfile PATH_TO_FILE.
 #
-# All paths in this config file need to be relative to this files location or absolute paths!
+# If no ownCloud/Nextcloud path is given as command line option, calcardbackup tries to find and use
+# this config file and all command line options except for -b|--batch will be ignored.
+#
+# All paths in this config file need to be relative to this file's location or absolute paths!
 #
 # For clarification, the associated command line options are given in comments.
 #
@@ -24,12 +25,11 @@ nextcloud_path="/usr/share/nginx/www/"
 
 
 # URL of Own-/Nextcloud Login-page
-# The script tries to automatically detect the URL of ownCloud/Nextcloud.
-# If the URL autodetection fails, the script will run anyway, but omit some
+# If inbuilt URL autodetection fails, calcardbackup will run, but omit some
 # additional checks.
-# The URL is only mandatory to be changed to suit your setup, if you use
-# 'fetch_from_database="no"' (see below) together with ownCloud < 7.0
-# correlates to option -a|--address
+# This option is mandatory if you use
+# 'fetch_from_database="no"' (see below) and ownCloud version < 7.0
+# identical to option -a|--address
 
 nextcloud_url="https://www.my_nextcloud.net/"
 
@@ -37,90 +37,88 @@ nextcloud_url="https://www.my_nextcloud.net/"
 # Will cURL trust the servers certificate?
 # cURL is used to retrieve status.php and the vendor of your ownCloud/Nextcloud to
 # perform some additional checks. If cURL can't access the URL due to an
-# untrustful certificate, calcardbackup will omit this checks, but still work.
-# So, in normal use, there is no need to change this.
-# However, if you use the deprecated option 'fetch_from_database="no"' (see below),
-# it is mandatory to change this to "no", if your server uses a self signed certificate.
+# untrustful certificate, calcardbackup will omit these checks, but still work.
+# If you use the deprecated option 'fetch_from_database="no"' (see below) and
+# your server uses a self signed certificate, change this option to "no".
 # correlates to option -s|--selfsigned
 
 trustful_certificate="yes"
 
 
-# path to file with usernames and passwords (see 'README.md' and 'users.txt.example')
-# As default calcardbackup will create a backup of all existing calendars/addressbooks
-# by fetching the data directly from the database.
+# path to file with usernames [and passwords] (see 'README.md' and 'users.txt.example')
 # If you only want to backup items of certain users, then give location of file, which
-# contains usernames of users to be backed up. One user per line.
-# Due to fetching the data from the database passwords don't have to be given in this
-# file, unless the deprecated option 'fetch_from_database="no"' is used.
-# NOTE: this file is only mandatory when using the deprecated
-#       option 'fetch_from_database="no"' (see below).
-# correlates to option -u|--usersfile
+# contains their usernames, one user per line.
+# If deprecated option 'fetch_from_database="no"' (see below) is used, this option must
+# be used and passwords have to be specified for each user.
+# identical to option -u|--usersfile
 
 users_file=""
 
 
-# path to folder where backed up files will be saved.
-# if not declared, folder 'backups/' in script's directory will be created and used.
-# correlates to option -o|--output
+# path to folder where backed up files will be saved
+# If not declared, folder 'backups/' in script's directory will be created and used.
+# identical to option -o|--output
 
 backupfolder="backups/"
 
 
-# format of date extension for backup files. Default is "-%Y-%m-%d" resulting
-# in backup files named e.g. "calcardbackup-2017-03-23.tar.gz"
-# for syntax, have a look at format options under "man date"
-# correlates to option -d|--date
+# Format of date extension for backup files
+# Default is "-%Y-%m-%d" resulting in backup files named
+# like "calcardbackup-2017-03-23.tar.gz".
+# For syntax, have a look at format options under "man date"
+# identical to option -d|--date
 
 date_extension="-%Y-%m-%d"
 
 
-# delete old backup files after how many days?
+# Days to keep old backup files
 # the default value of "0" means to never delete backups
-# correlates to option -r|--remove
+# identical to option -r|--remove
 
 delete_backups_older_than="0"
 
 
+# Compression of backup files
 # change to "no" to not compress backup files
-# find your files then in a backup directory instead of compressed file
-# if you plan to encrypt your backup, this has to be "yes"
 # correlates to option -x|--uncompressed
 
 compress="yes"
 
 
-# change to "zip" to compress backup as zip (instead of tar.gz)
-# package "zip" needs to be installed.
+# Compression method
+# Change to "zip" to compress backup as zip (instead of tar.gz)
+# Package "zip" needs to be installed.
 # correlates to option -z|--zip
 
 compression_method="tar.gz"
 
 
-# change first line to "yes" and give a passphrase in the second line to encrypt
+# Encryption
+# Change "no" to "yes" and give a passphrase in the second line to encrypt
 # compressed backup with given passphrase by GnuPG (symmetric AES256).
-# pay attention to the comments about encryption in 'README.md'!
+# Pay attention to the comments about encryption in 'README.md'.
 # correlates to option -e|--encrypt
 
 encrypt_backup="no"
 gpg_passphrase="1234"
 
 
-# change to "no" if you do not want to backup the according category
+In-/exclude addressbooks or calendars
+# Change to "no" if you do not want to back up the according category.
 # correlates to options -na|--no-addressbooks, -nc|--no-calendars
 
 backup_addressbooks="yes"
 backup_calendars="yes"
 
 
-# create backup by fetching data from database?
+# Create backup by fetching data directly from database
 # NOTE: changing this to "no" is deprecated and only available to provide backwards
 # compatibility. If set to "no", calcardbackup will get the calendars/addressbooks via
 # http request from the ownCloud/Nextcloud server - a file with usernames and according
 # cleartext passwords (see 'usersfile') is then mandatory (set 'users_file="yes"').
 # Getting files via http request used to be the default behaviour until
 # calcardbackup <= 0.7.2, but is not recommended anymore due to the security issue
-# of cleartext passwords in a separate file
+# of cleartext passwords in a separate file.
 # NOTE: all you need to know about this is to NEVER change this to "no", unless you have a
 #       reason to expose cleartext passwords of your ownCloud/Nextcloud users!
 ## setting this to "no" correlates to deprecated option -g|--get-via-http
@@ -128,22 +126,21 @@ backup_calendars="yes"
 fetch_from_database="yes"
 
 
-# Backup shared addressbooks/calendars, too?
-# change to "yes" if you want to backup shared addressbooks/calendars as well.
-# This may be used to provide just one username in 'users.txt', to whom
-# all items, needed to be backed up, are shared. Items will only be backed
-# up once: e.g a shared calendar won't be backed up if the same calendar was already
-# backed up for another user.
-# NOTE: this option will be ignored if 'users_file' is not declared nor found
+# Backup shared addressbooks/calendars
+# Change to "yes" if you want to backup shared addressbooks/calendars.
+# This may be used to define all items to be backed up by sharing them to 
+# one specific user, which is then specified in 'users.txt'.
+# Any item will only be backed up once, even if shared.
+# NOTE: this option will be ignored if 'users_file' is not used correctly.
 # correlates to option -i|--include-shares
 
 include_shares="no"
 
 
-# if you are running nextcloud-snap (https://github.com/nextcloud/nextcloud-snap),
-# this value is mandatory to be changed to "yes". Use as path to nextcloud
-# the path to the nextcloud configuration files. If you haven't changed anything, this
-# should be: /var/snap/nextcloud/current/nextcloud/
+# nextcloud-snap
+# If you are running nextcloud-snap (https://github.com/nextcloud/nextcloud-snap),
+# change this to "yes". Set nextcloud_path to nextcloud configuration files.
+# By default, this should be "/var/snap/nextcloud/current/nextcloud/".
 # Note that calcardbackup has to be run with sudo in order to work with snap installations.
 # See example No.6 in README.md
 # correlates to option -p|--snap
