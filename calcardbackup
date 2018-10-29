@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-27 (29.10.2018), AGPL-3.0"
+version="0.7.2-28 (30.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -211,7 +211,7 @@ preparations() {
         include_shares="no"
       fi
       _output echo "+  no usersfile given: will backup all available items${ignore:-.}"
-      unset ignore
+      unset -v ignore
       complete_backup_from_database="yes"
     elif [[ ${fetch_from_database} == "no" ]]; then
       [[ -z "${config_file:-}" ]] && error_exit "file with usernames and according passwords must be passed to this script when using option '-g'!"
@@ -911,7 +911,7 @@ get_icsvcf_files() {
   if [[ -z ${uri:-} ]]; then
     _output echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
     # unset arrays (to not include calendardata for addressbook export):
-    unset -v id principal uri displayname already_saved_as
+    unset -v id principal uri displayname already_saved_as calendarcolor
     # there is not a single item to export, let's exit this function and proceed:
     return
   fi
@@ -1025,7 +1025,7 @@ get_icsvcf_files() {
   fi
 
   # unset arrays (to not include calendardata for addressbook export):
-  unset -v id principal uri displayname already_saved_as
+  unset -v id principal uri displayname already_saved_as calendarcolor
 }
 
 create_calendar_from_db() {
@@ -1110,7 +1110,7 @@ create_calendar_from_db() {
       END:${component:-} )
         # something is ending here!
         # if line ends an iCalendar component: unset the component-variable:
-        unset component
+        unset -v component
         # additionally reset vtime indicator (to 0) and continue with next line if we are ending an VTIMEZONE component that was collected before:
         [[ ${vtime} -eq 2 ]] && { vtime=0; continue; }
         ;;
@@ -1134,7 +1134,7 @@ create_calendar_from_db() {
             # match: TZID is already present in array: remember that timezone is already saved (set vtime indicator to 2):
             vtime=2
             # unset temporary array (filled with partially collected timezone-data):
-            unset tz_temp
+            unset -v tz_temp
             # current VTIMEZONE component is already collected, so let's continue with the next line from database:
             continue 2
           fi
@@ -1156,7 +1156,7 @@ create_calendar_from_db() {
         # reset vtime indicator to 0:
         vtime=0
         # unset tz_temp, so there wont be any old data when collecting the next found timezone:
-        unset tz_temp
+        unset -v tz_temp
       fi
       # line was already stored in tz_temp array, let us get the next line from database:
       continue
