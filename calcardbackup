@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.7.2-26 (29.10.2018), AGPL-3.0"
+version="0.7.2-27 (29.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -43,10 +43,10 @@ get_absolute_path() {
 
   if [[ "${2}" != /* ]]; then
     # change path of ${2} (file) relative to ${1} (dir) to absolute path and remove trailing slashes:
-    absolute_path="$(readlink -vf "${1}/${2}")" || error_exit "ERROR: ${1}/${2} can't be canonicalized. Check given path in config-file!" "I need to be able to read the full path!"
+    absolute_path="$(readlink -f "${1}/${2}")" || error_exit "ERROR: ${1}/${2} can't be canonicalized. Check given path in config-file!" "I need to be able to read the full path!"
   else
     # if ${2} contains already absolute path, then only remove trailing slashes:
-    absolute_path="$(readlink -vf "${2}")" || error_exit "ERROR: ${2} can't be canonicalized. Check given path in config-file!" "I need to be able to read the full path!"
+    absolute_path="$(readlink -f "${2}")" || error_exit "ERROR: ${2} can't be canonicalized. Check given path in config-file!" "I need to be able to read the full path!"
   fi
   echo "${absolute_path}"
 }
@@ -65,7 +65,7 @@ set_required_paths() {
   # store current directory, because we have to change dir later and need to be able to come back to where we were:
   working_dir="$(pwd)"
   # get path to scripts dir:
-  script_dir="$(readlink -vf "${BASH_SOURCE[0]}")" || error_exit "ERROR: Can't convert scripts directory to absolute path." "I need to be able to read the full path of this scripts directory!"
+  script_dir="$(readlink -f "${BASH_SOURCE[0]}")" || error_exit "ERROR: Can't convert scripts directory to absolute path." "I need to be able to read the full path of this scripts directory!"
 
   script_dir="$(dirname "${script_dir}")"
 }
@@ -94,7 +94,7 @@ read_config_file() {
   local temp
 
   # absolute path to config file:
-  temp="$(readlink -vf "${config_file}")" || error_exit "ERROR: path to config file '${config_file}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
+  temp="$(readlink -f "${config_file}")" || error_exit "ERROR: path to config file '${config_file}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
   config_file="${temp}"
   config_file_dir="$(dirname "${config_file}")"
   _output echo "+  Using configuration file ${config_file}, ignoring all other command line options."
@@ -134,7 +134,7 @@ preparations() {
   [[ -z "${config_file:-}" && -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
 
   # canonicalize and remove trailing slashes from $nextcloud_path:
-  nextcloud_path="$(readlink -vf "${nextcloud_path}")" || error_exit "ERROR: path to ownCloud/Nextcloud '${nextcloud_path}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
+  nextcloud_path="$(readlink -f "${nextcloud_path}")" || error_exit "ERROR: path to ownCloud/Nextcloud '${nextcloud_path}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
   # remove trailing slashes from $nextcloud_url:
   while [[ "${nextcloud_url}" =~ /$ ]]; do
     nextcloud_url="${nextcloud_url%/}"
@@ -241,7 +241,7 @@ preparations() {
   # if $backupfolder is empty or not set: set it to 'backups/' in script's dir
   [[ -z "${backupfolder:-}" ]] && backupfolder="${script_dir}/backups/"
   # canonicalize path to backupfolder (writeable test will follow later):
-  backupfolder="$(readlink -vf "${backupfolder}")" || error_exit "ERROR: path to output directory '${backupfolder}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
+  backupfolder="$(readlink -f "${backupfolder}")" || error_exit "ERROR: path to output directory '${backupfolder}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
 
   # make sure the configured date format in $date_extension is valid:
   if [[ ! "$(date +"${date_extension}" 2>/dev/null)" ]]; then
