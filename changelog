@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.8.0 (30.10.2018)
 - added: new option -g|--get-via-http for deprecated behaviour to get files via http request
 - added: support environment variables OWNCLOUD_CONFIG_DIR and NEXTCLOUD_CONFIG_DIR
 - improved: error and exit only when using option -g, if Server is offline
