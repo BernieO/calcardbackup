@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.0 (30.10.2018), AGPL-3.0"
+version="0.8.0-1 (31.10.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -396,6 +396,9 @@ read_config_php() {
   row_displayname="displayname"
   row_calendarcolor="calendarcolor"
   table_group_user="${dbtableprefix}group_user"
+  # for calendarsubscriptions:
+  table_calendarsubscriptions="${dbtableprefix}calendarsubscriptions"
+  row_source="source"
 
   # get ownClouds/Nextclouds URL from config.php (overwrite.cli.url), compare to user given url ($nextcloud_url) and notice/error, if something is not as expected:
   local nextcloud_url_default="https://www.my_nextcloud.net"
@@ -679,8 +682,8 @@ query_database() {
   # gets details of calendars/addressbooks from database
   # see next lines for description of arguments ${1} and ${2}
 
-  table="${1}"  # ${table_calendars} or ${table_addressbooks}
-  item="${2}"   # "calendar" or "addressbook", just a verbal description, needed for output messages
+  table="${1}"  # ${table_calendars}, ${table_calendarsubscriptions} or ${table_addressbooks}
+  item="${2}"   # "calendar", "calendarsubscription" or "addressbook", just a verbal description, needed for output messages
 
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
@@ -695,8 +698,8 @@ query_database() {
   # shellcheck disable=SC2086
   [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table} LIMIT 1;")"
 
-  if [[ "${check_table:-}" == "" ]]; then
-    # print notice, if table doesn't exist:
+  if [[ "${check_table:-}" == "" && "${item}" != "calendarsubscription" ]]; then
+    # print notice, if table doesn't exist (unnecessary for calendarsubscriptions):
     _output echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
     _output echo "-- NOTICE: Looks like your ${productname} did not create any ${item}s yet."
 
@@ -710,12 +713,12 @@ query_database() {
     # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
     [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]] && fields="${row_id}, ${fields}"
     [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && fields="coalesce(${row_calendarcolor},'NULL'), ${fields}"
+    [[ "${item}" == "calendarsubscription" ]] && fields="${row_id}, ${row_principaluri}, ${row_displayname}, ${row_source}"
     # adjust output format of MySQL/MariaDB/PostgreSQL to match output of SQLite3 (field|field|field):
     [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
     # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
     # shellcheck disable=SC2016
     db_query='"select ${fields} from ${table} order by id"'
-
     # read required fields from table and assign values to arrays:
     while read -r line; do
       # make sure empty lines are not processed (PostgreSQL prints as last line in the results an empty line - don't know how to suppress that):
@@ -724,7 +727,7 @@ query_database() {
         calendarcolor+=("${line%%|*}") # store calendarcolor (first field) in array
         line="${line#*|}"          # cut first field (calendarcolor)
       fi
-      if [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]]; then
+      if [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" || "${item}" == "calendarsubscription" ]]; then
         id+=("${line%%|*}")        # store id (first field) in array
         line="${line#*|}"          # cut first field (id)
       fi
@@ -732,7 +735,11 @@ query_database() {
       principal+=("${line%%|*}")   # store principal (=username, is first field) in array
       line="${line#*|}"            # cut first field (principal)
       displayname+=("${line%%|*}") # store displayname (is now first field) in array
-      uri+=("${line##*|}")         # store uri (last field) in array
+      if [[ "${item}" == "calendarsubscription" ]]; then
+        source+=("${line##*|}")    # store source (URL to calendarsubscription, last field) in array
+      else
+        uri+=("${line##*|}")       # store uri (last field) in array
+      fi
     done < <(eval "${dbcommand}" "${db_query}")
   fi
 
@@ -1024,7 +1031,7 @@ get_icsvcf_files() {
     _output echo "-- NOTICE: You may want to check '${users_file}' for valid ${productname} users!"
   fi
 
-  # unset arrays (to not include calendardata for addressbook export):
+  # unset arrays (to not include calendardata for calendarsubscriptions or addressbook export):
   unset -v id principal uri displayname already_saved_as calendarcolor
 }
 
@@ -1187,6 +1194,40 @@ create_calendar_from_db() {
   shopt -u nocasematch
 }
 
+create_calendarsubscription_files() {
+  # creates textfiles with URLs to subscribed calendars
+
+  local i index filename
+
+  for (( i=0; i<${#id[@]}; i++ )); do      # go through array with calendarsubscriptions
+
+    if [[ -n "${users_file:-}" ]]; then
+      # loop through array with usernames given in file with users credentials (users.txt):
+      for index in "${!users[@]}"; do
+        # compare prinicpal with username. If there is no match: continue with next username
+        [[ "${principal[$i]}" == "${user[$index]}" ]] && break
+      done
+      # continue with next id of calendarsubscriptions, if no matching user was found
+      # (this is the case, if (index_of_users-array + 1) equals the number of elements of that array):
+      [[ $(( index + 1 )) -eq ${#users[@]} ]] && continue
+    fi
+
+    # create filename like: username-(calendar-/addressbook-)name-date:
+    filename="${principal[$i]}-${displayname[$i]}.webcal"
+    # remove funky characters from filename:
+    filename="${filename//[\/\\*? ]/_}"
+
+    # create file with URL to subscribed calendar:
+    _output printf '%s' "+  saving ${item} ${filename} ..."
+    echo "${source[$i]}" > "${backupfolder_day}/${filename}"
+    _output printf '%s\n' "...success!"
+
+  done
+
+  # unset arrays (to not include data of calendarsubscriptions for addressbook export):
+  unset -v id principal displayname source
+}
+
 create_addressbook_from_db() {
   # create vCard addressbook (.vcf file) by reading cards directly from database (option -f | --fetch-from-database):
 
@@ -1233,6 +1274,10 @@ get_calendars() {
   query_database "${table_calendars}" "calendar"
   [[ "${include_shares}" == "yes" ]] && include_shares
   get_icsvcf_files "calendar" ".ics" "BEGIN:VCALENDAR" "${caldav}" ""
+
+  # get calendarsubscriptions as well:
+  query_database "${table_calendarsubscriptions}" "calendarsubscription"
+  create_calendarsubscription_files
 }
 
 get_addressbooks() {
