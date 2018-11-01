@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.0-1 (31.10.2018), AGPL-3.0"
+version="0.8.0-2 (01.11.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1277,7 +1277,13 @@ get_calendars() {
 
   # get calendarsubscriptions as well:
   query_database "${table_calendarsubscriptions}" "calendarsubscription"
-  create_calendarsubscription_files
+  if [[ -n "${source:-}" ]]; then
+  # create files with calendarsubscriptions, if table calendarsubscriptions is not empty:
+    create_calendarsubscription_files
+  else
+    # print info, that there are no calendarsubscriptions in the installation, (if table calendarsubscriptions is empty):
+    _output echo "+  No calendarsubscriptions found."
+  fi
 }
 
 get_addressbooks() {
