@@ -71,6 +71,15 @@ backupfolder="backups/"
 date_extension="-%Y-%m-%d"
 
 
+# Keep backups like time machine
+# keeps daily backups for the given number of days
+# keeps weekly backups for the time before
+# the default value of "0" means to not delete anything
+# identical to option -l|--like-time-machine
+
+keep_days_like_time_machine="0"
+
+
 # Days to keep old backup files
 # the default value of "0" means to never delete backups
 # identical to option -r|--remove

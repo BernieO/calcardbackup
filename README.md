@@ -77,6 +77,8 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Backup shared addressbooks/calendars, too. Items will only be backed up once: e.g. a shared
        calendar won't be backed up if the same calendar was already backed up for another user.
        NOTE: this option will be ignored if not used together with option '-u|--users-file'.
+-ltm | --like-time-machine N
+       keep daily backups for the last N days, keep only one backup per week for the time before.
 -na | --no-addressbooks
        Do not backup addressbooks
 -nc | --no-calendars

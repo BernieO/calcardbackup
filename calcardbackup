@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.0-2 (01.11.2018), AGPL-3.0"
+version="0.8.0-3 (05.11.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -249,6 +249,14 @@ preparations() {
     [[ -n "${config_file:-}" ]] && _output echo "-- NOTICE: Parameter 'date_extension' has no valid format (check 'man date' for valid formats)."
     _output echo "-- NOTICE: Using default value instead: \"-%Y-%m-%d\""
     date_extension="-%Y-%m-%d"
+  fi
+
+  # make sure $keep_days_like_time_machine is a positive integer and set it to the default (0) if not:
+  if [[ ! "${keep_days_like_time_machine:-}" =~ ^[0-9]+$ ]]; then
+    [[ -z "${config_file:-}" ]] && _output echo "-- NOTICE: Argument to option '-ltm/--like-time-machine' is not a positive number."
+    [[ -n "${config_file:-}" ]] && _output echo "-- NOTICE: Parameter 'keep_days_like_time_machine' is not a positive number."
+    _output echo "-- NOTICE: Using default value of 0 instead (not deleting anything)."
+    keep_days_like_time_machine="0"
   fi
 
   # make sure $delete_backups_older_than is a positive integer and set it to default (0) if not:
@@ -1356,6 +1364,44 @@ gpg_encrypt_backup() {
   _output echo "+  Find your encrypted backup here: ${path_to_backup}"
 }
 
+keep_like_time_machine() {
+  # keeps old backups like apples timemachine:
+  #   - keeps daily backups for the last $keep_days_like_time_machine days
+  #   - keeps weekly backups for the time before
+
+  local deleted line dir
+  # delete backups not created on a monday and older than $keep_days_like_time_machine days
+  # (use option -daystart to set beginning of day = 0:00 am in order
+  # to satisfy probably by users expected behavior of this function):
+
+  _output echo "+  Delete old backups like time machine (keep daily for the last ${keep_days_like_time_machine} days; weekly before):"
+
+  deleted="no"
+
+  # find all files which are older than 14 days and read them line by line:
+  while read -r line; do
+    # exit loop, if $line is empty
+    [[ -z "${line:-}" ]] && break
+    # continue, if $line contains $dir (because dir was already deleted, otherwise $(date) below complains about non existing files)
+    [[ -n "${dir:-}" && "${line}" =~ ^${dir:-}/.+ ]] && continue
+    # check, if line is a directory:
+    if [[ -d "${line}" ]]; then
+      dir="${line}"
+    fi
+    # check if file was not created on a monday:
+    if [[ $(date +%u -r "$line") -ne 1 ]]; then
+      # print notice about file and delete file/folder:
+      _output echo "+     - ${line}"
+      rm -r "${line}"
+      # remember that something has been deleted:
+      [[ "${deleted}" == "no" ]] && deleted="yes"
+    fi
+  done <<<"$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${keep_days_like_time_machine} -print)"
+
+  # print notice, of nothing has been found to be deleted:
+  [[ "${deleted}" == "yes" ]] || _output echo "+  No backups found to be deleted like time machine."
+}
+
 delete_old_backups() {
   # deletes backups older than the configured amount of days ($delete_backups_older_than)
 
@@ -1528,6 +1574,11 @@ do
     -i | --include-shares )
       include_shares="yes"
     ;;
+    -ltm | --like-time-machine )
+      shift
+      check_argument "${1:-}"
+      keep_days_like_time_machine="${1}"
+    ;;
     -na | --no-addressbooks )
       backup_addressbooks="no"
     ;;
@@ -1606,5 +1657,6 @@ if [[ "${backup_files_present}" == "yes" ]]; then
   fi
   [[ "${encrypt_backup}" == "yes" ]] && gpg_encrypt_backup
 fi
+[[ "${keep_days_like_time_machine}" -gt 0 ]] && keep_like_time_machine
 [[ "${delete_backups_older_than}" -gt 0 ]] && delete_old_backups
 finish
