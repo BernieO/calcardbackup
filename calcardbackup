@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.0-4 (05.11.2018), AGPL-3.0"
+version="0.8.0-5 (05.11.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -335,6 +335,8 @@ getvalue_from_configphp() {
   if [[ "${line:-}" != "" ]]; then
     line=${line%\'*}    # throw away end including last '
     line=${line##*\'}   # throw away beginning including last '
+  else
+    line="value is unset"
   fi
   echo "${line}"
 }
@@ -347,8 +349,8 @@ read_config_php() {
 
   # get dbtableprefix for prefix string of table names:
   dbtableprefix="$(getvalue_from_configphp "dbtableprefix")"
-  # set default dbtableprefix if empty or not found in config.php:
-  [[ -z "${dbtableprefix:-}" ]] && dbtableprefix="oc_"
+  # set default dbtableprefix if unset in config.php:
+  [[ "${dbtableprefix:-}" == "value is unset" ]] && dbtableprefix="oc_"
 
   # get version of ownCloud/Nextcloud and configure correct dav-endpoint:
   version_config_php="$(getvalue_from_configphp "version")"
@@ -412,7 +414,7 @@ read_config_php() {
   # get ownClouds/Nextclouds URL from config.php (overwrite.cli.url), compare to user given url ($nextcloud_url) and notice/error, if something is not as expected:
   local nextcloud_url_default="https://www.my_nextcloud.net"
   nextcloud_url_overwrite="$(getvalue_from_configphp "overwrite.cli.url")"
-  if [[ "${nextcloud_url}" != "${nextcloud_url_default}" && "${nextcloud_url}" != "${nextcloud_url_overwrite}" && "${nextcloud_url_overwrite}" != "" ]]; then
+  if [[ "${nextcloud_url}" != "${nextcloud_url_default}" && "${nextcloud_url}" != "${nextcloud_url_overwrite}" && "${nextcloud_url_overwrite}" != "value is unset" ]]; then
     # use given URL but print notice, if $nextcloud_url has been configured to something other than default or overwrite.cli.url:
     # (last conditional expression in if statement above: make sure overwrite.cli.url is present and not empty):
     _output echo "-- NOTICE: Configured URL differs from 'overwrite.cli.url' in config.php"
