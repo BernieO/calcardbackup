@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.0-5 (05.11.2018), AGPL-3.0"
+version="0.8.0-6 (05.11.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -709,10 +709,12 @@ query_database() {
   # shellcheck disable=SC2086
   [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table} LIMIT 1;")"
 
-  if [[ "${check_table:-}" == "" && "${item}" != "calendarsubscription" ]]; then
-    # print notice, if table doesn't exist (unnecessary for calendarsubscriptions):
-    _output echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
-    _output echo "-- NOTICE: Looks like your ${productname} did not create any ${item}s yet."
+  if [[ "${check_table:-}" == "" ]]; then
+    if [[ "${item}" != "calendarsubscription" ]]; then
+      # print notice, if table doesn't exist (unnecessary for calendarsubscriptions):
+      _output echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
+      _output echo "-- NOTICE: Looks like your ${productname} did not create any ${item}s yet."
+    fi
 
   else
     # table exists

@@ -2,6 +2,7 @@ vX.X.X (XX.XX.XXXX)
 - added: new option -ltm|--like-time-machine to keep old backups like apples time machine
 - added: also backup URLs of subscribed calendars
 - fixed: distinguish between unset and empty parameters in config.php
+- fixed: don't read table calendarsubscriptions, if it does not exist in database
 
 v0.8.0 (30.10.2018)
 - added: new option -g|--get-via-http for deprecated behaviour to get files via http request
