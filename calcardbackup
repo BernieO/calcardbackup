@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.0-3 (05.11.2018), AGPL-3.0"
+version="0.8.0-4 (05.11.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -77,6 +77,7 @@ load_default_values() {
   trustful_certificate="yes"
   users_file=""
   date_extension="-%Y-%m-%d"
+  keep_days_like_time_machine="0"
   delete_backups_older_than="0"
   compress="yes"
   compression_method="tar.gz"
@@ -255,7 +256,7 @@ preparations() {
   if [[ ! "${keep_days_like_time_machine:-}" =~ ^[0-9]+$ ]]; then
     [[ -z "${config_file:-}" ]] && _output echo "-- NOTICE: Argument to option '-ltm/--like-time-machine' is not a positive number."
     [[ -n "${config_file:-}" ]] && _output echo "-- NOTICE: Parameter 'keep_days_like_time_machine' is not a positive number."
-    _output echo "-- NOTICE: Using default value of 0 instead (not deleting anything)."
+    _output echo "-- NOTICE: Using default value of 0 instead (keeping everything)."
     keep_days_like_time_machine="0"
   fi
 
