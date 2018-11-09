@@ -72,9 +72,9 @@ date_extension="-%Y-%m-%d"
 
 
 # Keep backups like time machine
-# keeps daily backups for the given number of days
-# keeps weekly backups for the time before
-# the default value of "0" means to not delete anything
+# keeps all backups for the given number of days
+# keeps only backups created on mondays for the time before
+# the default value of "0" means to keep all backups created ever
 # identical to option -l|--like-time-machine
 
 keep_days_like_time_machine="0"
