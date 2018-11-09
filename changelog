@@ -1,5 +1,5 @@
 vX.X.X (XX.XX.XXXX)
-- added: new option -ltm|--like-time-machine to keep backups like apples time machine
+- added: new option -ltm|--like-time-machine to keep backups similar to apples time machine
 - added: also backup URLs of subscribed calendars
 - fixed: distinguish between unset and empty parameters in config.php
 - fixed: use default values for unset parameters in config.php
