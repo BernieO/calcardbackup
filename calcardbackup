@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.0-6 (05.11.2018), AGPL-3.0"
+version="0.8.0-7 (09.11.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -576,10 +576,14 @@ get_database_details() {
 
   # read type of database being used (SQLite or MySQL/MariaDB)
   dbtype="$(getvalue_from_configphp "dbtype")"
+  [[ "${dbtype}" == "value is unset" ]] && dbtype="sqlite3" # use default if unset in config.php
   case "${dbtype}" in
     mysql|pgsql)
       dbname="$(getvalue_from_configphp "dbname")"
       dbhost="$(getvalue_from_configphp "dbhost")"
+      # use localhost as dbhost if unset in config.php
+      # though (as per documentation) there is no default for dbhost, chances are quite high, that the database listens there:
+      [[ "${dbhost}" == "value is unset" ]] && dbhost="localhost"
       # check whether dbhost contains socket or portnumber and store it for mysql/psql commands:
       if [[ "${dbhost}" =~ ^.+:/.+$ ]]; then
         # dbhost contains socket after hostname (e.g. 'localhost:/var/run/mysqld/mysqld.sock'):
@@ -645,6 +649,7 @@ get_database_details() {
       # check if command-line-interface of sqlite3 is installed:
       command -v sqlite3 > /dev/null || error_exit "ERROR: ${productname} database is sqlite3. Therefore this script requires package 'sqlite3'." "Install with 'apt-get install sqlite3' and run script again"
       datadirectory="$(getvalue_from_configphp "datadirectory")" # has to be absolute path for working Own-/Nextcloud, so no need to get absolute path
+      [[ "${datadirectory}" == "value is unset" ]] && datadirectory="${nextcloud_path}/data" # use default if unset in config.php
       sqlite3_database="${datadirectory}/owncloud.db"
       # use options '-list' and '-separator "|"' for sqlite3 command, to override eventually existing user-specific config-file '~/.sqlite3rc':
       # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
