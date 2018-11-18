@@ -1,5 +1,7 @@
 # calcardbackup
+
 [english version of this  README...](README.md)
+
 Dieses Bash-Skript exportiert Kalender und Adressbücher aus ownCloud/Nextcloud als .ics- und .vcf-Dateien und speichert sie in einem komprimierten Archiv. Weitere Optionen stehen zur Verfügung.
 
 __WICHTIG__: Ab Version 0.8.0 ist keine Datei mit Benutzernamen und Passwörtern mehr notwendig, da alle benötigten Daten direkt aus der Datenbank gezogen werden.  
