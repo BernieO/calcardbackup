@@ -1,3 +1,6 @@
+vX.X.X (XX.XX.XXXX)
+- added: german readme (README_GER.md)
+
 v0.8.1 (10.11.2018)
 - added: new option -ltm|--like-time-machine to keep backups similar to apples time machine
 - added: also backup URLs of subscribed calendars
