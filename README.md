@@ -19,6 +19,7 @@ __All users upgrading calcardbackup from a previous version to version 0.8.0 or 
 - [Does this also work with a broken instance?](#does-this-also-work-with-a-broken-owncloudnextcloud-instance)
 - [About Option -g|--get-via-http](#about-option--g----get-via-http)
 - [About Option -i|--include-shares](#about-option--i----include-shares)
+- [Want to read about calcardbackup in german?](#want-to-read-about-calcardbackup-in-german)
 
 ## Requirements
 
@@ -165,7 +166,7 @@ If you want to use the included encryption possibility, be aware that:
 - command to decrypt (you will be prompted to enter the passphrase):  
 `gpg -o OUTPUT_FILE -d FILE_TO_DECRYPT.GPG`
 
-## Does this also work with a roken ownCloud/Nextcloud instance?
+## Does this also work with a broken ownCloud/Nextcloud instance?
 
 Yes, it does!  
 *calcardbackup* only needs the database (and access to it) from an ownCloud/Nextcloud installation to be able to extract calendars/addressbooks from the database and save them as .ics and .vcf files. Here is how this can be accomplished:
@@ -214,7 +215,9 @@ __Drawback:__ no automatic inclusion of newly created addressbooks/calendars. It
 
 Due to the new default behaviour of calcardbackup >= 0.8.0 (creating calendars/addressbooks by fetching data from the database), this option basically becomes pointless. If you still want to use this method of shared items even without option `-g`, then there is of course no need to give passwords in the usernames file. If no usernames file is passed to the script via option `-u`, option `-i` will be ignored.
 
-## Want to read some of that in german?
+## Want to read about calcardbackup in german?
 
-There is a little article about calcardbackup available in german:  
+There is a german version of this readme:  
+[README_GER.md](README_GER.md)
+And there is a little article about calcardbackup available in german:  
 [Blog article about calcardbackup](https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht)
