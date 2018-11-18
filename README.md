@@ -218,6 +218,6 @@ Due to the new default behaviour of calcardbackup >= 0.8.0 (creating calendars/a
 ## Want to read about calcardbackup in german?
 
 There is a german version of this readme:  
-[README_GER.md](README_GER.md)
+[README_GER.md](README_GER.md)  
 And there is a little article about calcardbackup available in german:  
 [Blog article about calcardbackup](https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht)
