@@ -1,11 +1,24 @@
 # calcardbackup
 
+[zur deutschen Version dieses README...](README_GER.md)
+
 This Bash script exports calendars and addressbooks from ownCloud/Nextcloud to .ics and .vcf files and saves them to a compressed file. Additional options are available.
 
 __IMPORTANT__: starting with version 0.8.0, there is no need anymore for a file with user credentials because all data is fetched directly from the database.  
 If only calendars/addressbooks of certain users shall be backed up, list them in `users.txt` without any passwords.
 
 __All users upgrading calcardbackup from a previous version to version 0.8.0 or above are strongly advised to delete the file with users credentials - or at least to remove the cleartext passwords from this file!__
+
+## Contents
+- [Requirements](#requirements)
+- [Quick Installation Guide](#quick-installation-guide)
+- [Options](#options)
+- [Usage Examples](#usage-examples)
+- [Nextcloud-Snap Users](#nextcloud-snap-users)
+- [Considerations about Encryption](#considerations-about-encryption)
+- [Does this also work with a broken instance?](#does-this-also-work-with-a-broken-owncloudnextcloud-instance)
+- [About Option -g|--get-via-http](#about-option--g----get-via-http)
+- [About Option -i|--include-shares](#about-option--i----include-shares)
 
 ## Requirements
 
@@ -112,7 +125,7 @@ NOTE:  Option '-f|--fetch-from-database' (introduced with calcardbackup 0.6.0) i
        default for calcardbackup >= 0.8.0, thus it has no function anymore.
 ```
 
-## Usage examples
+## Usage Examples
 
 1. `./calcardbackup /var/www/nextcloud -nc -x`  
 Do not backup calendars (`-nc`) and store backed up files uncompressed (`-x`) in folder named `calcardbackup-YYYY-MM-DD` (default) under ./backups/ (default).
@@ -137,12 +150,12 @@ This example is for nextcloud-snap users. calcardbackup will use the cli utility
 Use the deprecated method and get the addressbook/calendar files via https-request from the ownCloud/Nextcloud webinterface (`-g`, deprecated), find usernames and according cleartext passwords of users to be backed up in file /etc/calcardbackupusers (`-u calcardbackupusers`, mandatory with option -g), tell calcardbackup that the server is using a selfsigned certificate (`-s`, only needed with option -g) and include shared items (`-i`). The backup will be saved as compressed `*.tar.gz` file named `calcardbackup-YYYY-MM-DD.tar.gz` (default) in folder `./backups/` (default).  
 __NOTE__: using option `-g` is deprecated and not recommended anymore, due to the mandatory file with user credentials and other drawbacks (see below)!
 
-## nextcloud-snap users
+## Nextcloud-snap Users
 
 If you are running Nextcloud-snap (https://github.com/nextcloud/nextcloud-snap), you have to use option `-p|--snap` to tell calcardbackup to use the cli utility `nextcloud.mysql-client` from the snap package.  
 In order for this to work, calcardbackup has to be run with `sudo` (even running as root without `sudo` will fail). As path to Nextcloud use the path to the configuration files of nextcloud. In a standard installation this would be `/var/snap/nextcloud/current/nextcloud`. See example no.6.
 
-## Considerations about encryption
+## Considerations about Encryption
 
 If you want to use the included encryption possibility, be aware that:
 - the files are encrypted by GnuPG, AES256 with the passphrase given in a separate file
@@ -152,7 +165,7 @@ If you want to use the included encryption possibility, be aware that:
 - command to decrypt (you will be prompted to enter the passphrase):  
 `gpg -o OUTPUT_FILE -d FILE_TO_DECRYPT.GPG`
 
-## Does this also work with a broken ownCloud/Nextcloud instance?
+## Does this also work with a roken ownCloud/Nextcloud instance?
 
 Yes, it does!  
 *calcardbackup* only needs the database (and access to it) from an ownCloud/Nextcloud installation to be able to extract calendars/addressbooks from the database and save them as .ics and .vcf files. Here is how this can be accomplished:
@@ -176,7 +189,7 @@ Yes, it does!
 3. run calcardbackup and give as first argument the path to dummy Nextcloud directory created in step 1:  
 `/path/to/calcardbackup /usr/local/bin/nextcloud-dummy`
 
-## About option -g | -\-get-via-http
+## About Option -g | -\-get-via-http
 
 __NOTE__: this option (which used to be the default until *calcardbackup v0.7.2*) is deprecated and not recommended anymore due to the necessity to give cleartext passwords in a separate file.  
 
@@ -186,7 +199,7 @@ Using this option also carries the risk of timeouts resulting in *calcardbackup*
 
 __To make a long story short__: all you need to know about option `-g|--get-via-http` is to __not__ use it, unless you have a good reason to expose passwords of the users to be backed up.
 
-## About option -i | -\-include-shares
+## About Option -i | -\-include-shares
 
 __NOTE:__ there is no need to read this section unless you want to run calcardbackup with the deprecated option `-g|--get-via-http`, which is not recommended (see above).  
 
