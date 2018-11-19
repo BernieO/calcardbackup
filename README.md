@@ -45,12 +45,13 @@ __All users upgrading calcardbackup from a previous version to version 0.8.0 or 
 
 5. Find your backup in directory `backups/`.
 
-There are many more options available: have a look at sections __Options__ and __Usage examples__ below.
+There are many more options available: have a look at sections [Options](#options) and [Usage examples](#usage-examples).
 
 ## Options
 
 All options can be specified in a configuration file or as command line arguments. If started with no options at all or only `-b|--batch`, the script attempts to use file `calcardbackup.conf` in the script's directory as configuration file.  
-If no configuration file via option `-c|--configfile` is given, the path to your ownCloud/Nextcloud instance must be the very first argument. Find detailed description of all available options below.
+If no configuration file via option `-c|--configfile` is given, the path to your ownCloud/Nextcloud instance must be the very first argument.  
+Find detailed description of all available options below.
 
 ```
 Usage: ./calcardbackup [DIRECTORY] [option [argument]] [option [argument]] [option [argument]] ...
@@ -154,7 +155,7 @@ __NOTE__: using option `-g` is deprecated and not recommended anymore, due to th
 ## Nextcloud-snap Users
 
 If you are running Nextcloud-snap (https://github.com/nextcloud/nextcloud-snap), you have to use option `-p|--snap` to tell calcardbackup to use the cli utility `nextcloud.mysql-client` from the snap package.  
-In order for this to work, calcardbackup has to be run with `sudo` (even running as root without `sudo` will fail). As path to Nextcloud use the path to the configuration files of nextcloud. In a standard installation this would be `/var/snap/nextcloud/current/nextcloud`. See example no.6.
+In order for this to work, calcardbackup has to be run with `sudo` (even running as root without `sudo` will fail). As path to Nextcloud use the path to the configuration files of nextcloud. In a standard installation this would be `/var/snap/nextcloud/current/nextcloud`. See [example no.6](#usage-examples).
 
 ## Considerations about Encryption
 
@@ -219,5 +220,6 @@ Due to the new default behaviour of calcardbackup >= 0.8.0 (creating calendars/a
 
 There is a german version of this readme:  
 [README_GER.md](README_GER.md)  
+
 And there is a little article about calcardbackup available in german:  
 [Blog article about calcardbackup](https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht)

@@ -1,6 +1,6 @@
 # calcardbackup
 
-[english version of this  README...](README.md)
+[go to english version of this  README...](README.md)
 
 Dieses Bash-Skript exportiert Kalender und Adressbücher aus ownCloud/Nextcloud als .ics- und .vcf-Dateien und speichert sie in einem komprimierten Archiv. Weitere Optionen stehen zur Verfügung.
 
@@ -42,11 +42,12 @@ __Allen, die calcardbackup von einer früheren Version auf 0.8.0 aktualisieren, 
 
 5. Das Backup befindet sich im Verzeichnis `backups/`.
 
-Es gibt viele weitere Optionen, die dem Skript übergeben werden können (siehe __Optionen__ und __Beispiele__).
+Es gibt viele weitere Optionen, die dem Skript übergeben werden können (siehe [Optionen](#optionen) und [Beispiele](#beispiele)).
 
 ## Optionen
 Alle Optionen können als Konfigurationsdatei oder über die Kommandozeile übergeben werden. Ohne Optionen, oder nur mit Option `-b|--batch` aufgerufen, benutzt das Skript die Datei `calcardbackup.conf` im Skriptverzeichnis als Konfigurationsdatei, sofern vorhanden.  
-Falls keine Konfigurationsdatei über die Option `-c|--configfile` an das Skript übergegeben wird, muss der Pfad zur ownCloud/Nextcloud Instanz als erstes Argument übergeben werden. Im Folgenden werden die verfügbaren Optionen ausführlich beschrieben:
+Falls keine Konfigurationsdatei über die Option `-c|--configfile` an das Skript übergeben wird, muss der Pfad zur ownCloud/Nextcloud Instanz als erstes Argument übergeben werden.  
+Im Folgenden werden die verfügbaren Optionen ausführlich beschrieben:
 
 ```
 Aufruf: ./calcardbackup [VERZEICHNIS] [Option [Argument]] [Option [Argument]] [Option [Argument]] ...
@@ -56,7 +57,7 @@ Pfade (DATEI / VERZEICHNIS) sind absolute Pfade oder relative Pfade zum Arbeitsv
 
 -a | --address URL
        übergibt die URL der ownCloud Installation an das Skript.
-       Ist nur erforderlich, für Option '-g|--get-via-http' in Kombination mit ownCloud < 7.0
+       nur erforderlich für Option '-g|--get-via-http' in Kombination mit ownCloud < 7.0
 -b | --batch
        Batchmodus: außer des Pfades zum Backup erfolgt keine Ausgabe.
        Abhängig von der Konfiguration ist das:
@@ -73,19 +74,20 @@ Pfade (DATEI / VERZEICHNIS) sind absolute Pfade oder relative Pfade zum Arbeitsv
        'calcardbackup-2017-03-23.tar.gz' oder 'calcardbackup-2017-03-23'
        Weitergehende Informationen über verschiedene Formate und die Syntax finden sich unter 'man date'
 -e | --encrypt DATEI
-       Verschlüssele das komprimierte Backup mit AES256 (gnupg). Die erste Zeile von DATEI wird als Passphrase benutzt werden.
+       Verschlüssele das komprimierte Backup mit AES256 (gnupg).
+       Die erste Zeile von DATEI wird als Passphrase benutzt werden.
 -g | --get-via-http
        ACHTUNG: diese Option ist veraltet. Sie ist nur vorhanden, um Rückwärtskompatibilität zu gewährleisten.
        Fordere Kalender-/Addressbuchdateien über http(s) vom ownCloud/Nextcloud Server an.
-       Wenn diese Option benutzt wird, ist eine Datei mit Nutzernamen und dazugehörigen Klartext-Passwörtern zwingend notwendig
-       (siehe Option '-u|--usersfile')
-       Dies war die Standardvorgehensweise des Skripts bis calcardbackup <= 0.7.2. Es wird davon abgeraten diese Option zu
-       benutzen wegen des Sicherheitsrisikos, Passwörter im Klartext in einer eigenen Datei anzugeben.
+       Wenn diese Option benutzt wird, ist eine Datei mit Nutzernamen und dazugehörigen Klartext-Passwörtern
+       zwingend notwendig (siehe Option '-u|--usersfile')
+       Dies war die Standardvorgehensweise des Skripts bis calcardbackup <= 0.7.2. Es wird davon abgeraten diese
+       Option zu benutzen wegen des Sicherheitsrisikos, Passwörter im Klartext in einer eigenen Datei anzugeben.
 -h | --help
        Gib Versionsnummer und einen kurzen Hilfetext aus
 -i | --include-shares
-       Sichere auch geteilte Adressbücher und Kalender. Elemente werden nur einmal gesichert: z.B. ein geteilter Kalender
-       wird nicht erneut gesichert, wenn derselbe Kalender schon für einen anderen Nutzer gesichert wurde.
+       Sichere auch geteilte Adressbücher und Kalender. Elemente werden nur einmal gesichert: z.B. ein geteilter
+       Kalender wird nicht erneut gesichert, wenn derselbe Kalender schon für einen anderen Nutzer gesichert wurde.
        ACHTUNG: diese Option wird ignoriert, wenn nicht in Kombination mit der Option '-u|--usersfile' benutzt.
 -ltm | --like-time-machine N
        behalte alle Sicherungen der letzten N Tage, für die Zeit davor aber nur solche, die Montags erstellt wurden.
@@ -95,17 +97,18 @@ Pfade (DATEI / VERZEICHNIS) sind absolute Pfade oder relative Pfade zum Arbeitsv
        Sichere keine Kalender
 -o | --output VERZEICHNIS
        Benutze VERZEICHNIS, um die Backups zu speichern.
-       Fehlt diese Option, wird das Verzeihnis 'backups/' im Skriptverzeichnis erstellt und benutzt.
+       Fehlt diese Option, wird das Verzeichnis 'backups/' im Skriptverzeichnis erstellt und benutzt.
 -p | --snap
        Diese Option ist verpflichtend bei nextcloud-snap (https://github.com/nextcloud/nextcloud-snap).
        calcardbackup muss in diesem Fall mit sudo gestartet werden (ausgeführt als root ohne sudo wird auch scheitern!).
 -r | --remove N
        Lösche Backups älter als N Tage vom Backupverzeichnis (N muss eine positive Ganzzahl sein).
 -s | --selfsigned
-       Ignoriere ein nicht vertrauenswürdiges (z.B. selbstsigniertes) Zertifikat. Erforderlich in Kombination mit Option -g und nicht
-       vertrauenswürdigen Zertifikaten. In jedem Fall wird cURL benutzt, um status.php abzurufen und den Hersteller herauszufinden,
-       um zusätzliche Prüfungen durchzuführen. Falls cURL die URL nicht erreichen kann wegen eines nicht vertrauenswürdigen
-       Zertifikates, wird calcardbackup diese zusätzlichen Prüfungen überspringen.
+       Ignoriere ein nicht vertrauenswürdiges (z.B. selbstsigniertes) Zertifikat. Erforderlich in Kombination
+       mit Option '-g' und nicht vertrauenswürdigen Zertifikaten. In jedem Fall wird cURL benutzt, um status.php
+       abzurufen und den Hersteller zu ermitteln, um zusätzliche Prüfungen durchzuführen. Falls cURL die URL
+       aufgrund eines nicht vertrauenswürdigen Zertifikates nicht erreichen kann, wird calcardbackup diese
+       zusätzlichen Prüfungen überspringen.
 -u | —usersfile DATEI
        Benutze DATEI, die die Nutzernamen der Nutzer enthält, deren Daten gesichert werden sollen. Ein Nutzer pro Zeile.
        Siehe 'examples/users.txt.example'
@@ -147,7 +150,7 @@ __ACHTUNG__: die Option `-g` ist veraltet und es wird wegen der dabei notwendige
 ## Nextcloud-Snap Benutzer
 
 Falls Nextcloud-Snap (https://github.com/nextcloud/nextcloud-snap) benutzt wird, muss das Skript mit Option `-p|--snap` aufgerufen werden. Calcardbackup wird dann das im Snap-Paket enthaltene Dienstprogramm `nextcloud.mysql-client` benutzen, um auf die Datenbank zuzugreifen.  
-Damit dies funktioniert, muss calcardbackup mit `sudo` aufgerufen werden (als root ohne `sudo` aufgerufen wird auch fehlschlagen). Als Pfad zu Nextcloud muss der Pfad zu den Konfigurationsdateien des Snap Paketes angegeben werden. Bei einer Standardinstallation ist dies `/var/snap/nextcloud/current/nextcloud`. Siehe Beispiel Nr. 6.
+Damit dies funktioniert, muss calcardbackup mit `sudo` aufgerufen werden (als root ohne `sudo` aufgerufen wird auch fehlschlagen). Als Pfad zu Nextcloud muss der Pfad zu den Konfigurationsdateien des Snap Paketes angegeben werden. Bei einer Standardinstallation ist dies `/var/snap/nextcloud/current/nextcloud`. Siehe [Beispiel Nr. 6](#beispiele).
 
 ## Erwähnenswertes zur Verschlüsselungsoption
 
@@ -188,7 +191,7 @@ __ACHTUNG__: diese Option ist veraltet und es wird davon abgeraten sie zu benutz
 
 Standardmäßig erstellt *calcardbackup* Sicherungsdateien von Kalendern und Adressbüchern durch Auslesen der entsprechenden Daten direkt von der Datenbank. Falls das Skript jedoch mit der Option `-g|--get-via-http` aufgerufen wird, wird *calcardbackup* die veraltete Methode benutzen, um die Sicherung zu erstellen und Kalender und Addressbücher vom ownCloud/Nextcloud Webinterface herunterladen. Hierfür ist eine Datei mit Nutzernamen und Passwörtern notwendig, die an das Skript mit der Option `-u|--usersfile` übergeben wird.
 
-Diese Option zu benutzen birgt die Gefahr von Timeouts, die dazu führen, dass calcardbackup große Adressbücher nicht sichern kann.
+Neben des Sicherheitsrisikos Klartextpasswörter in einer Datei zu speichern, birgt diese Option die Gefahr von Timeouts, die dazu führen, dass calcardbackup große Adressbücher nicht sichern kann.
 
 __Lange Rede kurzer Sinn__: alles was Sie über die Option `-g|--get-via-http` wissen müssen ist, sie niemals zu benutzen (außer Sie haben einen guten Grund, die Passwörter der zu sichernden ownCloud/Nextcloud Nutzer preiszugeben).
 
