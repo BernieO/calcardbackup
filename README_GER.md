@@ -156,7 +156,7 @@ __ACHTUNG__: die Option `-g` ist veraltet und es wird wegen der dabei notwendige
 
 ## Nextcloud-Snap Benutzer
 
-Falls Nextcloud-Snap (https://github.com/nextcloud/nextcloud-snap) benutzt wird, muss das Skript mit Option `-p|--snap` aufgerufen werden. *calcardbackup* wird dann das im Snap-Paket enthaltene Dienstprogramm `nextcloud.mysql-client` benutzen, um auf die Datenbank zuzugreifen.  
+Falls [Nextcloud-Snap](https://github.com/nextcloud/nextcloud-snap) benutzt wird, muss das Skript mit Option `-p|--snap` aufgerufen werden. *calcardbackup* wird dann das im Snap-Paket enthaltene Dienstprogramm `nextcloud.mysql-client` benutzen, um auf die Datenbank zuzugreifen.  
 Damit dies funktioniert, muss *calcardbackup* mit `sudo` aufgerufen werden (als root ohne `sudo` aufgerufen wird auch fehlschlagen). Als Pfad zu Nextcloud muss der Pfad zu den Konfigurationsdateien des Snap Paketes angegeben werden. Bei einer Standardinstallation ist dies `/var/snap/nextcloud/current/nextcloud`. Siehe [Beispiel Nr. 6](#beispiele).
 
 ## Erwähnenswertes zur Verschlüsselungsoption
@@ -175,7 +175,7 @@ Ja, allerdings!
 *calcardbackup* benötigt lediglich die Datenbank (und Zugang zu ihr) einer ownCloud/Nextcloud installation, um Kalender/Adressbücher von der Datenbank auszulesen und sie als .ics und .vcf Datein zu sichern.  
 Gehen Sie folgendermaßen vor:
 
-1. eine Nextcloud Verzeichnis Attrappe anlegen:
+1. eine Nextcloud Verzeichnis Attrappe anlegen:  
 `mkdir -p /usr/local/bin/nextcloud-attrappe/config`
 
 2. eine Datei `config.php` anlegen und mit folgenden Werten füllen:  
