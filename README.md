@@ -136,7 +136,7 @@ Do not backup calendars (`-nc`) and store backed up files uncompressed (`-x`) in
 This is exactly the same command as above but with long options instead of short options.
 
 3. `./calcardbackup -c /etc/calcardbackup.conf`  
-Use configuration file /etc/calcardbackup.conf (`-c /etc/calcardbackup.conf`). Parameters for desired behaviour have to be given in that file (see examples/calcardbackup.conf.example).
+Use configuration file /etc/calcardbackup.conf (`-c /etc/calcardbackup.conf`). Parameters for desired behaviour have to be given in that file (see [examples/calcardbackup.conf.example](examples/calcardbackup.conf.example)).
 Don't give any other command line options in this case, because they will be ignored (except for `-b|--batch`).
 
 4. `./calcardbackup /var/www/nextcloud -b -d .%d.%H -z -e /home/tom/key -o /media/data/backupfolder/ -u /etc/calcardbackupusers -i -r 15`  
