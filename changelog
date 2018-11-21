@@ -1,3 +1,6 @@
+vX.X.X_no-fd (XX.XX.XXXX)
+- changed: use tempfile instead of here documents (no access to /dev/fd)
+
 v0.8.2 (20.11.2018)
 - added: german version of README.md (README_GER.md)
 

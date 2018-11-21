@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.2 (20.11.2018), AGPL-3.0"
+version="0.8.2-1_no-fd (21.11.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -243,6 +243,8 @@ preparations() {
   [[ -z "${backupfolder:-}" ]] && backupfolder="${script_dir}/backups/"
   # canonicalize path to backupfolder (writeable test will follow later):
   backupfolder="$(readlink -f "${backupfolder}")" || error_exit "ERROR: path to output directory '${backupfolder}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
+  # set path to temporary file (needed, because filedescriptor can't be used):
+  tempfile="${backupfolder}/tempfile"
 
   # make sure the configured date format in $date_extension is valid:
   if [[ ! "$(date +"${date_extension}" 2>/dev/null)" ]]; then
@@ -551,13 +553,14 @@ read_status_php() {
 
   esac
 
-  # detect whether Installation is Nextcloud or ownCloud (look in user documentation for productname):
+  # detect whether Installation is Nextcloud or ownCloud (look in user documentation for productname) - no need to check for error, because empty file = can't detect vendor:
+  curl -s ${trust} "${nextcloud_url}/core/doc/user/index.html" > "${tempfile}" || :
   regex="(Nextcloud|ownCloud)"
   line=""
   while read -r line; do
     [[ "${line}" =~ $regex ]] && break
     line=""
-  done <<<"$(curl -s ${trust} "${nextcloud_url}/core/doc/user/index.html")"
+  done < "${tempfile}"
   if [[ "${line}" =~ Nextcloud ]]; then
     productname="Nextcloud"
   elif [[ "${line}" =~ ownCloud ]]; then
@@ -622,7 +625,7 @@ get_database_details() {
         case "${snap}" in
           no )
             # shellcheck disable=SC2016
-            dbcommand='mysql --defaults-extra-file=<(printf "[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s" "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sre '
+            dbcommand='mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -sre '
           ;;
           yes )
             # shellcheck disable=SC2016
@@ -708,7 +711,7 @@ query_database() {
   [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
   # check if table exists:
-  [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
+  [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "show tables like '${table}'")"
   [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
   [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")"
   # shellcheck disable=SC2086
@@ -737,7 +740,9 @@ query_database() {
     # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
     # shellcheck disable=SC2016
     db_query='"select ${fields} from ${table} order by id"'
+
     # read required fields from table and assign values to arrays:
+    eval "${dbcommand}" "${db_query}" > "${tempfile}"
     while read -r line; do
       # make sure empty lines are not processed (PostgreSQL prints as last line in the results an empty line - don't know how to suppress that):
       [[ "${line:-}" == "" ]] && continue
@@ -758,7 +763,7 @@ query_database() {
       else
         uri+=("${line##*|}")       # store uri (last field) in array
       fi
-    done < <(eval "${dbcommand}" "${db_query}")
+    done < "${tempfile}"
   fi
 
   # switch back to original directory when using sqlite3 (use OR instead of AND to return true in any case - changed in 0.4.2-8):
@@ -778,7 +783,7 @@ include_shares() {
     [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
     # check if table $table_shares exists:
-    [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
+    [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "show tables like '${table_shares}'")"
     [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
     [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}'")"
     # shellcheck disable=SC2086
@@ -804,6 +809,7 @@ include_shares() {
       db_query='"select ${fields} from ${table_shares} order by id"'
 
       # read required fields from table and assign values to share-arrays:
+      eval "${dbcommand}" "${db_query}" > "${tempfile}"
       while read -r line; do
         # don't process empty lines (PostgreSQL returns am empty line after the result):
         [[ "${line:-}" == "" ]] && continue
@@ -818,11 +824,11 @@ include_shares() {
         line="${line#*|}"                   # cut first field (share-principal)
         share_type+=("${line%%|*}")         # store share_type (is now first field) in array
         share_resourceid+=("${line##*|}")   # store share_resourceid (last field) in array
-      done < <(eval "${dbcommand}" "${db_query}")
+      done < "${tempfile}"
 
       # we also need to get info about group members to be able to backup calendars/addressbooks which are shared to groups:
       # check if table group_user ($table_group_user) exists:
-      [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_group_user}'")"
+      [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "show tables like '${table_group_user}'")"
       [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_group_user}'")"
       [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}'")"
       # shellcheck disable=SC2086
@@ -839,11 +845,12 @@ include_shares() {
         db_query='"select ${fields} from ${table_group_user} order by gid"'
 
         # read values from database and create array with list of groups and their users:
+        eval "${dbcommand}" "${db_query}" > "${tempfile}"
         while read -r line; do
           # don't process empty lines (PostgreSQL returns am empty line after the result):
           [[ "${line:-}" == "" ]] && continue
           grouplist+=("${line}")
-        done < <(eval "${dbcommand}" "${db_query}")
+        done < "${tempfile}"
       # no need for else section with error-message, because: if there is no group list - there are no groups, which is not a problem
       fi
 
@@ -1049,6 +1056,9 @@ get_icsvcf_files() {
     _output echo "-- NOTICE: You may want to check '${users_file}' for valid ${productname} users!"
   fi
 
+  # remove temporary file:
+  rm -f "${tempfile}"
+
   # unset arrays (to not include calendardata for calendarsubscriptions or addressbook export):
   unset -v id principal uri displayname already_saved_as calendarcolor
 }
@@ -1091,6 +1101,7 @@ create_calendar_from_db() {
   tz_ids[0]="dummy"
 
   # read calendardata line by line and collect components:
+  eval "${dbcommand}" "${db_query}" > "${tempfile}"
   while read -r line; do
 
     # vtime: is indicator for VTIMEZONE
@@ -1192,7 +1203,7 @@ create_calendar_from_db() {
     # output line:
     printf '%s\r\n' "${line/%[[:space:]]}" >> "${backupfolder_day}/${filename}"
 
-  done< <(eval "${dbcommand}" "${db_query}")
+  done < "${tempfile}"
 
   # reset IFS to its original value (was set to null string before to prevent read from stripping leading and trailing whitespace from the line):
   IFS="${ifs_original}"
@@ -1389,6 +1400,7 @@ keep_like_time_machine() {
   deleted="no"
 
   # find all files which are older than 14 days and read them line by line:
+  find "${backupfolder}"/calcardbackup* -daystart -mtime +${keep_days_like_time_machine} -print > "${tempfile}"
   while read -r line; do
     # exit loop, if $line is empty
     [[ -z "${line:-}" ]] && break
@@ -1406,7 +1418,7 @@ keep_like_time_machine() {
       # remember that something has been deleted:
       [[ "${deleted}" == "no" ]] && deleted="yes"
     fi
-  done <<<"$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${keep_days_like_time_machine} -print)"
+  done < "${tempfile}"
 
   # print notice, of nothing has been found to be deleted:
   [[ "${deleted}" == "yes" ]] || _output echo "+  No backups found to be deleted like time machine."
