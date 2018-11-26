@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.2-1_no-fd (21.11.2018), AGPL-3.0"
+version="0.8.2-2_no-fd (27.11.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -416,6 +416,11 @@ read_config_php() {
   # get ownClouds/Nextclouds URL from config.php (overwrite.cli.url), compare to user given url ($nextcloud_url) and notice/error, if something is not as expected:
   local nextcloud_url_default="https://www.my_nextcloud.net"
   nextcloud_url_overwrite="$(getvalue_from_configphp "overwrite.cli.url")"
+  # remove trailing slashes from $nextcloud_url_overwrite:
+  while [[ "${nextcloud_url_overwrite}" =~ /$ ]]; do
+    nextcloud_url_overwrite="${nextcloud_url_overwrite%/}"
+  done
+
   if [[ "${nextcloud_url}" != "${nextcloud_url_default}" && "${nextcloud_url}" != "${nextcloud_url_overwrite}" && "${nextcloud_url_overwrite}" != "value is unset" ]]; then
     # use given URL but print notice, if $nextcloud_url has been configured to something other than default or overwrite.cli.url:
     # (last conditional expression in if statement above: make sure overwrite.cli.url is present and not empty):
