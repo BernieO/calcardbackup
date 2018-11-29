@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.2-2_no-fd (27.11.2018), AGPL-3.0"
+version="0.8.2-3_no-fd (29.11.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -871,7 +871,7 @@ include_shares() {
   fi
 
   # declare local arrays and variables:
-  local -a temp_principal temp_displayname temp_uri temp_id
+  local -a temp_principal temp_displayname temp_uri temp_id temp_calendarcolor
   local -i i s g
 
   # look for matches of share_resourceid of $table_shares and calendar/addressbook-ids and store values in a temporary array:
@@ -889,6 +889,8 @@ include_shares() {
           temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
           temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
           temp_id+=("${share_resourceid[$s]}")
+          # in case it is a calendar - also add calendarcolor of original item to temp array with shared items:
+          [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && temp_calendarcolor+=("${calendarcolor[$i]}")
         else
           # if share-principal is a group:
           #     go through list with groups and their users and
@@ -904,6 +906,8 @@ include_shares() {
               temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
               temp_displayname+=("${displayname[$i]}_shared_by_${principal[$i]}")
               temp_id+=("${share_resourceid[$s]}")
+              # in case it is a calendar - also add calendarcolor of original item to temp array with shared items:
+              [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && temp_calendarcolor+=("${calendarcolor[$i]}")
             fi
           done
         fi
@@ -920,6 +924,7 @@ include_shares() {
       uri+=("${temp_uri[$i]}")
       displayname+=("${temp_displayname[$i]}")
       id+=("${temp_id[$i]}")
+      [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && calendarcolor+=("${temp_calendarcolor[$i]}")
     done
   fi
 

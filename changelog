@@ -1,5 +1,6 @@
 vX.X.X_no-fd (XX.XX.XXXX)
-- fixed: remove trailing slashes from overwrite.cli.url
+- fixed: take into account that overwrite.cli.url may contain a trailing slash
+- fixed: set calendarcolor also for shared calendars
 - changed: use tempfile instead of here documents (no access to /dev/fd)
 
 v0.8.2 (20.11.2018)
