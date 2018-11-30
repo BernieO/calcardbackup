@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.8.3 (30.11.2018)
 - fixed: take into account that overwrite.cli.url may contain a trailing slash
 - fixed: set calendarcolor also for shared calendars
 
