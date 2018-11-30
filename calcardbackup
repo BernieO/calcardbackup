@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.2-3_no-fd (29.11.2018), AGPL-3.0"
+version="0.8.2-4_no-fd (01.12.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -244,7 +244,7 @@ preparations() {
   # canonicalize path to backupfolder (writeable test will follow later):
   backupfolder="$(readlink -f "${backupfolder}")" || error_exit "ERROR: path to output directory '${backupfolder}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
   # set path to temporary file (needed, because filedescriptor can't be used):
-  tempfile="${backupfolder}/tempfile"
+  tempfile="${script_dir}/tempfile"
 
   # make sure the configured date format in $date_extension is valid:
   if [[ ! "$(date +"${date_extension}" 2>/dev/null)" ]]; then
