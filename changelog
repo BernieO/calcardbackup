@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.8.4 (11.12.2018)
 - fixed: also identify lowercased vendorname in vendor detection
 - verified: compatible with Nextcloud 15.0
 
