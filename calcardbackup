@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.2-4_no-fd (01.12.2018), AGPL-3.0"
+version="0.8.3-1_no-fd (12.12.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -483,6 +483,7 @@ read_status_php() {
   # Nextcloud 12.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"12.0.0.29","versionstring":"12.0.0","edition":"","productname":"Nextcloud"}
   # Nextcloud 13.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"13.0.0.14","versionstring":"13.0.0","edition":"","productname":"Nextcloud"}
   # Nextcloud 14.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"14.0.0.19","versionstring":"14.0.0","edition":"","productname":"Nextcloud"}
+  # Nextcloud 15.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"15.0.0.10","versionstring":"15.0.0","edition":"","productname":"Nextcloud"}
 
   # regex matching versions mentioned above (tested with regex101.com):
   # (due to options added in ownCloud 10.0: version(string) maybe hidden or hostname maybe present (see hide.version, show_server_hostname in config.php))

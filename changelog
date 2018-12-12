@@ -2,6 +2,7 @@ vX.X.X_no-fd (XX.XX.XXXX)
 - fixed: take into account that overwrite.cli.url may contain a trailing slash
 - fixed: set calendarcolor also for shared calendars
 - changed: use tempfile instead of here documents (no access to /dev/fd)
+- verified: compatible with Nextcloud 15.0
 
 v0.8.2 (20.11.2018)
 - added: german version of README.md (README_GER.md)
