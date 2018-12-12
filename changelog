@@ -1,4 +1,4 @@
-vX.X.X_no-fd (XX.XX.XXXX)
+v0.8.4_no-fd (12.12.2018)
 - fixed: also identify lowercased vendorname in vendor detection
 - fixed: take into account that overwrite.cli.url may contain a trailing slash
 - fixed: set calendarcolor also for shared calendars
