@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.3-1_no-fd (12.12.2018), AGPL-3.0"
+version="0.8.3-2_no-fd (12.12.2018), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -561,15 +561,15 @@ read_status_php() {
 
   # detect whether Installation is Nextcloud or ownCloud (look in user documentation for productname) - no need to check for error, because empty file = can't detect vendor:
   curl -s ${trust} "${nextcloud_url}/core/doc/user/index.html" > "${tempfile}" || :
-  regex="(Nextcloud|ownCloud)"
+  regex="([Nn]extcloud|own[Cc]loud)"
   line=""
   while read -r line; do
     [[ "${line}" =~ $regex ]] && break
     line=""
   done < "${tempfile}"
-  if [[ "${line}" =~ Nextcloud ]]; then
+  if [[ "${line}" =~ [Nn]extcloud ]]; then
     productname="Nextcloud"
-  elif [[ "${line}" =~ ownCloud ]]; then
+  elif [[ "${line}" =~ own[Cc]loud ]]; then
     productname="ownCloud"
   else {
     _output echo "-- Notice: can't detect vendor."

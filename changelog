@@ -1,4 +1,5 @@
 vX.X.X_no-fd (XX.XX.XXXX)
+- fixed: also identify lowercased vendorname in vendor detection
 - fixed: take into account that overwrite.cli.url may contain a trailing slash
 - fixed: set calendarcolor also for shared calendars
 - changed: use tempfile instead of here documents (no access to /dev/fd)
