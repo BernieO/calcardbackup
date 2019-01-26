@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.4_no-fd (12.12.2018), AGPL-3.0"
+version="0.8.4-1_no-fd (26.01.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -717,9 +717,9 @@ query_database() {
   [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
   # check if table exists:
-  [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "show tables like '${table}'")"
-  [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table}'")"
-  [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}'")"
+  [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "SHOW TABLES LIKE '${table}';")"
+  [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table}';")"
+  [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}';")"
   # shellcheck disable=SC2086
   [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table} LIMIT 1;")"
 
@@ -739,13 +739,13 @@ query_database() {
     # If we want to get addressbooks from the database (instead of downloading from ownCloud/Nextcloud) or
     # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
     [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]] && fields="${row_id}, ${fields}"
-    [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && fields="coalesce(${row_calendarcolor},'NULL'), ${fields}"
+    [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && fields="COALESCE(${row_calendarcolor},'NULL'), ${fields}"
     [[ "${item}" == "calendarsubscription" ]] && fields="${row_id}, ${row_principaluri}, ${row_displayname}, ${row_source}"
     # adjust output format of MySQL/MariaDB/PostgreSQL to match output of SQLite3 (field|field|field):
     [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
     # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
     # shellcheck disable=SC2016
-    db_query='"select ${fields} from ${table} order by id"'
+    db_query='"SELECT ${fields} FROM ${table} ORDER BY id;"'
 
     # read required fields from table and assign values to arrays:
     eval "${dbcommand}" "${db_query}" > "${tempfile}"
@@ -789,9 +789,9 @@ include_shares() {
     [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
     # check if table $table_shares exists:
-    [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "show tables like '${table_shares}'")"
-    [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_shares}'")"
-    [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}'")"
+    [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "SHOW TABLES LIKE '${table_shares}';")"
+    [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table_shares}';")"
+    [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}';")"
     # shellcheck disable=SC2086
     [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table_shares} LIMIT 1;")"
 
@@ -812,7 +812,7 @@ include_shares() {
       [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
       # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
       # shellcheck disable=SC2016
-      db_query='"select ${fields} from ${table_shares} order by id"'
+      db_query='"SELECT ${fields} FROM ${table_shares} ORDER BY id;"'
 
       # read required fields from table and assign values to share-arrays:
       eval "${dbcommand}" "${db_query}" > "${tempfile}"
@@ -834,9 +834,9 @@ include_shares() {
 
       # we also need to get info about group members to be able to backup calendars/addressbooks which are shared to groups:
       # check if table group_user ($table_group_user) exists:
-      [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "show tables like '${table_group_user}'")"
-      [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "show tables like '${table_group_user}'")"
-      [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}'")"
+      [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "SHOW TABLES LIKE '${table_group_user}';")"
+      [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table_group_user}';")"
+      [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}';")"
       # shellcheck disable=SC2086
       [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table_group_user} LIMIT 1;")"
 
@@ -848,7 +848,7 @@ include_shares() {
         [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
         # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
         # shellcheck disable=SC2016
-        db_query='"select ${fields} from ${table_group_user} order by gid"'
+        db_query='"SELECT ${fields} FROM ${table_group_user} ORDER BY gid;"'
 
         # read values from database and create array with list of groups and their users:
         eval "${dbcommand}" "${db_query}" > "${tempfile}"
@@ -967,9 +967,9 @@ get_icsvcf_files() {
   [[ "${dbtype}" == "sqlite3" && "${fetch_from_database}" == "yes" ]] && cd "${datadirectory}"
   # set convert variable for PostgreSQL if we want to get addressbooks directly from database:
   if [[ "${dbtype}" == "pgsql" && "${fetch_from_database}" == "yes" ]]; then
-    [[ "${item}" == "addressbook" ]] && convert="convert_from(carddata,'UTF8')"
+    [[ "${item}" == "addressbook" ]] && convert="CONVERT_FROM(carddata,'UTF8')"
     # shellcheck disable=SC2034
-    [[ "${item}" == "calendar" ]] && convert="convert_from(calendardata,'UTF8')"
+    [[ "${item}" == "calendar" ]] && convert="CONVERT_FROM(calendardata,'UTF8')"
   fi
 
   # loop through array with addressbooks/calendars:
@@ -1088,7 +1088,7 @@ create_calendar_from_db() {
 
   # prepare database query (variable convert is needed for PostgreSQL) to collect all events from according calendarid:
   # shellcheck disable=SC2016
-  db_query='"SELECT ${convert:-calendardata} FROM ${table_calendarobjects} WHERE calendarid=${id[$i]}"'
+  db_query='"SELECT ${convert:-calendardata} FROM ${table_calendarobjects} WHERE calendarid=${id[$i]};"'
 
   # print generic iCalendar properties (BEGIN, VERSION, PRODID, CALSCALE):
   printf '%s\r\n' "BEGIN:VCALENDAR" "VERSION:2.0" "PRODID:https://github.com/BernieO/calcardbackup v${version%% *}" "CALSCALE:GREGORIAN" > "${backupfolder_day}/${filename}"
@@ -1273,7 +1273,7 @@ create_addressbook_from_db() {
 
   # prepare database query (variable convert is needed for PostgreSQL) to collect all cards belonging to addressbookid:
   # shellcheck disable=SC2016
-  db_query='"SELECT ${convert:-carddata} FROM ${table_cards} WHERE addressbookid=${id[$i]}"'
+  db_query='"SELECT ${convert:-carddata} FROM ${table_cards} WHERE addressbookid=${id[$i]};"'
 
   # this is much less complex than iCalendar: a vCard addressbook is just single vCards stuck together one after the other.
   # so we just need to pipe the output the column carddata with id of the according addressbook to the addressbook file.
