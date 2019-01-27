@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.4-2_no-fd (27.01.2019), AGPL-3.0"
+version="0.8.4-3_no-fd (27.01.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -717,8 +717,9 @@ query_database() {
   [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
   # check if table exists:
-  [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "SHOW TABLES LIKE '${table}';")"
-  [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table}';")"
+  # for checking tables with MySQL: option -r is not needed but an additional option -s is used to produce less output:
+  [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -sse "SHOW TABLES LIKE '${table}';")"
+  [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sse "SHOW TABLES LIKE '${table}';")"
   [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}';")"
   # this check is a bit more complicated for PostgreSQL:
   if [[ "${dbtype}" == "pgsql" ]]; then
@@ -794,8 +795,9 @@ include_shares() {
     [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
     # check if table $table_shares exists:
-    [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "SHOW TABLES LIKE '${table_shares}';")"
-    [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table_shares}';")"
+    # for checking tables with MySQL: option -r is not needed but an additional option -s is used to produce less output:
+    [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -sse "SHOW TABLES LIKE '${table_shares}';")"
+    [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sse "SHOW TABLES LIKE '${table_shares}';")"
     [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}';")"
     # this check is a bit more complicated for PostgreSQL:
     if [[ "${dbtype}" == "pgsql" ]]; then
@@ -844,8 +846,9 @@ include_shares() {
 
       # we also need to get info about group members to be able to backup calendars/addressbooks which are shared to groups:
       # check if table group_user ($table_group_user) exists:
-      [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -e "SHOW TABLES LIKE '${table_group_user}';")"
-      [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table_group_user}';")"
+      # for checking tables with MySQL: option -r is not needed but an additional option -s is used to produce less output:
+      [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -sse "SHOW TABLES LIKE '${table_group_user}';")"
+      [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sse "SHOW TABLES LIKE '${table_group_user}';")"
       [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}';")"
       # this check is a bit more complicated for PostgreSQL:
       if [[ "${dbtype}" == "pgsql" ]]; then
