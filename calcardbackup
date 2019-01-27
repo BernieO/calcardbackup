@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.4-3_no-fd (27.01.2019), AGPL-3.0"
+version="0.8.4-4_no-fd (27.01.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -597,7 +597,7 @@ get_database_details() {
       if [[ "${dbhost}" =~ ^.+:/.+$ ]]; then
         # dbhost contains socket after hostname (e.g. 'localhost:/var/run/mysqld/mysqld.sock'):
         [[ "${dbtype}" == "mysql" ]] && {
-          dbprotocol="socket = ${dbhost#*:}"
+          dbprotocol="-S ${dbhost#*:}"
           dbhost="${dbhost%%:*}"
         }
         [[ "${dbtype}" == "pgsql" ]] && {
@@ -608,7 +608,7 @@ get_database_details() {
      elif [[ "${dbhost}" =~ ^.+:[[:digit:]]+$ ]]; then
         # dbhost contains portnumber after hostname (e.g. '127.0.0.1:3306'):
         [[ "${dbtype}" == "mysql" ]] && {
-          dbprotocol="port = ${dbhost#*:}"
+          dbprotocol="-P ${dbhost#*:}"
           dbhost="${dbhost%%:*}"
         }
         [[ "${dbtype}" == "pgsql" ]] && {
