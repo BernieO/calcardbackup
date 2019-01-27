@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.4-1 (26.01.2019), AGPL-3.0"
+version="0.8.4-2 (27.01.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -717,8 +717,13 @@ query_database() {
   [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table}';")"
   [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table}';")"
   [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}';")"
-  # shellcheck disable=SC2086
-  [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table} LIMIT 1;")"
+  # this check is a bit more complicated for PostgreSQL:
+  if [[ "${dbtype}" == "pgsql" ]]; then
+    # first let us assume that the desired table exists (variable needs to be set for check later):
+    check_table="table ${table} exists"
+    # then querie for the first line in that table, suppress any output and set ${check_table} to empty string, if psql throws an error:
+    PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
+  fi
 
   if [[ "${check_table:-}" == "" ]]; then
     if [[ "${item}" != "calendarsubscription" ]]; then
@@ -787,8 +792,13 @@ include_shares() {
     [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table_shares}';")"
     [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table_shares}';")"
     [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}';")"
-    # shellcheck disable=SC2086
-    [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table_shares} LIMIT 1;")"
+    # this check is a bit more complicated for PostgreSQL:
+    if [[ "${dbtype}" == "pgsql" ]]; then
+      # first let us assume that the desired table exists (variable needs to be set for check later):
+      check_table="table ${table} exists"
+      # then querie for the first line in that table, suppress any output and set ${check_table} to empty string, if psql throws an error:
+      PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
+    fi
 
     if [[ "${check_table:-}" == "" ]]; then
       # print notice, if $table_shares doesn't exist:
@@ -831,8 +841,13 @@ include_shares() {
       [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table_group_user}';")"
       [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -e "SHOW TABLES LIKE '${table_group_user}';")"
       [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}';")"
-      # shellcheck disable=SC2086
-      [[ "${dbtype}" == "pgsql" ]] && check_table="$(PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -qtc "SELECT * FROM ${table_group_user} LIMIT 1;")"
+      # this check is a bit more complicated for PostgreSQL:
+      if [[ "${dbtype}" == "pgsql" ]]; then
+        # first let us assume that the desired table exists (variable needs to be set for check later):
+        check_table="table ${table} exists"
+        # then querie for the first line in that table, suppress any output and set ${check_table} to empty string, if psql throws an error:
+        PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
+      fi
 
       if [[ "${check_table:-}" != "" ]]; then
         # table group_user exists -> read values in array grouplist:
