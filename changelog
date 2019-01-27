@@ -1,5 +1,6 @@
 vX.X.X_no-fd (XX.XX.XXXX)
 - improved: use capital letters for keywords and functions in SQL queries
+- fixed: eliminate error if calendar/addressbooks-tables are not existing when using PostgreSQL
 
 v0.8.4_no-fd (12.12.2018)
 - fixed: also identify lowercased vendorname in vendor detection
