@@ -2,7 +2,7 @@
 
 # calcardbackup by BernieO - extracts ownCloud/Nextcloud calendars and addressbooks
 # Source: https://github.com/BernieO/calcardbackup
-# Copyright (C) 2018 BernieO
+# Copyright (C) 2017-2019 BernieO
 #
 # This script is licensed under the GNU AFFERO GENERAL PUBLIC LICENSE v3.0
 #
@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.4-4_no-fd (27.01.2019), AGPL-3.0"
+version="0.8.5_no-fd (28.01.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS

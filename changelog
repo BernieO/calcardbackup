@@ -1,4 +1,4 @@
-vX.X.X_no-fd (XX.XX.XXXX)
+v0.8.5_no-fd (28.01.2019)
 - improved: downscale and comment checks for existing tables in MySQL
 - improved: use capital letters for keywords and functions in SQL queries
 - fixed: proper assignment of socket/port for MySQL
