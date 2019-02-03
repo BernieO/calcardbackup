@@ -1,3 +1,6 @@
+vX.X.X (XX.XX.XXXX)
+- improved: use versionstring from status.php whenever possible
+
 v0.8.5 (28.01.2019)
 - improved: downscale and comment checks for existing tables in MySQL
 - improved: use capital letters for keywords and functions in SQL queries
