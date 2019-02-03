@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-1_no-fd (03.02.2019), AGPL-3.0"
+version="0.8.5-2_no-fd (04.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -475,7 +475,7 @@ read_status_php() {
   # ownCloud 9.1.4   {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"9.1.4","edition":""}
   # ownCloud 10.0.0  {"installed":"true","maintenance":"false","needsDbUpgrade":"false","version":"10.0.0.12","versionstring":"10.0.0","edition":"Community","productname":"ownCloud"}
   # options in config.php introduced with ownCloud 10.0.0/10.0.6 generate a different status.php output:
-  #   hide.version   {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"","versionstring":"","edition":"","productname":""}
+  #   version.hide   {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"","versionstring":"","edition":"","productname":""}
   #   show_server_hostname {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"10.0.6.1","versionstring":"10.0.6","edition":"Community","productname":"ownCloud","hostname":"Hostname"}
   # Nextcloud 9.0.57 {"installed":true,"maintenance":false,"version":"9.0.57.2","versionstring":"9.0.57","edition":""}
   # Nextcloud 10.0.4 {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"10.0.4","edition":""}
@@ -486,7 +486,7 @@ read_status_php() {
   # Nextcloud 15.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"15.0.0.10","versionstring":"15.0.0","edition":"","productname":"Nextcloud"}
 
   # regex matching versions mentioned above (tested with regex101.com):
-  # (due to options added in ownCloud 10.0: version(string) maybe hidden or hostname maybe present (see hide.version, show_server_hostname in config.php))
+  # (due to options added in ownCloud 10.0: version(string) maybe hidden or hostname maybe present (see version.hide, show_server_hostname in config.php))
   regex='^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[^"]*","versionstring":"[^"]*","edition":"[^"]*"(,"productname":"[^"]*")?(,"hostname":"[^"]*")?\}$'
 
   if [[ "${status_php}" =~ ${regex} ]]; then
@@ -498,7 +498,7 @@ read_status_php() {
     versionstring_status_php=${status_php#*versionstring\":\"}
     versionstring_status_php=${versionstring_status_php%%\"*}
 
-    # check for missing version in status.php due to option in config.php introduced with ownCloud 10.0 ('hide.version' => true,):
+    # check for missing version in status.php due to option in config.php introduced with ownCloud 10.0 ('version.hide' => true,):
     [[ -z "${version_status_php:-}" || -z "${versionstring_status_php:-}" ]] && {
       # version number hidden (empty): print notice and use values from config.php:
       _output echo "-- NOTICE: version number hidden in status.php."

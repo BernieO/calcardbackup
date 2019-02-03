@@ -1,5 +1,6 @@
-vX.X.X_no-fd (03.02.2019)
+vX.X.X_no-fd (XX.XX.XXXX)
 - improved: use versionstring from status.php whenever possible
+- fixed: minor typos in changelog for v0.3.1 and in three comments (version.hide)
 
 v0.8.5_no-fd (28.01.2019)
 - improved: downscale and comment checks for existing tables in MySQL
@@ -108,7 +109,7 @@ v0.3.2 (13.02.2018)
 
 v0.3.1 (06.02.2018)
 - added: check whether ownCloud/Nextcloud requires a database-upgrade
-- fixed: take account of ownCloud 10.0 options in config.php (hide.version, show_server_hostname)
+- fixed: take account of ownCloud 10.0 options in config.php (version.hide, show_server_hostname)
 - verified: compatible with Nextcloud 13.0
 
 v0.3.0 (21.09.2017)
