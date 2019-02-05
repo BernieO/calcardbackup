@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-2 (04.02.2019), AGPL-3.0"
+version="0.8.5-3 (05.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -487,25 +487,6 @@ read_status_php() {
   # (due to options added in ownCloud 10.0: version(string) maybe hidden or hostname maybe present (see version.hide, show_server_hostname in config.php))
   regex='^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[^"]*","versionstring":"[^"]*","edition":"[^"]*"(,"productname":"[^"]*")?(,"hostname":"[^"]*")?\}$'
 
-  if [[ "${status_php}" =~ ${regex} ]]; then
-
-    # get version from status.php:
-    version_status_php=${status_php#*version\":\"}
-    version_status_php=${version_status_php%%\"*}
-    # get versionstring from status_php (needed for proper versioning (ownloud 5.0 has in version also only 3 numbers)):
-    versionstring_status_php=${status_php#*versionstring\":\"}
-    versionstring_status_php=${versionstring_status_php%%\"*}
-
-    # check for missing version in status.php due to option in config.php introduced with ownCloud 10.0 ('version.hide' => true,):
-    [[ -z "${version_status_php:-}" || -z "${versionstring_status_php:-}" ]] && {
-      # version number hidden (empty): print notice and use values from config.php:
-      _output echo "-- NOTICE: version number hidden in status.php."
-      version_status_php=${version_config_php}
-      versionstring_status_php=${version_config_php%.*}
-    }
-
-  fi
-
   # check status.php for valid installation of ownCloud/Nextcloud:
   case ${fetch_from_database} in
 
@@ -515,8 +496,9 @@ read_status_php() {
         # no further requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no" and return from this function:
         [[ -n ${cerror:-} ]] && _output echo "+  can't read status.php (cURL code '${cerror}')."
         [[ -z ${cerror:-} ]] && _output echo "+  no valid status.php found at ${nextcloud_url}."
-        versionstring_status_php=${version_config_php%.*}
       fi
+      # always use version from config.php when fetching from database, because not requesting anything from the webinterface:
+      versionstring_status_php=${version_config_php%.*}
     ;;
 
     no )
@@ -531,6 +513,21 @@ read_status_php() {
           [[ -n "${config_file:-}" ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again using 'fetch_from_database=\"yes\"' in config file."
         fi
       fi
+
+      # get version from status.php:
+      version_status_php=${status_php#*version\":\"}
+      version_status_php=${version_status_php%%\"*}
+      # get versionstring from status_php (needed for proper versioning (ownloud 5.0 has in version also only 3 numbers)):
+      versionstring_status_php=${status_php#*versionstring\":\"}
+      versionstring_status_php=${versionstring_status_php%%\"*}
+
+      # check for missing version in status.php due to option in config.php introduced with ownCloud 10.0 ('version.hide' => true,):
+      [[ -z "${version_status_php:-}" || -z "${versionstring_status_php:-}" ]] && {
+        # version number hidden (empty): print notice and use values from config.php:
+        _output echo "-- NOTICE: version number hidden in status.php."
+        version_status_php=${version_config_php}
+        versionstring_status_php=${version_config_php%.*}
+      }
 
       # check for "needsDbUpgrade":true in status.php and exit if ownCloud/Nextcloud needs a DbUpgrade:
       regex='"needsDbUpgrade":"?true"?'
