@@ -1,5 +1,4 @@
 vX.X.X_no-fd (XX.XX.XXXX)
-- improved: use versionstring from status.php whenever possible
 - fixed: minor typos in changelog for v0.3.1 and in three comments (version.hide)
 
 v0.8.5_no-fd (28.01.2019)
