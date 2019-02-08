@@ -1,4 +1,5 @@
 vX.X.X (XX.XX.XXXX)
+- fixed: eliminate error, if calendar-/addressbooknames contain linebreak and/or carriage return
 - fixed: minor typos in changelog for v0.3.1 and in three comments (version.hide)
 
 v0.8.5 (28.01.2019)

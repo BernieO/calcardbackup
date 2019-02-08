@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-3 (05.02.2019), AGPL-3.0"
+version="0.8.5-4 (08.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -738,13 +738,13 @@ query_database() {
     # table exists
 
     # prepare database query:
-    # fields to be read from database table:
-    fields="${row_principaluri}, ${row_displayname}, ${row_uri}"
+    # fields to be read from database table (have displayname as last field to be able to fix issue #17):
+    fields="${row_principaluri}, ${row_uri}, ${row_displayname}"
     # If we want to get addressbooks from the database (instead of downloading from ownCloud/Nextcloud) or
     # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
     [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]] && fields="${row_id}, ${fields}"
     [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && fields="COALESCE(${row_calendarcolor},'NULL'), ${fields}"
-    [[ "${item}" == "calendarsubscription" ]] && fields="${row_id}, ${row_principaluri}, ${row_displayname}, ${row_source}"
+    [[ "${item}" == "calendarsubscription" ]] && fields="${row_id}, ${row_principaluri}, ${row_source}, ${row_displayname}"
     # adjust output format of MySQL/MariaDB/PostgreSQL to match output of SQLite3 (field|field|field):
     [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
     # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
@@ -765,12 +765,14 @@ query_database() {
       line="${line/principals\/users\/}" # remove "principals/users/" from line, to get username
       principal+=("${line%%|*}")   # store principal (=username, is first field) in array
       line="${line#*|}"            # cut first field (principal)
-      displayname+=("${line%%|*}") # store displayname (is now first field) in array
       if [[ "${item}" == "calendarsubscription" ]]; then
-        source+=("${line##*|}")    # store source (URL to calendarsubscription, last field) in array
+        source+=("${line%%|*}")    # store source (URL to calendarsubscription, is now first field) in array
       else
-        uri+=("${line##*|}")       # store uri (last field) in array
+        uri+=("${line%%|*}")       # store uri (is now first field) in array
       fi
+      line="${line##*|}"           # separate last field (contains displayname)
+      # delete eventually existing trailing white space characters (fix issue #17) and store displayname in array:
+      displayname+=("${line%[[:space:]]}")
     done < <(eval "${dbcommand}" "${db_query}")
   fi
 
