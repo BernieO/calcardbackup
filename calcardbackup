@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-4 (08.02.2019), AGPL-3.0"
+version="0.8.5-5 (08.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -708,6 +708,9 @@ query_database() {
   table="${1}"  # ${table_calendars}, ${table_calendarsubscriptions} or ${table_addressbooks}
   item="${2}"   # "calendar", "calendarsubscription" or "addressbook", just a verbal description, needed for output messages
 
+  # declare local variables:
+  local check_table PGPASSWORD fields regex dbquery line
+
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
   # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
@@ -740,20 +743,44 @@ query_database() {
     # prepare database query:
     # fields to be read from database table (have displayname as last field to be able to fix issue #17):
     fields="${row_principaluri}, ${row_uri}, ${row_displayname}"
+    # regex for testing correct syntax of fields (in case a field contains a linebreak with eventually following characters):
+    regex=".+\|.+\|.+"
+    # adjust regex for ownCloud/Nextcloud > 9.0
+    [[ "${mainversion}" -ge "${davchangeversion}" ]] && regex="principals\/(system|users)\/${regex}"
     # If we want to get addressbooks from the database (instead of downloading from ownCloud/Nextcloud) or
     # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
-    [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]] && fields="${row_id}, ${fields}"
-    [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]] && fields="COALESCE(${row_calendarcolor},'NULL'), ${fields}"
-    [[ "${item}" == "calendarsubscription" ]] && fields="${row_id}, ${row_principaluri}, ${row_source}, ${row_displayname}"
+    if [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]]; then
+      fields="${row_id}, ${fields}"
+      # adjust regex:
+      regex="[[:digit:]]+\|${regex}"
+    fi
+    if [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]]; then
+      fields="COALESCE(${row_calendarcolor},'NULL'), ${fields}"
+      # adjust regex:
+      regex="(#[0-9a-fA-F]{6}|NULL)\|${regex}"
+    fi
+    if [[ "${item}" == "calendarsubscription" ]]; then
+      fields="${row_id}, ${row_principaluri}, ${row_source}, ${row_displayname}"
+      # adjust regex:
+      regex="[[:digit:]]+\|"
+      [[ "${mainversion}" -lt "${davchangeversion}" ]] && regex="${regex}principals\/(system|users)\/"
+      regex="${regex}.+\|.+\|.+"
+    fi
+    # add beginning and end of line to regex:
+    regex="^${regex}$"
     # adjust output format of MySQL/MariaDB/PostgreSQL to match output of SQLite3 (field|field|field):
     [[ "${dbtype}" != "sqlite3" ]] && fields="CONCAT_WS('|', ${fields})"
     # ATTENTION: variable $db_query will be passed to command "eval" later. So better take care when adding new stuff to $db_query!
     # shellcheck disable=SC2016
     db_query='"SELECT ${fields} FROM ${table} ORDER BY id;"'
+
     # read required fields from table and assign values to arrays:
     while read -r line; do
-      # make sure empty lines are not processed (PostgreSQL prints as last line in the results an empty line - don't know how to suppress that):
-      [[ "${line:-}" == "" ]] && continue
+
+      # if $line doesn't match $regex, continue with next line
+      # (increase robustness against faulty displayname entries (displayname is only field that contains user generated input)):
+      [[ ! "${line}" =~ ${regex} ]] && continue
+
       if [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]]; then
         calendarcolor+=("${line%%|*}") # store calendarcolor (first field) in array
         line="${line#*|}"          # cut first field (calendarcolor)
