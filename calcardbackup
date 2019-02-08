@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-5 (08.02.2019), AGPL-3.0"
+version="0.8.5-6 (08.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -475,6 +475,7 @@ read_status_php() {
   # options in config.php introduced with ownCloud 10.0.0/10.0.6 generate a different status.php output:
   #   version.hide   {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"","versionstring":"","edition":"","productname":""}
   #   show_server_hostname {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"10.0.6.1","versionstring":"10.0.6","edition":"Community","productname":"ownCloud","hostname":"Hostname"}
+  # ownCloud 10.1.0  {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"10.1.0.4","versionstring":"10.1.0","edition":"Community","productname":"ownCloud"}
   # Nextcloud 9.0.57 {"installed":true,"maintenance":false,"version":"9.0.57.2","versionstring":"9.0.57","edition":""}
   # Nextcloud 10.0.4 {"installed":true,"maintenance":false,"version":"9.1.4.2","versionstring":"10.0.4","edition":""}
   # Nextcloud 11.0.2 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"11.0.2.7","versionstring":"11.0.2","edition":"","productname":"Nextcloud"}
