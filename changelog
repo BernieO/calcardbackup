@@ -1,4 +1,5 @@
 vX.X.X (XX.XX.XXXX)
+- improved: rewrite of vendor detection
 - fixed: only use first line as calendar-/addressbookname, if displayname is multiline
 - fixed: minor typos in changelog for v0.3.1 and in three comments (version.hide)
 - verified: compatible with ownCloud 10.1
