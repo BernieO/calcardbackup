@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-8 (12.02.2019), AGPL-3.0"
+version="0.8.5-9 (12.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -791,7 +791,7 @@ query_database() {
   item="${2}"   # "calendar", "calendarsubscription" or "addressbook", just a verbal description, needed for output messages
 
   # declare local variables:
-  local check_table PGPASSWORD fields regex dbquery line
+  local check_table fields regex db_query line
 
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
