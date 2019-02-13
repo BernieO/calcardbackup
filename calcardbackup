@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-12 (13.02.2019), AGPL-3.0"
+version="0.8.5-13 (13.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -830,7 +830,7 @@ query_database() {
     # regex for testing correct syntax of fields (in case a field contains a linebreak with eventually following characters):
     regex=".+\|.+\|.+"
     # adjust regex for ownCloud/Nextcloud > 9.0
-    [[ "${mainversion}" -ge "${davchangeversion}" ]] && regex="principals\/(system|users)\/${regex}"
+    [[ "${mainversion}" -ge "${davchangeversion}" ]] && regex="principals(\/(system|users))?\/${regex}"
     # If we want to get addressbooks from the database (instead of downloading from ownCloud/Nextcloud) or
     # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
     if [[ "${include_shares}" == "yes" || "${fetch_from_database}" == "yes" ]]; then
@@ -847,7 +847,7 @@ query_database() {
       fields="${row_id}, ${row_principaluri}, ${row_source}, ${row_displayname}"
       # adjust regex:
       regex="[[:digit:]]+\|"
-      [[ "${mainversion}" -lt "${davchangeversion}" ]] && regex="${regex}principals\/(system|users)\/"
+      [[ "${mainversion}" -lt "${davchangeversion}" ]] && regex="${regex}principals(\/(system|users))?\/"
       regex="${regex}.+\|.+\|.+"
     fi
     # add beginning and end of line to regex:
