@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.8.6 (13.02.2019)
 - improved: be more gentle and verbose, if no items found for users given in usersfile
 - improved: rewrite of vendor detection
 - fixed: take into account that principals can be principals/<username> from legacy installs
