@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-10 (13.02.2019), AGPL-3.0"
+version="0.8.5-11 (13.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -427,7 +427,7 @@ read_config_php() {
     _output echo "-- NOTICE: Configured URL differs from 'overwrite.cli.url' in config.php"
     _output echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
     _output echo "-- ${nextcloud_url}/   ==>   given with option -a/--address or found in config file."
-  elif [[ "${nextcloud_url}" == "${nextcloud_url_default}" && "${nextcloud_url_overwrite}" == "" ]]; then
+  elif [[ "${nextcloud_url}" == "${nextcloud_url_default}" && "${nextcloud_url_overwrite}" == "value is unset" ]]; then
     if [[ ${fetch_from_database} == "no" ]]; then
       # we want do download addressbooks/calendars - therefore the URL to ownCloud/Nextcloud server is required.
       # Error, if $nextcloud_url is on default value and config.php contains no overwrite.cli.url (or is empty)
@@ -436,12 +436,12 @@ read_config_php() {
     else
       # if we fetch everything from database, we do not need the url of the ownCloud/Nextcloud server,
       # so avoid requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no"
-      _output echo "-- NOTICE: Can't retrieve url from ${configphp}."
-      _output echo "-- NOTICE: Continuing anyway, because fetching everything from database."
+      _output echo "+  Can't retrieve url from ${configphp}"
+      _output echo "+  Continuing anyway, because fetching everything from database."
       # For this scenario this variable name is a bit misleading, but the script needs to act as if curl wasn't installed:
       curl_installed="no"
     fi
-  elif [[ "${nextcloud_url_overwrite}" != "" ]]; then
+  elif [[ "${nextcloud_url_overwrite}" != "value is unset" ]]; then
     # if overwrite.cli.url is found (and $nextcloud_url is on default value): use it as $nextcloud_url
     nextcloud_url="${nextcloud_url_overwrite}"
   fi
