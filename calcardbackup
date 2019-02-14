@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-9_no-fd (14.02.2019), AGPL-3.0"
+version="0.8.5-10_no-fd (14.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -286,8 +286,10 @@ preparations() {
     _output echo "-- WARNING: Using default value instead: encrypt_backup=\"no\""
     encrypt_backup="no"
   elif [[ "${encrypt_backup}" == "yes" ]]; then
-    # check for package gpg:
-    command -v gpg > /dev/null || error_exit "ERROR: You chose to encrypt your backup." "Therefore package 'gnupg' is needed. Install with 'apt-get install gnupg' and run script again"
+    # check for package gpg (if installed, prefer gpg2 over gpg)::
+    command -v gpg > /dev/null && gpgcommand="gpg"
+    command -v gpg2 > /dev/null && gpgcommand="gpg2"
+    [[ -z "${gpgcommand:-}" ]] && error_exit "ERROR: You chose to encrypt your backup." "Therefore package 'gnupg' is needed. Install with 'apt-get install gnupg' and run script again"
     if [[ "${compress}" == "no" ]]; then
       _output echo "-- WARNING: Can't encrypt uncompressed backup."
       _output echo "-- WARNING: Changing from uncompress to compress backup"
@@ -1514,7 +1516,7 @@ gpg_encrypt_backup() {
   # compose path to encrypted backup by adding ".gpg" to the path/filename of compressed backup:
   local path_encrypted_backup="${path_to_backup}.gpg"
   # encrypt compressed backup file:
-  gpg --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_to_backup}" || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
+  ${gpgcommand} --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_to_backup}" || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
   # command to decrypt: gpg --passphrase-file <(echo "${gpg_passphrase}") --batch --output decrypted_output_file --decrypt encrypted_file
 
   # delete passphrase from memory:

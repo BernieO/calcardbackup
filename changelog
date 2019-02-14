@@ -1,6 +1,7 @@
 vX.X.X_no-fd (XX.XX.XXXX)
 - improved: be more gentle and verbose, if no items found for users given in usersfile
 - improved: rewrite of vendor detection
+- fixed: if installed, prefer gpg2 over gpg to encrypt backup (fixes issue #18)
 - fixed: minor typo in declaring local variables
 - fixed: only use first line as calendar-/addressbookname, if displayname is multiline
 - fixed: minor typos in changelog for v0.3.1 and in three comments (version.hide)
