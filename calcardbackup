@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6_no-fd (14.02.2019), AGPL-3.0"
+version="0.8.6-1_no-fd (14.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -549,8 +549,8 @@ read_status_php() {
       if [[ "$mainversion" -ge 8 ]]; then
         regex='"maintenance":"?true"?'
         if [[ "${status_php}" =~ ${regex} ]]; then
-          [[ -z "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "Another possibility is to not use option '-g|--get-via-http'."
-          [[ -n "${config_file:-}" ]] && error_exit "ERROR: ${productname} is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "More recommended is to set the default 'fetch_from_database=\"yes\"' in the configuration file."
+          [[ -z "${config_file:-}" ]] && error_exit "ERROR: Installation is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "Another possibility is to not use option '-g|--get-via-http'."
+          [[ -n "${config_file:-}" ]] && error_exit "ERROR: Installation is in maintenance mode!" "Disable maintenance mode with command \"sudo -u www-data php ${nextcloud_path}/occ maintenance:mode --off\" and run script again" "More recommended is to set the default 'fetch_from_database=\"yes\"' in the configuration file."
         fi
       fi
     ;;

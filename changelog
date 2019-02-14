@@ -1,3 +1,6 @@
+vX.X.X_no-fd (XX.XX.XXXX)
+- fixed: eliminate error when using option -g and server being in maintenance mode
+
 v0.8.6_no-fd (14.02.2019)
 - improved: be more gentle and verbose, if no items found for users given in usersfile
 - improved: rewrite of vendor detection
