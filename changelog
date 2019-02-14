@@ -1,5 +1,5 @@
 vX.X.X_no-fd (XX.XX.XXXX)
-- fixed: eliminate error, if calendar-/addressbooknames contain linebreak and/or carriage return
+- fixed: only use first line as calendar-/addressbookname, if displayname is multiline
 - fixed: minor typos in changelog for v0.3.1 and in three comments (version.hide)
 
 v0.8.5_no-fd (28.01.2019)
