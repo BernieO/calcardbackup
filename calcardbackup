@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-11_no-fd (14.02.2019), AGPL-3.0"
+version="0.8.5-12_no-fd (14.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -876,7 +876,9 @@ query_database() {
         id+=("${line%%|*}")        # store id (first field) in array
         line="${line#*|}"          # cut first field (id)
       fi
-      line="${line/principals\/users\/}" # remove "principals/users/" from line, to get username
+      # for the next two lines see: https://github.com/nextcloud/server/pull/13573
+      line="${line/principals\/}"  # at first only remove "principals/" from line to get username for legacy installs
+      line="${line/users\/}"       # then also remove "users/" from line to get username for non-legacy installs
       principal+=("${line%%|*}")   # store principal (=username, is first field) in array
       line="${line#*|}"            # cut first field (principal)
       if [[ "${item}" == "calendarsubscription" ]]; then
@@ -949,7 +951,9 @@ include_shares() {
           share_type_group+=("${line%%|*}") # first field contains share-type_group
           line="${line#*|}"                 # cut first field (share_type_group) from array
         fi
-        line="${line/principals\/users\/}"  # remove "principals/users/" to get username ("/principals/groups" stays there for groupcheck later)
+        # for the next two lines see: https://github.com/nextcloud/server/pull/13573
+        line="${line/principals\/}"  # at first only remove "principals/" from line to get username for legacy installs
+        line="${line/users\/}"       # then also remove "users/" from line to get username for non-legacy installs ("groups/" stays there for groupcheck later)
         share_principal+=("${line%%|*}")    # store share_principal (is now first field) in array
         line="${line#*|}"                   # cut first field (share-principal)
         share_type+=("${line%%|*}")         # store share_type (is now first field) in array
@@ -1014,7 +1018,7 @@ include_shares() {
       if [[ "${share_resourceid[$s]}" == "${id[$i]}" && "${share_type[$s]}" == "${item}" ]]; then
         # make sure, principal of share is not a group (group will be treated below)
         # first expression in next line is for ownCloud/Nextcloud >= 9.0, the second one (after &&) is for ownCloud < 9.0:
-        if [[ ! "${share_principal[$s]}" =~ principals/groups/ && ! "${share_type_group[$s]:-}" =~ ^1$ ]]; then
+        if [[ ! "${share_principal[$s]}" =~ groups/ && ! "${share_type_group[$s]:-}" =~ ^1$ ]]; then
           # add identified dav-share (shared with a user!) to the temporary 'shares to be backed up'-arrays:
           temp_principal+=("${share_principal[$s]}")
           temp_uri+=("${uri[$i]}_shared_by_${principal[$i]}")
@@ -1027,7 +1031,7 @@ include_shares() {
           #     go through list with groups and their users and
           #     add item to the temporary 'shares to be backed up'-arrays for all users of that very group:
           for g in "${!grouplist[@]}"; do
-            if [[ "${share_principal[$s]#*principals/groups/}" == "${grouplist[$g]%|*}" ]]; then
+            if [[ "${share_principal[$s]#*groups/}" == "${grouplist[$g]%|*}" ]]; then
               # if item owner is member of group:
               #     do not add item to 'shares to be backed up'-arrays for owner, instead continue with next element
               #     (owner is excluded here, because owners item will be downloaded anyway: it is already in the array with items to be downloaded):
