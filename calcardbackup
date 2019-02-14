@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-6_no-fd (14.02.2019), AGPL-3.0"
+version="0.8.5-7_no-fd (14.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -183,7 +183,7 @@ preparations() {
   if [[ ${curl_installed:-} == "no" ]]; then
     # cURL is not necessarily needed for fetching data from database, but cURL is indeed needed to get
     # calendars/addressbooks via http. So error and exit, if fetch_from_database="no":
-    [[ ${fetch_from_database} == "yes" ]] && _output echo "+  Info: cURL not installed. Can't detect vendor."
+    [[ ${fetch_from_database} == "yes" ]] && _output echo "+  cURL not installed - vendor detection might fail."
     if [[ ${fetch_from_database} == "no" ]]; then
       [[ -z "${config_file:-}" ]] && error_exit "ERROR: Package 'curl' is needed for running this script with option -g." "Run script again without option '-g' or install cURL with 'apt-get install curl'."
       [[ -n "${config_file:-}" ]] && error_exit "ERROR: Package 'curl' is needed for running this script with 'fetch_from_database=\"no\"'." "Run script again with 'fetch_from_database=\"yes\"' or install cURL with 'apt-get install curl'."
@@ -456,10 +456,7 @@ read_status_php() {
   #     checks, if version number of $nextcloud_url/status.php correlates with version number of config.php
 
   # declare local variables:
-  local status_php version_status_php versionstring_status_php regex line
-
-  # set productname to dummy value - might be changed later:
-  productname="Server"
+  local status_php regex line
 
   # store output of status.php in variable OR store curls exit code if it returns an empty string (which is in case of an error):
   status_php="$(curl -s ${trust} "${nextcloud_url}/status.php")" || cerror=$?
@@ -499,9 +496,8 @@ read_status_php() {
         # no further requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no" and return from this function:
         [[ -n ${cerror:-} ]] && _output echo "+  can't read status.php (cURL code '${cerror}')."
         [[ -z ${cerror:-} ]] && _output echo "+  no valid status.php found at ${nextcloud_url}."
+        :   # needed, otherwise function returns "false" if $cerror is set
       fi
-      # always use version from config.php when fetching from database, because not requesting anything from the webinterface:
-      versionstring_status_php=${version_config_php%.*}
     ;;
 
     no )
@@ -526,17 +522,15 @@ read_status_php() {
 
       # check for missing version in status.php due to option in config.php introduced with ownCloud 10.0 ('version.hide' => true,):
       [[ -z "${version_status_php:-}" || -z "${versionstring_status_php:-}" ]] && {
-        # version number hidden (empty): print notice and use values from config.php:
+        # print notice that version number is hidden (empty):
         _output echo "-- NOTICE: version number hidden in status.php."
-        version_status_php=${version_config_php}
-        versionstring_status_php=${version_config_php%.*}
       }
 
       # check for "needsDbUpgrade":true in status.php and exit if ownCloud/Nextcloud needs a DbUpgrade:
       regex='"needsDbUpgrade":"?true"?'
       if [[ "${status_php}" =~ ${regex} ]]; then
-        [[ -z "${config_file:-}" ]] && error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your ${productname} Installation before running this script again!" "Or run script again without option '-g|--get-via-http'"
-        [[ -n "${config_file:-}" ]] && error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your ${productname} Installation before running this script again!" "Or run script again with the default value 'fetch-from-database=\"yes\"' in config file '${config_file}'."
+        [[ -z "${config_file:-}" ]] && error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your Installation before running this script again!" "Or run script again without option '-g|--get-via-http'"
+        [[ -n "${config_file:-}" ]] && error_exit "ERROR: ${nextcloud_url}/status.php reports \"needsDbUpgrade\":true" "You need to upgrade your Installation before running this script again!" "Or run script again with the default value 'fetch-from-database=\"yes\"' in config file '${config_file}'."
       fi
 
       # check whether version of config.php is the same than version of status.php:
@@ -547,7 +541,7 @@ read_status_php() {
 
       # check for installed=true in status.php and exit if ownCloud/Nextcloud report installed:false:
       regex='"installed":"?true"?'
-      [[ "${status_php}" =~ ${regex} ]] || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your ${productname} Installation!"
+      [[ "${status_php}" =~ ${regex} ]] || error_exit "ERROR: ${nextcloud_url}/status.php does not contain \"installed\":\"true\"!" "You need to check your Installation!"
 
       # check for maintenance=false for versions >= 8.0 in status.php and exit if ownCloud/Nextcloud in maintenance mode:
       if [[ "$mainversion" -ge 8 ]]; then
@@ -560,26 +554,112 @@ read_status_php() {
     ;;
 
   esac
+}
 
-  # detect whether Installation is Nextcloud or ownCloud (look in user documentation for productname) - no need to check for error, because empty file = can't detect vendor:
-  curl -s ${trust} "${nextcloud_url}/core/doc/user/index.html" > "${tempfile}" || :
-  regex="([Nn]extcloud|own[Cc]loud)"
-  line=""
-  while read -r line; do
-    [[ "${line}" =~ $regex ]] && break
-    line=""
-  done < "${tempfile}"
-  if [[ "${line}" =~ [Nn]extcloud ]]; then
-    productname="Nextcloud"
-  elif [[ "${line}" =~ own[Cc]loud ]]; then
-    productname="ownCloud"
-  else {
-    _output echo "-- Notice: can't detect vendor."
-  }
+detect_vendor() {
+  # vendor detection (detect whether installation is Nextcloud or ownCloud):
+
+  local full_version server_version
+
+  # set productname to dummy value, will be changed later in this function:
+  productname="Server"
+
+  [[ "${fetch_from_database}" == "yes" ]] && full_version="${version_config_php}"
+  [[ "${fetch_from_database}" == "no" ]] && full_version="${version_status_php}"
+
+  # find out major, minor and patch version numbers and assign server_version (major.minor.patch):
+  main_version="${full_version%%.*}"      # first field is mainversion (overwritten, because better take version from status.php for option -g)
+  minor_version="${full_version#*.}"      # cut first number (first number is no minor version)
+  patch_version="${minor_version#*.}"     # cut first number again (first number is no patch version)
+  patch_version="${patch_version%%.*}"    # cut everything from the end to only have patch versionnumber in $patchversion
+  minor_version="${minor_version%%.*}"    # cut everything from the end to only have minor versionnumber in $minorversion
+  server_version="${main_version}.${minor_version}.${patch_version}"
+
+  # there is no Nextcloud < 9.0:
+  [[ "${main_version}" -lt 9 ]] && productname="ownCloud"
+  # there is no ownCloud > 10 yet (needs to be changed once ownCloud 11.0 is released):
+  [[ "${main_version}" -gt  10 ]] && productname="Nextcloud"
+  # only ownCloud >= 10.0 is able to hide server version in status.php (version.hide in config.php)
+  [[ "${fetch_from_database}" == "no" && -z "${full_version:-}" ]] && productname="ownCloud"
+
+  # try to detect vendor from user documentation (only if curl is installed):
+  if [[ "${productname}" == "Server" ]]; then
+
+    if [[ "${curl_installed}" == "yes" ]]; then
+      regex="([Nn]extcloud|own[Cc]loud)"
+      line=""
+      while read -r line; do
+        [[ "${line}" =~ $regex ]] && break
+        line=""
+      done <<<"$(curl -s ${trust} "${nextcloud_url}/core/doc/user/index.html")"
+
+      if [[ "${line}" =~ [Nn]extcloud ]]; then
+        productname="Nextcloud"
+        # set server_version to versionstring from status.php for Nextcloud 10 (reports itselfs version as 9.1)
+        if [[ "${main_version}.${minor_version}" == "9.1" ]]; then
+          main_version="10"
+          minor_version="0"
+          server_version="${main_version}.${minor_version}.${patch_version}"
+        fi
+      elif [[ "${line}" =~ own[Cc]loud ]]; then
+        productname="ownCloud"
+      fi
+    fi
   fi
 
-  _output echo "+  ${productname} ${versionstring_status_php} detected."
+  # if vendor still could not be detected (e.g. missing curl), try to detect vendor through 'version' in config.php/status.php:
+  if [[ "${productname}" == "Server" ]]; then
+    case "${main_version}.${minor_version}" in
 
+      9.0 )
+        # Nextcloud 9.0 has a patch version equal or greater than 50:
+        [[ "${patch_version}" -lt 50 ]] &&  productname="ownCloud"
+        [[ "${patch_version}" -ge 50 ]] &&  productname="Nextcloud"
+      ;;
+
+      9.1 )
+        if [[ "${fetch_from_database}" == "yes" ]]; then
+          if [[ "${patch_version}" -gt 6 ]]; then
+            # Nextcloud 10.0.6 (reports itself as 9.1.6 in config.php) is the latest version of Nextcloud 10.0, so this must be ownCloud:
+            productname="ownCloud"
+          else
+            # Nextcloud 10.0s version in config.php is 9.1.X, as well as ownCloud 9.1 - can't detect vendor then:
+            echo "+  can't detect vendor"
+            # use $fullversion for output
+            server_version="${full_version}"
+          fi
+        else
+          # running with option -g|get-via-http - check versionstring from status.php:
+          if [[ "${versionstring_status_php%%.*}" == "10" ]]; then
+            # Nextcloud 10.0 reports itself as version 9.1 in version and as 10.0 in verstionstring from status.php:
+            productname="Nextcloud"
+            # use versionstring from status.php as version information (will be 10.0.X for Nextcloud 10.0):
+            server_version="${versionstring_status_php}"
+          elif [[ "${versionstring_status_php%%.*}" == "9" ]]; then
+            # if both (version and versionstring) from status.php are beginning with 9 then this is ownCloud:
+            productname="ownCloud"
+          fi
+        fi
+      ;;
+
+      10* )
+        # there is no Nextcloud 10.0 (in version from config.php/status.php, because  Nextcloud 10.0 reports as Nextcloud 9.1.x):
+        productname="ownCloud"
+      ;;
+
+      * )
+        # vendor can't be detected:
+        _output echo "+  can't detect vendor."
+        # set productname to a generic value
+        productname="Server"
+        # use $fullversion for output
+        server_version="${full_version}"
+      ;;
+
+    esac
+  fi
+
+  _output echo "+  ${productname} ${server_version} detected."
 }
 
 get_database_details() {
@@ -1707,17 +1787,8 @@ done
 
 preparations
 read_config_php
-case ${curl_installed} in
-  yes )
-    # read status.php only if cURL is installed:
-    read_status_php
-    ;;
-  no )
-    # cURL is not installed - don't read status.php and assign a default value to productname:
-    productname="Server"
-    _output echo "+  Nextcloud/ownCloud ${productname} version ${version_config_php} detected."
-    ;;
-esac
+[[ "${curl_installed}" == "yes" ]] && read_status_php
+detect_vendor
 get_database_details
 # only read file with user credentials, if we ar not doing a complete backup by fetching everything from database:
 [[ "${complete_backup_from_database:-}" == "yes" ]] || read_users_txt
