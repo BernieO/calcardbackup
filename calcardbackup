@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.5-7_no-fd (14.02.2019), AGPL-3.0"
+version="0.8.5-8_no-fd (14.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1190,10 +1190,8 @@ get_icsvcf_files() {
   [[ "${dbtype}" == "sqlite3" && "${fetch_from_database}" == "yes" ]] && cd "${working_dir}"
 
   # there is no matching Nextcloud user, if there are calendars/addressbooks in database table but nothing has been exported:
-  if [[ ${exported} == 0 ]]; then
-    _output echo "-- NOTICE: Found ${item}s in database, but none of them belongs to one of the users given in '${users_file}'."
-    _output echo "-- NOTICE: You may want to check '${users_file}' for valid ${productname} users!"
-  fi
+  # print notice, if there are calendars/addressbooks in database but nothing has been exported:
+  [[ ${exported} == 0 ]] && _output echo "+  no ${item}s found for users given in '${users_file}'."
 
   # remove temporary file:
   rm -f "${tempfile}"
@@ -1365,7 +1363,9 @@ create_calendar_from_db() {
 create_calendarsubscription_files() {
   # creates textfiles with URLs to subscribed calendars
 
-  local i index filename
+  local i index filename exported
+
+  exported=0
 
   for (( i=0; i<${#id[@]}; i++ )); do      # go through array with calendarsubscriptions
 
@@ -1389,8 +1389,11 @@ create_calendarsubscription_files() {
     _output printf '%s' "+  saving ${item} ${filename} ..."
     echo "${source[$i]}" > "${backupfolder_day}/${filename}"
     _output printf '%s\n' "...success!"
-
+    exported=$((exported + 1))
   done
+
+  # print notice, if there are calendarsubscriptions in database but nothing has been exported:
+  [[ ${exported} == 0 ]] && _output echo "+  no calendarsubscriptions found for users given in '${users_file}'."
 
   # unset arrays (to not include data of calendarsubscriptions for addressbook export):
   unset -v id principal displayname source
@@ -1446,7 +1449,7 @@ get_calendars() {
   # get calendarsubscriptions as well:
   query_database "${table_calendarsubscriptions}" "calendarsubscription"
   if [[ -n "${source:-}" ]]; then
-  # create files with calendarsubscriptions, if table calendarsubscriptions is not empty:
+    # create files with calendarsubscriptions, if table calendarsubscriptions is not empty:
     create_calendarsubscription_files
   else
     # print info, that there are no calendarsubscriptions in the installation, (if table calendarsubscriptions is empty):
