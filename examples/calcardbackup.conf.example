@@ -75,7 +75,7 @@ date_extension="-%Y-%m-%d"
 # keeps all backups for the given number of days
 # keeps only backups created on mondays for the time before
 # the default value of "0" means to keep all backups created ever
-# identical to option -l|--like-time-machine
+# identical to option -ltm|--like-time-machine
 
 keep_days_like_time_machine="0"
 
