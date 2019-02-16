@@ -111,8 +111,8 @@ Pfade (DATEI / VERZEICHNIS) sind absolute Pfade oder relative Pfade zum Arbeitsv
 -s | --selfsigned
        Ignoriere ein nicht vertrauenswürdiges (z.B. selbstsigniertes) Zertifikat. Erforderlich in
        Kombination mit Option '-g' und nicht vertrauenswürdigen Zertifikaten. In jedem Fall wird cURL
-       benutzt, um status.php abzurufen und den Hersteller zu ermitteln, um zusätzliche Prüfungen
-       durchzuführen. Falls cURL die URL aufgrund eines nicht vertrauenswürdigen Zertifikates nicht
+       benutzt, um status.php abzurufen und damit zusätzliche Prüfungen durchzuführen.
+       Falls cURL die URL aufgrund eines nicht vertrauenswürdigen Zertifikates nicht
        erreichen kann, wird calcardbackup diese zusätzlichen Prüfungen überspringen.
 -u | —usersfile DATEI
        Benutze DATEI, die die Nutzernamen der Nutzer enthält, deren Daten gesichert werden sollen.

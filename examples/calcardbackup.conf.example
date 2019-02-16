@@ -35,7 +35,7 @@ nextcloud_url="https://www.my_nextcloud.net/"
 
 
 # Will cURL trust the servers certificate?
-# cURL is used to retrieve status.php and the vendor of your ownCloud/Nextcloud to
+# cURL is used to retrieve status.php of your ownCloud/Nextcloud to
 # perform some additional checks. If cURL can't access the URL due to an
 # untrustful certificate, calcardbackup will omit these checks, but still work.
 # If you use the deprecated option 'fetch_from_database="no"' (see below) and
