@@ -108,8 +108,8 @@ Paths (FILE / DIRECTORY) are absolute paths or relative paths to working directo
        Remove backups older than N days from backup folder (N needs to be a positive integer).
 -s | --selfsigned
        Let cURL ignore an untrustful (e.g. selfsigned) certificate. With option -g, this is
-       mandatory for backup in that case. In any case, cURL is used to retrieve status.php and the
-       vendor of the ownCloud/Nextcloud installation to perform some additional checks. If cURL
+       mandatory for backup in that case. In any case, cURL is used to retrieve status.php
+       of the ownCloud/Nextcloud installation to perform some additional checks. If cURL
        can't access the URL due to an untrustful certificate, calcardbackup will run without
        executing these checks.
 -u | --usersfile FILE
