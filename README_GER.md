@@ -240,6 +240,9 @@ Aufgrund des neuen Standardverhaltens von *calcardbackup* >= 0.8.0 (die Sicherun
 - https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht - October 2018 (deutsch)
 - https://strobelstefan.org/?p=6094 - January 2019 (deutsch)
 
+#### Docker Abbild für calcardbackup
+- https://hub.docker.com/r/waja/calcardbackup/
+
 #### ICS und VCF Standard
 - [RFC 5545](https://tools.ietf.org/html/rfc5545) - Internet Calendaring and Scheduling Core Object Specification (iCalendar)
 - [RFC 6350](https://tools.ietf.org/html/rfc6350) - vCard Format Specification
