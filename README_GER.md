@@ -19,6 +19,7 @@ __Allen, die *calcardbackup* von einer früheren Version auf 0.8.0 aktualisieren
 - [Funktioniert das auch mit einer nicht funktionierenden ownCloud/Nextcloud Installation?](#funktioniert-das-auch-mit-einer-nicht-funktionierenden-owncloudnextcloud-installation)
 - [Über die Option -g|--get-via-http](#über-die-option--g----get-via-http)
 - [Über die Option -i|--include-shares](#über-die-option--i----include-shares)
+- [Links](#links)
 
 ## Voraussetzungen
 - lokale Installation von ownCloud/Nextcloud >= 5.0 mit MySQL/MariaDB, PostgreSQL oder SQLite3
@@ -35,7 +36,7 @@ __Allen, die *calcardbackup* von einer früheren Version auf 0.8.0 aktualisieren
 2. die Besitzrechte des Repository dem Webserver-User zuweisen (hier `www-data`):  
 `chown -R www-data:www-data .`
 
-3. das Skript als Webserver-User aufrufen und als Argument den Pfad zu ownCloud/Nextcloud übergeben (hier `/var/www/nextcloud`):  
+3. das Skript als Webserver-User (hier `www-data`) aufrufen und als Argument den Pfad zu ownCloud/Nextcloud übergeben (hier `/var/www/nextcloud`):  
 `sudo -u www-data ./calcardbackup "/var/www/nextcloud"`
 
 4. die Ausgabe des Skripts beobachten. Falls weitere Optionen benötigt werden, wird dies ausgegeben.
@@ -125,7 +126,7 @@ Pfade (DATEI / VERZEICHNIS) sind absolute Pfade oder relative Pfade zum Arbeitsv
 -x | --uncompressed
        komprimiere das Backup nicht
 -z | --zip
-       Benutze zip, um das Backup zu komprimieren, an Stelle eines gzip-tar-Archivs (tar.gz)=
+       Benutze zip, um das Backup zu komprimieren, an Stelle eines gzip-tar-Archivs (tar.gz)
 
 ACHTUNG: die Option '-f|--fetch-from-database' (eingeführt mit calcardbackup 0.6.0) ist
          der Standard für calcardbackup >= 0.8.0 und hat daher keine Funktion mehr.
@@ -139,30 +140,37 @@ Sichere keine Kalender (`-nc`) und speichere das Backup unkomprimiert (`-x`) im 
 Dies ist genau dasselbe Kommando wie im ersten Beispiel, allerdings mit langen Optionsnamen statt der kurzen.
 
 3. `./calcardbackup -c /etc/calcardbackup.conf`  
-Benutze die Konfigurationsdatei /etc/calcardbackup.conf (`-c /etc/calcardbackup.conf`). Alle Parameter für das gewünschte Verhalten müssen in dieser Datei angegeben werden (siehe [examples/calcardbackup.conf.example](examples/calcardbackup.conf.example)). Die Angabe weiterer Optionen entfällt, da sie ignoriert werden (mit Ausnahme von `-b|--batch`).
+Benutze die Konfigurationsdatei /etc/calcardbackup.conf (`-c /etc/calcardbackup.conf`). Alle Parameter für das gewünschte Verhalten müssen in dieser Datei angegeben werden (siehe [examples/calcardbackup.conf.example](examples/calcardbackup.conf.example)).  
+Die Angabe weiterer Optionen entfällt, da sie ignoriert werden (mit Ausnahme von `-b|--batch`).
 
-4. `./calcardbackup /var/www/nextcloud -b -d .%d.%H -z -e /home/tom/key -o /media/data/backupfolder/ -u /etc/calcardbackupusers -i -r 15`  
+4. `./calcardbackup`  
+Benutze die Datei calcardbackup.conf im Verzeichnis des Skripts als Konfigurationsdatei.  
+Dies ist im Grunde dasselbe wie Beispiel Nr. 3, nur mit dem Standardpfad der Konfigurationsdatei.
+
+5. `./calcardbackup /var/www/nextcloud -b -d .%d.%H -z -e /home/tom/key -o /media/data/backupfolder/ -u /etc/calcardbackupusers -i -r 15`  
 Unterdrücke alle Ausgaben außer dem Pfad zum Backup (`-b`), benutze die Dateinamenserweiterung .DD.HH (`-d .%d.%H`), benutze zip, um das Backup zu komprimieren (`-z`), verschlüssele das komprimierte Backup und benutze als Schlüssel die erste Zeile der Datei /home/tom/key (`-e /home/tom/key`), speichere das Backup im Verzeichnis /media/data/backupfolder/ (`-o /media/data/backupfolder/`), sichere nur Elemente von in der Datei /etc/calcardbackupusers angegebenen Nutzern (`-u /etc/calcardbackupusers`), schließe mit Nutzern geteilte Adressbücher/Kalender mit ein (`-i`) und lösche alle Sicherungen älter als 15 Tage (`-r 15`).
-
-5. `./calcardbackup`  
-Benutze die Datei calcardbackup.conf im Verzeichnis des Skripts als Konfigurationsdatei. Dies ist im Grunde dasselbe wie Beispiel Nr. 3, nur mit dem Standardpfad der Konfigurationsdatei.
 
 6. `sudo ./calcardbackup /var/snap/nextcloud/current/nextcloud -p`  
 Dieses Beispiel ist für Nutzer von [nextcloud-snap](https://github.com/nextcloud/nextcloud-snap). *calcardbackup* wird die Dienstprogramme von nextcloud-snap benutzen (`-p`), um alle in der Datenbank vorhandenen Kalender und Adressbücher zu sichern.
 
-7. `./calcardbackup /var/www/nextcloud -g -u /etc/calcardbackupusers -s -i`  
+7. `./calcardbackup /var/www/nextcloud -ltm 30 -r 180`  
+Behalte alle Sicherungen der letzten 30 Tage, für die Zeit davor aber nur solche, die Montags erstellt wurden (`-ltm 30`) und lösche alle Backups, die älter als 180 Tage sind (`-r 180`).  
+__ACHTUNG__: es muss sichergestellt werden, dass Backups auch Montags erstellt werden, wenn die Option `-ltm` benutzt wird.
+
+8. `./calcardbackup /var/www/nextcloud -g -u /etc/calcardbackupusers -s -i`  
 Benutze die veraltete Methode, um Kalender- und Adressbuchdateien per http(s)-Anforderung vom ownCloud/Nextcloud Server herunterzuladen (`-g`, veraltet), finde die Nutzernamen und zugehörigen Klartext-Passwörter der zu sichernden Benutzer in der Datei /etc/calcardbackupusers (`-u /etc/calcardbackupusers`, verpflichtend bei Option -g), ignoriere ein nicht vertrauenswürdiges Zertifikat (`-s`, nur zwingend erforderlich bei Option -g) und sichere auch mit den Benutzern geteilte Kalender/Adressbücher (`-i`). Die Sicherung wird als komprimierte `*.tar.gz` Datei im Verzeichnis `./backups/` (Standard) gespeichert werden.  
-__ACHTUNG__: die Option `-g` ist veraltet und es wird wegen der dabei notwendigen Datei mit Zugangsdaten der Nutzer stark davon abgeraten diese Option zu benutzen.
+__ACHTUNG__: die Option `-g` ist veraltet und es wird wegen der dabei notwendigen Datei mit Zugangsdaten der Nutzer stark davon abgeraten diese Option zu benutzen (siehe [Über die Option -g|--get-via-http](#über-die-option--g----get-via-http)).
 
 ## Nextcloud-Snap Benutzer
 
 Falls [Nextcloud-Snap](https://github.com/nextcloud/nextcloud-snap) benutzt wird, muss das Skript mit Option `-p|--snap` aufgerufen werden. *calcardbackup* wird dann das im Snap-Paket enthaltene Dienstprogramm `nextcloud.mysql-client` benutzen, um auf die Datenbank zuzugreifen.  
-Damit dies funktioniert, muss *calcardbackup* mit `sudo` aufgerufen werden (als root ohne `sudo` aufgerufen wird auch fehlschlagen). Als Pfad zu Nextcloud muss der Pfad zu den Konfigurationsdateien des Snap Paketes angegeben werden. Bei einer Standardinstallation ist dies `/var/snap/nextcloud/current/nextcloud`. Siehe [Beispiel Nr. 6](#beispiele).
+Damit dies funktioniert, muss *calcardbackup* mit `sudo` aufgerufen werden (als root ohne `sudo` aufgerufen wird auch fehlschlagen).  
+Als Pfad zu Nextcloud muss der Pfad zu den Konfigurationsdateien des Snap Paketes angegeben werden. Bei einer Standardinstallation ist dies `/var/snap/nextcloud/current/nextcloud`. Siehe [Beispiel Nr. 6](#beispiele).
 
 ## Erwähnenswertes zur Verschlüsselungsoption
 
 Falls Sie die Verschlüsselungsoption des Skripts benutzen möchten, seien Sie sich der folgenden Tatsachen bewusst:
-- die Dateien werden von GnuGPG (AES256) mit einem Passwort verschlüsselt, das in einer separaten Datei angegeben wird
+- die Dateien werden von [GnuPG](https://gnupg.org/) ([AES256](https://de.wikipedia.org/wiki/Advanced_Encryption_Standard)) mit einem Passwort verschlüsselt, das in einer separaten Datei angegeben wird
 - das Passwort ist in einer Datei gespeichert. Andere Nutzer mit Zugang zum Server könnten das Passwort einsehen.
 - *calcardbackup* soll ohne Benutzerinteraktion funktionieren. Daher kann es keine bombensichere Verschlüsselung anbieten. Ich betrachte die angebotene Verschlüsselungsmöglichkeit allerdings für die meisten Anwendungsfälle als ausreichend
 - falls bombensichere Verschlüsselung benötigt wird, lassen Sie nicht *calcardbackup* die Sicherung verschlüsseln. Verschlüsseln Sie das Archiv stattdessen selbst.
@@ -171,8 +179,9 @@ Falls Sie die Verschlüsselungsoption des Skripts benutzen möchten, seien Sie s
 
 ## Funktioniert das auch mit einer nicht funktionierenden ownCloud/Nextcloud Installation?
 
-Ja, allerdings!  
-*calcardbackup* benötigt lediglich die Datenbank (und Zugang zu ihr) einer ownCloud/Nextcloud installation, um Kalender/Adressbücher von der Datenbank auszulesen und sie als .ics und .vcf Datein zu sichern.  
+__Ja, das geht!__
+  
+*calcardbackup* benötigt lediglich die Datenbank (und Zugang zu ihr) einer ownCloud/Nextcloud Installation, um Kalender/Adressbücher von der Datenbank auszulesen und sie als .ics und .vcf Datein zu sichern.  
 Gehen Sie folgendermaßen vor:
 
 1. eine Nextcloud Verzeichnis Attrappe anlegen:  
@@ -201,11 +210,11 @@ Standardmäßig erstellt *calcardbackup* Sicherungsdateien von Kalendern und Adr
 
 Neben des Sicherheitsrisikos Klartextpasswörter in einer Datei zu speichern, birgt diese Option die Gefahr von Timeouts, die dazu führen, dass *calcardbackup* große Adressbücher nicht sichern kann.
 
-__Lange Rede kurzer Sinn__: alles was Sie über die Option `-g|--get-via-http` wissen müssen ist, sie niemals zu benutzen (außer Sie haben einen guten Grund, die Passwörter der zu sichernden ownCloud/Nextcloud Nutzer preiszugeben).
+__Lange Rede kurzer Sinn__: alles was Sie über die Option `-g|--get-via-http` wissen müssen ist, sie __NICHT__ zu benutzen (außer Sie haben einen guten Grund, die Passwörter der zu sichernden ownCloud/Nextcloud Nutzer preiszugeben).
 
 ## Über die Option -i | -\-include-shares
 
-__ACHTUNG__: es gibt keinen Grund diesen Abschnitt zu lesen, außer Sie möchten *calcardbackup* mit der veralteten Option `-g|--get-via-http` aufrufen, wovon abgeraten wird (siehe vorhergehender Abschnitt).
+__ACHTUNG__: es gibt keinen Grund diesen Abschnitt zu lesen, außer Sie möchten *calcardbackup* mit der veralteten Option `-g|--get-via-http` aufrufen, wovon abgeraten wird (siehe [Über die Option -g|--get-via-http](#über-die-option--g----get-via-http)).
 
 Falls, aus welchem Grund auch immer, *calcardbackup* mit der Option `-g|--get-via-http` aufgerufen wird (wovon abgeraten wird!), kann folgendermaßen vorgegangen werden, um die Passwörter der Hauptnutzer geheim zu halten:
 - einen neuen Benutzer in ownCloud/Nextcloud erstellen
@@ -217,3 +226,24 @@ __Vorteil dieser Herangehensweise__: falls die Datei `users.txt` in falsche Hän
 __Nachteil__: neu erstellte Kalender/Adressbücher werden nicht automatisch gesichert. Sie  müssen zuerst mit diesem neuen Benutzerkonto geteilt werden.
 
 Aufgrund des neuen Standardverhaltens von *calcardbackup* >= 0.8.0 (die Sicherungsdateien direkt aus der Datenbank zu erstellen), ist diese Option eigentlich unnütz geworden. Falls diese Option trotzdem benutzt werden soll, um geteilte Elemente auch ohne die Option `-g` zu sichern, dann gibt es keinerlei Notwendigkeit Passwörter in der Datei `users.txt` anzugeben. Falls keine Datei mit Nutzernamen an das Skript mit der Option `-u` übergeben wird, wird die Option `-i` ignoriert werden.
+
+## Links
+
+#### Englische Version dieses README
+- [README.md](README.md)
+
+#### Zugehörige Forumsthemen
+- [help.nextcloud.com/t/calcardbackup-bash-script...](https://help.nextcloud.com/t/calcardbackup-bash-script-to-backup-nextcloud-calendars-and-addressbooks-as-ics-vcf-files/11978) (englisch)
+- [central.owncloud.org/t/calcardbackup-bash-script...](https://central.owncloud.org/t/calcardbackup-bash-script-to-backup-owncloud-calendars-and-addressbooks-as-ics-vcf-files/7340) (englisch)
+
+#### Blogartikel über *calcardbackup*
+- https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht - October 2018 (deutsch)
+- https://strobelstefan.org/?p=6094 - January 2019 (deutsch)
+
+#### ICS und VCF Standard
+- [RFC 5545](https://tools.ietf.org/html/rfc5545) - Internet Calendaring and Scheduling Core Object Specification (iCalendar)
+- [RFC 6350](https://tools.ietf.org/html/rfc6350) - vCard Format Specification
+
+#### Exporter Plugins von SabreDAV
+- [ICSExportPlugin.php](https://github.com/sabre-io/dav/blob/master/lib/CalDAV/ICSExportPlugin.php) - ICS Exporter
+- [VCFExportPlugin.php](https://github.com/sabre-io/dav/blob/master/lib/CardDAV/VCFExportPlugin.php) - VCF Exporter
