@@ -233,15 +233,15 @@ Aufgrund des neuen Standardverhaltens von *calcardbackup* >= 0.8.0 (die Sicherun
 - [README.md](README.md)
 
 #### Zugehörige Forumsthemen
-- [help.nextcloud.com/t/calcardbackup-bash-script...](https://help.nextcloud.com/t/calcardbackup-bash-script-to-backup-nextcloud-calendars-and-addressbooks-as-ics-vcf-files/11978) (englisch)
-- [central.owncloud.org/t/calcardbackup-bash-script...](https://central.owncloud.org/t/calcardbackup-bash-script-to-backup-owncloud-calendars-and-addressbooks-as-ics-vcf-files/7340) (englisch)
+- [https://help.nextcloud.com/t/calcardbackup-bash-script...](https://help.nextcloud.com/t/calcardbackup-bash-script-to-backup-nextcloud-calendars-and-addressbooks-as-ics-vcf-files/11978) (englisch)
+- [https://central.owncloud.org/t/calcardbackup-bash-script...](https://central.owncloud.org/t/calcardbackup-bash-script-to-backup-owncloud-calendars-and-addressbooks-as-ics-vcf-files/7340) (englisch)
 
 #### Blogartikel über *calcardbackup*
-- https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht - October 2018 (deutsch)
-- https://strobelstefan.org/?p=6094 - January 2019 (deutsch)
+- [https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht](https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht) - Oktober 2018 (deutsch)
+- [https://strobelstefan.org/?p=6094](https://strobelstefan.org/?p=6094) - Januar 2019 (deutsch)
 
 #### Docker Abbild für calcardbackup
-- https://hub.docker.com/r/waja/calcardbackup/
+- [https://hub.docker.com/r/waja/calcardbackup](https://hub.docker.com/r/waja/calcardbackup)
 
 #### ICS und VCF Standard
 - [RFC 5545](https://tools.ietf.org/html/rfc5545) - Internet Calendaring and Scheduling Core Object Specification (iCalendar)
