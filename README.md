@@ -181,11 +181,11 @@ __Yes, it does!__
 *calcardbackup* only needs the database (and access to it) from an ownCloud/Nextcloud installation to be able to extract calendars/addressbooks from the database and save them as .ics and .vcf files.  
 Here is how this can be accomplished:
 
-1. create a dummy Nextcloud directory structure:  
-`mkdir -p /usr/local/bin/nextcloud-dummy/config`
+1. create a dummy Nextcloud directory including subdirectory `config`:  
+`mkdir -p /usr/local/bin/nextcloud_dummy/config`
 
 2. create and edit file `config.php` to fit your needs as follows:  
-`nano /usr/local/bin/nextcloud-dummy/config/config.php`
+`nano /usr/local/bin/nextcloud_dummy/config/config.php`
 
    - add database type according to [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L90-L101)
 
@@ -193,12 +193,12 @@ Here is how this can be accomplished:
      - add according database values according to [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L103-L135)
 
    - for SQLite3:
-     - add path to the nextcloud-dummy folder as 'datadirectory' according to [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L76-L82)
-     - copy the SQLite3 database to the nexcloud-dummy directory (filename of the SQLite3 database must be `owncloud.db`):  
-     `cp /path/to/owncloud.db /usr/local/bin/nextcloud-dummy/owncloud.db`
+     - add path to the nextcloud_dummy folder as 'datadirectory' according to [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L76-L82)
+     - copy the SQLite3 database to the nexcloud_dummy directory (filename of the SQLite3 database must be `owncloud.db`):  
+     `cp /path/to/owncloud.db /usr/local/bin/nextcloud_dummy/owncloud.db`
 
 3. run *calcardbackup* and give as first argument the path to dummy Nextcloud directory created in step 1:  
-`/path/to/calcardbackup /usr/local/bin/nextcloud-dummy`
+`./calcardbackup /usr/local/bin/nextcloud_dummy`
 
 ## About Option -g | -\-get-via-http
 

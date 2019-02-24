@@ -28,7 +28,7 @@ __Allen, die *calcardbackup* von einer früheren Version auf 0.8.0 aktualisieren
 - *optional*: das Paket `curl`, wenn die nicht empfohlene Option `-g|--get-via-http` gesetzt wird
 
 ## Schnellinstallation
-1. das Repository auf deinen Server klonen (nicht ins webroot!) und ins Verzeichnis wechseln:  
+1. das Repository auf Ihren Server klonen (nicht ins webroot!) und ins Verzeichnis wechseln:  
 `cd /usr/local/bin`  
 `git clone https://github.com/BernieO/calcardbackup`  
 `cd calcardbackup`
@@ -184,23 +184,23 @@ __Ja, das geht!__
 *calcardbackup* benötigt lediglich die Datenbank (und Zugang zu ihr) einer ownCloud/Nextcloud Installation, um Kalender/Adressbücher von der Datenbank auszulesen und sie als .ics und .vcf Datein zu sichern.  
 Gehen Sie folgendermaßen vor:
 
-1. eine Nextcloud Verzeichnis Attrappe anlegen:  
-`mkdir -p /usr/local/bin/nextcloud-attrappe/config`
+1. eine Nextcloud Verzeichnis Attrappe anlegen (inklusive Unterverzeichnis `config`):  
+`mkdir -p /usr/local/bin/nextcloud_dummy/config`
 
 2. eine Datei `config.php` anlegen und mit folgenden Werten füllen:  
-`nano /usr/local/bin/nextcloud-dummy/config/config.php`
+`nano /usr/local/bin/nextcloud_dummy/config/config.php`
 
     - den Typ der Datenbank wie in [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L90-L101)
 
     - für MySQL/MariaDB/PostgreSQL:
       - die entsprechenden Datenbankwerte wie in [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L103-L135)
     - für SQLite3:
-      - den Pfad zum der in Schritt 1 angelegten Attrappe eines Nextcloud Verzeichnisses als 'datadirectory' wie in [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L76-L82)
+      - den Pfad des in Schritt 1 angelegten nextcloud_dummy Verzeichnisses als 'datadirectory' wie in [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L76-L82)
       - die SQLite3 Datenbank in die Verzeichnisattrappe kopieren (der Dateiname der SQLite3 Datenbank muss `owncloud.db` lauten):  
-      `cp /path/to/owncloud.db /usr/local/bin/nextcloud-dummy/owncloud.db`
+      `cp /path/to/owncloud.db /usr/local/bin/nextcloud_dummy/owncloud.db`
 
-3. *calcardbackup* ausführen und als erstes Argument den Pfad zu der in Schritt 1 angelegten Nextcloud Verzeichnisattrappe angeben:
-`/path/to/calcardbackup /usr/local/bin/nextcloud-dummy`
+3. *calcardbackup* ausführen und als erstes Argument den Pfad zu der in Schritt 1 angelegten Nextcloud Verzeichnisattrappe angeben:  
+`./calcardbackup /usr/local/bin/nextcloud_dummy`
 
 ## Über die Option -g | -\-get-via-http
 
