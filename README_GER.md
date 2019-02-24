@@ -4,8 +4,8 @@
 
 Dieses Bash-Skript exportiert Kalender und Adressbücher aus ownCloud/Nextcloud als .ics- und .vcf-Dateien und speichert sie in einem komprimierten Archiv. Weitere Optionen stehen zur Verfügung.
 
-__WICHTIG__: Ab Version 0.8.0 ist keine Datei mit Benutzernamen und Passwörtern mehr notwendig, da alle benötigten Daten direkt aus der Datenbank gezogen werden.  
-Falls Kalender/Adressbücher von ausgewählten Benutzern gesichert werden sollen, können diese ohne Passwörter in `users.txt` gelistet werden.
+__WICHTIG__: Ab Version 0.8.0 ist eine Datei mit Benutzernamen und Passwörtern nicht mehr notwendig, da alle benötigten Daten direkt aus der Datenbank gezogen werden.  
+Falls Kalender/Adressbücher nur von ausgewählten Benutzern gesichert werden sollen, können diese ohne Passwörter in `users.txt` gelistet werden.
 
 __Allen, die *calcardbackup* von einer früheren Version auf 0.8.0 aktualisieren, wird nachdrücklich empfohlen, die Datei mit den Passwörtern zu löschen, oder zumindest die Passwörter daraus zu entfernen.__
 
@@ -23,7 +23,7 @@ __Allen, die *calcardbackup* von einer früheren Version auf 0.8.0 aktualisieren
 
 ## Voraussetzungen
 - lokale Installation von ownCloud/Nextcloud >= 5.0 mit MySQL/MariaDB, PostgreSQL oder SQLite3
-- der das Skript startende User muss Leserechte für das Skript selbst, die `config.php` der ownCloud/Nextcloud-Installation und alle Konfigurationsdateien haben
+- der das Skript startende User muss Leserechte für den gesamten Pfad zu ownClouds/Nextclouds `config.php`, zum Skript selbst und zu allen benutzten Konfigurationsdateien haben
 - *optional*: das Paket `zip`, um Backups als zip-Datei zu komprimieren (anstelle tar.gz)
 - *optional*: das Paket `curl`, wenn die nicht empfohlene Option `-g|--get-via-http` gesetzt wird
 
@@ -170,7 +170,7 @@ Als Pfad zu Nextcloud muss der Pfad zu den Konfigurationsdateien des Snap Pakete
 ## Erwähnenswertes zur Verschlüsselungsoption
 
 Falls Sie die Verschlüsselungsoption des Skripts benutzen möchten, seien Sie sich der folgenden Tatsachen bewusst:
-- die Dateien werden von [GnuPG](https://gnupg.org/) ([AES256](https://de.wikipedia.org/wiki/Advanced_Encryption_Standard)) mit einem Passwort verschlüsselt, das in einer separaten Datei angegeben wird
+- die Dateien werden von [GnuPG](https://de.wikipedia.org/wiki/GNU_Privacy_Guard) ([AES256](https://de.wikipedia.org/wiki/Advanced_Encryption_Standard)) mit einem Passwort verschlüsselt, das in einer separaten Datei angegeben wird
 - das Passwort ist in einer Datei gespeichert. Andere Nutzer mit Zugang zum Server könnten das Passwort einsehen.
 - *calcardbackup* soll ohne Benutzerinteraktion funktionieren. Daher kann es keine bombensichere Verschlüsselung anbieten. Ich betrachte die angebotene Verschlüsselungsmöglichkeit allerdings für die meisten Anwendungsfälle als ausreichend
 - falls bombensichere Verschlüsselung benötigt wird, lassen Sie nicht *calcardbackup* die Sicherung verschlüsseln. Verschlüsseln Sie das Archiv stattdessen selbst.

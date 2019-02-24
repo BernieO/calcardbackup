@@ -24,7 +24,7 @@ __All users upgrading *calcardbackup* from a previous version to version 0.8.0 o
 ## Requirements
 
 - local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
-- the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, all used configuration files and to the script itself
+- the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, to the script itself and all used configuration files
 - *optional*: package `zip` to compress backup as zip-file  (instead of tar.gz)
 - *optional*: package `curl` when using deprecated option `-g|--get-via-http`
 
@@ -167,7 +167,7 @@ As path to Nextcloud use the path to the configuration files of nextcloud. In a 
 ## Considerations about Encryption
 
 If you want to use the included encryption possibility, be aware that:
-- the files are encrypted by [GnuPG](https://gnupg.org/), [AES256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) with the passphrase given in a separate file
+- the files are encrypted by [GnuPG](https://en.wikipedia.org/wiki/GNU_Privacy_Guard), [AES256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) with the passphrase given in a separate file
 - the passphrase is stored in a file. Other users with access to the server might be able to see the passphrase.
 - *calcardbackup* is designed to run without user interaction, so there can't be a rock solid encryption. I consider the offered one as sufficient in most cases though.
 - if you need rock solid encryption, don't let *calcardbackup* encrypt the backup. Instead, encrypt it yourself.
