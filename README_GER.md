@@ -229,24 +229,21 @@ Aufgrund des neuen Standardverhaltens von *calcardbackup* >= 0.8.0 (die Sicherun
 
 ## Links
 
-#### Englische Version dieses README
-- [README.md](README.md)
-
-#### Zugehörige Forumsthemen
-- [https://help.nextcloud.com/t/calcardbackup-bash-script...](https://help.nextcloud.com/t/calcardbackup-bash-script-to-backup-nextcloud-calendars-and-addressbooks-as-ics-vcf-files/11978) (englisch)
-- [https://central.owncloud.org/t/calcardbackup-bash-script...](https://central.owncloud.org/t/calcardbackup-bash-script-to-backup-owncloud-calendars-and-addressbooks-as-ics-vcf-files/7340) (englisch)
+#### Zugehörige Forenthreads
+- [help.nextcloud.com](https://help.nextcloud.com/t/calcardbackup-bash-script-to-backup-nextcloud-calendars-and-addressbooks-as-ics-vcf-files/11978) - Nextcloud
+- [central.owncloud.org](https://central.owncloud.org/t/calcardbackup-bash-script-to-backup-owncloud-calendars-and-addressbooks-as-ics-vcf-files/7340) - ownCloud
 
 #### Blogartikel über *calcardbackup*
-- [https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht](https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht) - Oktober 2018 (deutsch)
-- [https://strobelstefan.org/?p=6094](https://strobelstefan.org/?p=6094) - Januar 2019 (deutsch)
+- [bob.gatsmas.de](https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht) - Oktober 2018 (deutsch)
+- [strobelstefan.org](https://strobelstefan.org/?p=6094) - Januar 2019 (deutsch)
 
-#### Docker Abbild für calcardbackup
-- [https://hub.docker.com/r/waja/calcardbackup](https://hub.docker.com/r/waja/calcardbackup)
+#### Docker Abbild für *calcardbackup*
+- [hub.docker.com](https://hub.docker.com/r/waja/calcardbackup) - Docker Abbild von waja
 
 #### ICS und VCF Standard
 - [RFC 5545](https://tools.ietf.org/html/rfc5545) - Internet Calendaring and Scheduling Core Object Specification (iCalendar)
 - [RFC 6350](https://tools.ietf.org/html/rfc6350) - vCard Format Specification
 
 #### Exporter Plugins von SabreDAV
-- [ICSExportPlugin.php](https://github.com/sabre-io/dav/blob/master/lib/CalDAV/ICSExportPlugin.php) - ICS Exporter
-- [VCFExportPlugin.php](https://github.com/sabre-io/dav/blob/master/lib/CardDAV/VCFExportPlugin.php) - VCF Exporter
+- [ICSExportPlugin.php](https://github.com/sabre-io/dav/blob/master/lib/CalDAV/ICSExportPlugin.php) - ICS Exporter `public function mergeObjects`
+- [VCFExportPlugin.php](https://github.com/sabre-io/dav/blob/master/lib/CardDAV/VCFExportPlugin.php) - VCF Exporter `public function generateVCF`
