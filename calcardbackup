@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6-1 (14.02.2019), AGPL-3.0"
+version="0.8.6-2 (25.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -761,12 +761,16 @@ get_database_details() {
 read_users_txt() {
   # reads file with user credentials
 
-  # split each line at the first colon (username:password) and store usernames and according passwords in array:
+  # split each line at the first colon (username:password) and store usernames and according passwords in separate arrays:
   readarray -t users < "${users_file}"
   for i in "${!users[@]}"; do
     user[$i]="${users[$i]%%:*}"
-    pass[$i]="${users[$i]#*:}"
+    # only store password in array, when we are going to get calendars/addressbooks via http(s)-request:
+    [[ "${fetch_from_database}" == "no" ]] && pass[$i]="${users[$i]#*:}"
   done
+
+  # unset array with usernames (and maybe also passwords), because it is not needed anymore:
+  unset -v users
 }
 
 create_backup_folder() {
@@ -1084,6 +1088,11 @@ get_icsvcf_files() {
     _output echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
     # unset arrays (to not include calendardata for addressbook export):
     unset -v id principal uri displayname already_saved_as calendarcolor
+    # unset arrays with usernames (and eventually also array with passwords), after second run with addressbooks:
+    if [[ "${item}" == "addressbook" ]]; then
+       [[ "${fetch_from_database}" == "no" ]] && unset -v pass
+       unset -v user
+    fi
     # there is not a single item to export, let's exit this function and proceed:
     return
   fi
@@ -1131,7 +1140,7 @@ get_icsvcf_files() {
     fi
 
     # loop through array with usernames given in file with users credentials (users.txt):
-    for index in "${!users[@]}"; do
+    for index in "${!user[@]}"; do
       # compare prinicpal with username. If there is a match, we found an item to be downloaded
       # (exclude birthday calendar (contact_birthdays), because it is an automatically created calendar from ownCloud/Nextcloud):
       if [[ "${principal[$i]}" == "${user[$index]}" && "${uri[$i]}" != "contact_birthdays" ]]; then
@@ -1196,6 +1205,11 @@ get_icsvcf_files() {
 
   # unset arrays (to not include calendardata for calendarsubscriptions or addressbook export):
   unset -v id principal uri displayname already_saved_as calendarcolor
+  # unset arrays with usernames (and eventually also array with passwords), after second run with addressbooks:
+  if [[ "${item}" == "addressbook" ]]; then
+     [[ "${fetch_from_database}" == "no" ]] && unset -v pass
+     unset -v user
+  fi
 }
 
 create_calendar_from_db() {
@@ -1368,13 +1382,13 @@ create_calendarsubscription_files() {
 
     if [[ -n "${users_file:-}" ]]; then
       # loop through array with usernames given in file with users credentials (users.txt):
-      for index in "${!users[@]}"; do
+      for index in "${!user[@]}"; do
         # compare prinicpal with username. If there is no match: continue with next username
         [[ "${principal[$i]}" == "${user[$index]}" ]] && break
       done
       # continue with next id of calendarsubscriptions, if no matching user was found
       # (this is the case, if (index_of_users-array + 1) equals the number of elements of that array):
-      [[ $(( index + 1 )) -eq ${#users[@]} ]] && continue
+      [[ $(( index + 1 )) -eq ${#user[@]} ]] && continue
     fi
 
     # create filename like: username-(calendar-/addressbook-)name-date:
