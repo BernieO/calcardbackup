@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6-2_no-fd (26.02.2019), AGPL-3.0"
+version="0.8.6-3_no-fd (26.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1463,7 +1463,8 @@ get_calendars() {
   # gets calendars and saves them in backup-folder. Have a look at used functions for more detailed explanations.
 
   query_database "${table_calendars}" "calendar"
-  [[ "${include_shares}" == "yes" ]] && include_shares
+  # run include_shares only if configured and calendars found in database:
+  [[ "${include_shares}" == "yes" && -n ${id:-} ]] && include_shares
   get_icsvcf_files "calendar" ".ics" "BEGIN:VCALENDAR" "${caldav}" ""
 
   # get calendarsubscriptions as well:
@@ -1481,7 +1482,8 @@ get_addressbooks() {
   # gets addressbooks and saves them in backup-folder. Have a look at used functions for more detailed explanations.
 
   query_database "${table_addressbooks}" "addressbook"
-  [[ "${include_shares}" == "yes" ]] && include_shares
+  # run include_shares only if configured and addressbooks found in database:
+  [[ "${include_shares}" == "yes" && -n ${id:-} ]] && include_shares
   get_icsvcf_files "addressbook" ".vcf" "BEGIN:VCARD" "${carddav}" "${extra_users}"
 }
 
