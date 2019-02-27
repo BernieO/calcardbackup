@@ -1,4 +1,5 @@
 vX.X.X_no-fd (XX.XX.XXXX)
+- improved: unset arrays when not being needed anymore to free up some memory
 - fixed: some corrections and additions (section with links) in README.md and README_GER.md
 - fixed: use correct name for option -ltm in examples/calcardbackup.conf.example
 - fixed: print error message when using option -g together with a server being in maintenance mode
