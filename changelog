@@ -1,5 +1,6 @@
 vX.X.X (XX.XX.XXXX)
 - improved: unset arrays when not being needed anymore to free up some memory
+- fixed: don't interpret certain paths to ownCloud/Nextcloud folder falsely as an option
 - fixed: don't collect info about shares, if no calendars or addressbooks found in database
 - fixed: some corrections and additions (section with links) in README.md and README_GER.md
 - fixed: use correct name for option -ltm in examples/calcardbackup.conf.example

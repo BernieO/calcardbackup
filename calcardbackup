@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6-3 (25.02.2019), AGPL-3.0"
+version="0.8.6-4 (28.02.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1687,10 +1687,13 @@ load_default_values
 ###
 
 # if no option or only option -b/--batch given: configure script to read config file from script_dir
-[[ ${#} -eq 0 || ( ${#} -eq 1 && "${1}" =~ -b|--batch ) ]] && config_file="${script_dir}/calcardbackup.conf"
+[[ ${#} -eq 0 || ( ${#} -eq 1 && "${1}" =~ ^(-b|--batch)$ ) ]] && config_file="${script_dir}/calcardbackup.conf"
 
-# get nextcloud path, if first given argument doesn't start with a hyphen
-if [[ ${#} -gt 0 && "${1}" != -* ]]; then
+# check whether first given argument is an available option for this script:
+# regex matching all available options:
+regex='^-(([a-i]|ltm|n(a|c)|o|p|r|s|u|x|z)|-(address|batch|configfile|date|encrypt|fetch-from-database|get-via-http|help|include-shares|like-time-machine|no-(addressbooks|calendars)|output|snap|remove|selfsigned|usersfile|uncompressed|zip))$'
+if [[ ${#} -gt 0 && ! "${1}" =~ ${regex} ]]; then
+  # use first argument as path to ownCloud/Nextcloud, since it does not match any of the available options for this script:
   nextcloud_path="${1}"
   shift
 fi
