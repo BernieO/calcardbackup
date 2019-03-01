@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6-4 (28.02.2019), AGPL-3.0"
+version="0.8.6-5 (01.03.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1667,9 +1667,9 @@ check_argument() {
   # if option was last on command line and no argument is following:
   [[ -z "${1:-}" ]] && error_exit "Option '${option}' requires an additional argument."
 
-  # if option was not last on command line, but an option (starting with a dash) is following instead of argument:
+  # if option was not last on command line, but an option is following instead of an argument:
   # (use || instead of && so that function returns true in any case - corrected in ver. 0.4.2-3)
-  [[ "${1:0:1}" != "-" ]] || error_exit "Invalid argument for option '${option}'"
+  [[ ! "${1}" =~ $options_regex ]] || error_exit "Invalid argument for option '${option}'"
 }
 
 
@@ -1689,10 +1689,11 @@ load_default_values
 # if no option or only option -b/--batch given: configure script to read config file from script_dir
 [[ ${#} -eq 0 || ( ${#} -eq 1 && "${1}" =~ ^(-b|--batch)$ ) ]] && config_file="${script_dir}/calcardbackup.conf"
 
-# check whether first given argument is an available option for this script:
 # regex matching all available options:
-regex='^-(([a-i]|ltm|n(a|c)|o|p|r|s|u|x|z)|-(address|batch|configfile|date|encrypt|fetch-from-database|get-via-http|help|include-shares|like-time-machine|no-(addressbooks|calendars)|output|snap|remove|selfsigned|usersfile|uncompressed|zip))$'
-if [[ ${#} -gt 0 && ! "${1}" =~ ${regex} ]]; then
+options_regex='^-(([a-i]|ltm|n(a|c)|o|p|r|s|u|x|z)|-(address|batch|configfile|date|encrypt|fetch-from-database|get-via-http|help|include-shares|like-time-machine|no-(addressbooks|calendars)|output|snap|remove|selfsigned|usersfile|uncompressed|zip))$'
+
+# check whether first given argument is an available option for this script:
+if [[ ${#} -gt 0 && ! "${1}" =~ ${options_regex} ]]; then
   # use first argument as path to ownCloud/Nextcloud, since it does not match any of the available options for this script:
   nextcloud_path="${1}"
   shift
@@ -1701,8 +1702,8 @@ fi
 # read options and their arguments and store them in according variables:
 while [[ ${#} -gt 0 ]]
 do
-  # store argument for error message, if invalid argument for option provided
-  # (needed because of needed shift to get different arguments)
+  # store option for error message, in case an invalid argument for this option is provided
+  # (needed because of possibly required shift to get argument for option)
   option="${1}"
 
   case "${1}" in
@@ -1721,12 +1722,8 @@ do
     ;;
     -d | --date )
       shift
-      # make sure argument passed to --date does not clash with any other option:
-      if [[ -n "${1:-}" && ! "${1}" =~ -{1,2}[a-ehnorsuxz] ]]; then
-        date_extension="${1}"
-      else
-        check_argument "${1:-}"
-      fi
+      check_argument "${1:-}"
+      date_extension="${1}"
     ;;
     -e | --encrypt )
       shift
@@ -1735,15 +1732,15 @@ do
       passphrase_file="${1}"
     ;;
     -f | --fetch-from-database )
-      # not mentioned in README.md as this is the default for calcardbackup >= 0.8.0
+      # option -f is the default for calcardbackup >= 0.8.0
       fetch_from_database="yes"
-      # make sure -f overrides -g, if both (-f and -g) is given (see below):
+      # make sure -f overrides -g, if both (-f and -g) are given (see option -g below):
       f=1
     ;;
     -g | --get-via-http )
-      # deprecated
-      # this used to be the defaut for calcardbackup <= v0.7.2
-      # make sure -f overrides -g, if both (-f and -g) is given (see above):
+      # option -g is deprecated and not recommended anymore!
+      # this used to be the default for calcardbackup <= v0.7.2
+      # make sure -f overrides -g, if both (-f and -g) are given (see above):
       [[ ${f:-} -eq 1 ]] || fetch_from_database="no"
     ;;
     -h | --help )
@@ -1797,6 +1794,9 @@ do
   esac
   shift
 done
+
+# unset variables not needed anymore:
+unset -v options_regex f
 
 ###
 ### END: parse command line for options/arguments
