@@ -1,6 +1,7 @@
 vX.X.X (XX.XX.XXXX)
 - improved: unset arrays when not being needed anymore to free up some memory
 - improved: allow arguments starting with a hyphen
+- improved: don't use given URL, if it is not a trusted domain in config.php
 - fixed: don't backup system addressbook
 - fixed: don't interpret certain paths to ownCloud/Nextcloud folder falsely as an option
 - fixed: don't collect info about shares, if no calendars or addressbooks found in database
