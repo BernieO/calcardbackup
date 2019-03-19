@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6-8 (19.03.2019), AGPL-3.0"
+version="0.8.6-9 (19.03.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -670,27 +670,24 @@ detect_vendor() {
   [[ "${fetch_from_database}" == "no" && -z "${full_version:-}" ]] && productname="ownCloud"
 
   # try to detect vendor from user documentation (only if curl is installed):
-  if [[ "${productname}" == "Server" ]]; then
-
-    if [[ "${curl_installed}" == "yes" ]]; then
-      regex="([Nn]extcloud|own[Cc]loud)"
+  if [[ "${productname}" == "Server" && "${curl_installed}" == "yes" ]]; then
+    regex="([Nn]extcloud|own[Cc]loud)"
+    line=""
+    while read -r line; do
+      [[ "${line}" =~ $regex ]] && break
       line=""
-      while read -r line; do
-        [[ "${line}" =~ $regex ]] && break
-        line=""
-      done <<<"$(curl -s ${trust} "${nextcloud_url}/core/doc/user/index.html")"
+    done <<<"$(curl -s ${trust} "${nextcloud_url}/core/doc/user/index.html")"
 
-      if [[ "${line}" =~ [Nn]extcloud ]]; then
-        productname="Nextcloud"
-        # set server_version for Nextcloud 10 (reports itself as version 9.1):
-        if [[ "${main_version}.${minor_version}" == "9.1" ]]; then
-          main_version="10"
-          minor_version="0"
-          server_version="${main_version}.${minor_version}.${patch_version}"
-        fi
-      elif [[ "${line}" =~ own[Cc]loud ]]; then
-        productname="ownCloud"
+    if [[ "${line}" =~ [Nn]extcloud ]]; then
+      productname="Nextcloud"
+      # set server_version for Nextcloud 10 (reports itself as version 9.1):
+      if [[ "${main_version}.${minor_version}" == "9.1" ]]; then
+        main_version="10"
+        minor_version="0"
+        server_version="${main_version}.${minor_version}.${patch_version}"
       fi
+    elif [[ "${line}" =~ own[Cc]loud ]]; then
+      productname="ownCloud"
     fi
   fi
 
