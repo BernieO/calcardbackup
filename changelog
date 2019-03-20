@@ -3,13 +3,13 @@ vX.X.X (XX.XX.XXXX)
 - improved: allow arguments starting with a hyphen
 - improved: don't use given URL, if it is not among trusted domains in config.php
 - improved: minor code optimizations and corrections of some comments
-- improved: print header before error messages are possibly occuring
+- improved: print header before errors are possibly occuring
 - fixed: don't backup system addressbook
 - fixed: don't interpret certain paths to ownCloud/Nextcloud folder falsely as an option
 - fixed: don't collect info about shares, if no calendars or addressbooks found in database
 - fixed: some corrections and additions (section with links) in README.md and README_GER.md
 - fixed: use correct name for option -ltm in examples/calcardbackup.conf.example
-- fixed: print error message when using option -g together with a server being in maintenance mode
+- fixed: print error when using option -g together with a server being in maintenance mode
 
 v0.8.6 (13.02.2019)
 - improved: be more gentle and verbose, if no items found for users given in usersfile
