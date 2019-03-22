@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6-6_no-fd (22.03.2019), AGPL-3.0"
+version="0.8.6-7_no-fd (22.03.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -331,7 +331,7 @@ getvalue_from_configphp() {
   # This might be a problem: because wrong value might be returned, if value is also present in a multi-line comment before the actual declaration in config.php!
   regex="^[[:space:]]*'${1}'.*"
   while read -r line; do
-    [[ "${line}" =~ $regex ]] && break
+    [[ "${line}" =~ ${regex} ]] && break
     line=""
   done <"${configphp}"
 
@@ -343,6 +343,59 @@ getvalue_from_configphp() {
     line="value is unset"
   fi
   echo "${line}"
+}
+
+is_trusted_domain() {
+  # checks, if to this function passed URL is present in trusted_domains in config.php
+  # arguments: ${1} is URL which needs to be checked:
+
+  local given_domain regex looping_trusted_domains line result
+
+  # get domain from passed URL:
+  given_domain="${1#*//}"             # cut http(s):// from the beginning of URL
+  given_domain="${given_domain%%/*}"  # cut eventuelly existing paths from end of URL
+
+  # look for trusted_domains:
+  regex="^[[:space:]]*'trusted_domains' =>.*"
+  looping_trusted_domains=0
+
+  while read -r line; do
+
+    case ${looping_trusted_domains} in
+
+      0)
+        # continue with next line, if line is not declaration of trusted_domains array:
+        [[ ! "${line}" =~ ${regex} ]] && continue
+        # line is declaration of trusted_domains array
+        # make sure to go to next step on next run:
+        looping_trusted_domains=1
+        # change regex to catch end of trusted_domains:
+        regex="\),"
+        continue
+      ;;
+
+      1)
+        # regex matches end of trusted_domains array, so no need to loop any further:
+        [[ "${line}" =~ ${regex} ]] && break
+
+        line="${line%\'*}"       # throw away end including last '
+        line="${line#*\'}"       # throw away beginning including first '
+
+        if [[ "${line}" == "${given_domain}" ]]; then
+          # set result to true, if passed URL matches this trusted domain:
+          result="true"
+          break   # passed URL is a trusted_domain, so no need to loop any furhter
+        fi
+
+        continue
+      ;;
+
+    esac
+
+  done <"${configphp}"
+
+  # return "true", if passed URL is a trusted_domain, otherwise return "false":
+  echo "${result:-false}"
 }
 
 read_config_php() {
@@ -423,12 +476,24 @@ read_config_php() {
     nextcloud_url_overwrite="${nextcloud_url_overwrite%/}"
   done
 
+  # nextcloud_url and nextcloud_url_overwrite are both set:
   if [[ "${nextcloud_url}" != "${nextcloud_url_default}" && "${nextcloud_url}" != "${nextcloud_url_overwrite}" && "${nextcloud_url_overwrite}" != "value is unset" ]]; then
     # use given URL but print notice, if $nextcloud_url has been configured to something other than default or overwrite.cli.url:
     # (last conditional expression in if statement above: make sure overwrite.cli.url is present and not empty):
-    _output echo "-- NOTICE: Configured URL differs from 'overwrite.cli.url' in config.php"
-    _output echo "-- ${nextcloud_url_overwrite}/   ==>   detected in ${configphp}"
-    _output echo "-- ${nextcloud_url}/   ==>   given with option -a/--address or found in config file."
+    _output echo "-- NOTICE: Configured URL differs from 'overwrite.cli.url' in config.php:"
+    _output echo "-- '${nextcloud_url_overwrite}/'   ==>   detected in ${configphp}"
+    _output echo "-- '${nextcloud_url}/'   ==>   given with option -a/--address or found in config file."
+
+    # test, if given URL is in trusted_domains array in config.php:
+    if [[ "$(is_trusted_domain "${nextcloud_url}")" == "true" ]]; then
+      _output echo "-- using second one, because found in 'trusted_domains' (config.php)."
+    else
+      _output echo "-- using first one, because '${nextcloud_url}' does not belong to 'trusted_domains' (config.php)"
+      # use overwrite.cli.url as URL, because given URL is not a trusted domain:
+      nextcloud_url="${nextcloud_url_overwrite}"
+    fi
+
+  # nextcloud_url and nextcloud_url_overwrite are both unset:
   elif [[ "${nextcloud_url}" == "${nextcloud_url_default}" && "${nextcloud_url_overwrite}" == "value is unset" ]]; then
     if [[ ${fetch_from_database} == "no" ]]; then
       # we want do download addressbooks/calendars - therefore the URL to ownCloud/Nextcloud server is required.
@@ -443,14 +508,33 @@ read_config_php() {
       # For this scenario this variable name is a bit misleading, but the script needs to act as if curl wasn't installed:
       curl_installed="no"
     fi
-  elif [[ "${nextcloud_url_overwrite}" != "value is unset" ]]; then
+
+  # nextcloud_url is set and nextcloud_url_overwrite is unset:
+  elif [[ "${nextcloud_url}" != "${nextcloud_url_default}" && "${nextcloud_url_overwrite}" == "value is unset" ]]; then
+    # if overwrite.cli.uri is unset and a domain has been passed to the script:
+    # check, of passed URL belongs to a trusted_domain in config.php:
+    if [[ "$(is_trusted_domain "${nextcloud_url}")" == "false" ]]; then
+      if [[ "${fetch_from_database}" == "no" ]]; then
+        # we want do download addressbooks/calendars - therefore a trusted domain URL to ownCloud/Nextcloud server is required.
+        # Error, if $nextcloud_url is configured, but not in trusted domains:
+        [[ -z "${config_file:-}" ]] && error_exit "ERROR: configured URL '${nextcloud_url}' does not belong to 'trusted_domains' (config.php)!" "Check URL passed with option -a to this script or don't use option '-g'."
+        [[ -n "${config_file:-}" ]] && error_exit "ERROR: configured URL '${nextcloud_url}' does not belong to 'trusted_domains' (config.php)!" "Check value 'nextcloud_url' or use 'fetch_from_database=\"yes\"'."
+      fi
+      # print notice, if given URL is not in trusted_domains array in config.php:
+      _output echo "-- NOTICE: given URL '${nextcloud_url}' does not belong to 'trusted_domains' (config.php)"
+      _output echo "+  Continuing without given URL, because fetching everything from database."
+      # For this scenario this variable name is a bit misleading, but the script needs to act as if curl wasn't installed:
+      curl_installed="no"
+    fi
+
+  # nextcloud_url is unset and nextcloud_url_overwrite is set:
+  elif [[ "${nextcloud_url}" == "${nextcloud_url_default}" && "${nextcloud_url_overwrite}" != "value is unset" ]]; then
     # if overwrite.cli.url is found (and $nextcloud_url is on default value): use it as $nextcloud_url
     nextcloud_url="${nextcloud_url_overwrite}"
   fi
-  # Print url which will be used (only if curl is installed and if it differs from default value):
-  if  [[ ${curl_installed} == "yes" ]]; then
-    [[ ${nextcloud_url} == "${nextcloud_url_default}" ]] || _output echo "+  Using URL: ${nextcloud_url}"
-  fi
+
+  # Print url which will be used only, if curl is installed (use || instead of && to not return false!):
+  [[ ${curl_installed} == "no" ]] || _output echo "+  Using URL: ${nextcloud_url}"
 }
 
 read_status_php() {
