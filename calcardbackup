@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6-4_no-fd (22.03.2019), AGPL-3.0"
+version="0.8.6-6_no-fd (22.03.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1119,8 +1119,9 @@ get_icsvcf_files() {
   for (( i=0; i<${#uri[@]}; i++ )); do
 
     if [[ "${complete_backup_from_database:-}" == "yes" ]]; then
-      # (exclude birthday calendar (contact_birthdays), because it is an automatically created calendar from ownCloud/Nextcloud) and system-addressbook:
-      if [[ "${uri[$i]}" != "contact_birthdays" && "${principal[$i]}" != "principals/system/system"  ]]; then
+      # exclude birthday calendar (contact_birthdays), because it is an automatically created calendar from ownCloud/Nextcloud
+      # and also exclude system-addressbook (system addressbook can't be restored, when backed up with calcardbackup!):
+      if [[ "${uri[$i]}" != "contact_birthdays" && "${principal[$i]}" != "system/system"  ]]; then
 
         # create filename like: username-(calendar-/addressbook-)name-date:
         filename="${principal[$i]}-${displayname[$i]}${item_extension}"
