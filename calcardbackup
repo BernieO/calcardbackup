@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6-9_no-fd (22.03.2019), AGPL-3.0"
+version="0.8.6-10_no-fd (22.03.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1257,10 +1257,8 @@ get_icsvcf_files() {
           z=${id[$i]}
           # check if there is already an entry for that item, meaning that it was already downloaded:
           if [[ "${already_saved_as[$z]:-}" != "" ]]; then
-            # create name of item for message:
-            item_name="${principal[$i]}-${displayname[$i]}"
-            # remove funky characters:
-            item_name="${item_name//[\/\\*? ]/_}"
+            # create name of item for message (use $filename without (.ics/.vcf):
+            item_name="${filename%.*}"
             # print message that item is already downloaded and break the for-loop going through usernames to continue with next addressbook/calendar:
             _output echo "+  Skipping ${item} '${item_name}': already saved as '${already_saved_as[$z]}'." && break
           fi
