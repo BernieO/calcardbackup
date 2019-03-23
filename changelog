@@ -1,7 +1,7 @@
 vX.X.X_no-fd (XX.XX.XXXX)
 - improved: unset arrays when not being needed anymore to free up some memory
 - improved: allow arguments starting with a hyphen
-- improved: don't use given URL, if it is not a trusted domain in config.php
+- improved: don't use given URL, if it is not among trusted domains in config.php
 - improved: minor code optimizations and corrections of some comments
 - improved: print header before error messages are possibly occuring
 - fixed: don't backup system addressbook
