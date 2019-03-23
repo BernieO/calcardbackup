@@ -1,4 +1,4 @@
-vX.X.X_no-fd (XX.XX.XXXX)
+v0.8.7_no-fd (23.03.2019)
 - improved: unset arrays when not being needed anymore to free up some memory
 - improved: allow arguments starting with a hyphen
 - improved: don't use given URL, if it is not among trusted domains in config.php
