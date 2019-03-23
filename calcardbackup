@@ -2,7 +2,7 @@
 
 # calcardbackup by BernieO - extracts ownCloud/Nextcloud calendars and addressbooks
 # Source: https://github.com/BernieO/calcardbackup
-# Copyright (C) 2017-2019 BernieO
+# Copyright (c) 2017-2019 BernieO
 #
 # This script is licensed under the GNU AFFERO GENERAL PUBLIC LICENSE v3.0
 #
@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6-12_no-fd (23.03.2019), AGPL-3.0"
+version="0.8.6-13_no-fd (23.03.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -916,7 +916,7 @@ query_database() {
     # first let us assume that the desired table exists (variable needs to be set for check later):
     check_table="table ${table} exists"
     # then querie for the first line in that table, suppress any output and set ${check_table} to empty string, if psql throws an error:
-    PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_tabl$
+    PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
   fi
 
   if [[ "${check_table:-}" == "" ]]; then
@@ -930,7 +930,7 @@ query_database() {
     # table exists
 
     # prepare database query:
-    # fields to be read from database table (have displayname as last field to be able to fix issue #17)
+    # fields to be read from database table (have displayname as last field to be able to fix issue #17):
     fields="${row_principaluri}, ${row_uri}, ${row_displayname}"
     # regex for testing correct syntax of fields (in case a field contains a linebreak with eventually following characters):
     regex=".+\|.+\|.+"
@@ -1008,7 +1008,7 @@ include_shares() {
     read_shared=1
 
     # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
-    # sqlite3 would then need "${dboptions}" (double quoted) to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
+    # sqlite3 would then need "${dboptions}" (double quoted!) to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
     [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
 
     # check if table $table_shares exists:
@@ -1021,7 +1021,7 @@ include_shares() {
       # first let us assume that the desired table exists (variable needs to be set for check later):
       check_table="table ${table} exists"
       # then querie for the first line in that table, suppress any output and set ${check_table} to empty string, if psql throws an error:
-      PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_tabl$
+      PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
     fi
 
     if [[ "${check_table:-}" == "" ]]; then
@@ -1074,7 +1074,7 @@ include_shares() {
         # first let us assume that the desired table exists (variable needs to be set for check later):
         check_table="table ${table} exists"
         # then querie for the first line in that table, suppress any output and set ${check_table} to empty string, if psql throws an error:
-        PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_tabl$
+        PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
       fi
 
       if [[ "${check_table:-}" != "" ]]; then
@@ -1656,7 +1656,7 @@ keep_like_time_machine() {
   local deleted line dir
   # delete backups not created on a monday and older than $keep_days_like_time_machine days
   # (use option -daystart to set beginning of day = 0:00 am in order
-  # to satisfy probably from users probably expected behavior of this function):
+  # to satisfy from users probably expected behavior of this function):
 
   _output echo "+  Delete old backups like time machine (keep daily for the last ${keep_days_like_time_machine} days; weekly before):"
 
