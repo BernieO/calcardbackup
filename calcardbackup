@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.7 (20.03.2019), AGPL-3.0"
+version="0.8.7-1 (23.03.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1189,8 +1189,8 @@ get_icsvcf_files() {
     unset -v id principal uri displayname already_saved_as calendarcolor
     # unset arrays with usernames (and eventually also array with passwords), after second run with addressbooks:
     if [[ "${item}" == "addressbook" ]]; then
-       [[ "${fetch_from_database}" == "no" ]] && unset -v pass
-       unset -v user
+      [[ "${fetch_from_database}" == "no" ]] && unset -v pass
+      unset -v user
     fi
     # there is not a single item to export, let's return from this function and proceed:
     return
@@ -1305,8 +1305,8 @@ get_icsvcf_files() {
   unset -v id principal uri displayname already_saved_as calendarcolor
   # unset arrays with usernames (and eventually also array with passwords), after second run with addressbooks:
   if [[ "${item}" == "addressbook" ]]; then
-     [[ "${fetch_from_database}" == "no" ]] && unset -v pass
-     unset -v user
+    [[ "${fetch_from_database}" == "no" ]] && unset -v pass
+    unset -v user
   fi
 }
 
