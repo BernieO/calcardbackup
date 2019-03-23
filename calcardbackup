@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.6-10_no-fd (22.03.2019), AGPL-3.0"
+version="0.8.6-11_no-fd (22.03.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -57,6 +57,14 @@ check_readable_file() {
 
   # $1 needs to be a regular file AND readable (not OR like in versions < 0.4.2-2)
   [[ -f "${1}" && -r "${1}" ]] || error_exit "ERROR: Can't read ${2}" "${1} needs to be a regular file and I need to be able to read it."
+}
+
+print_header() {
+  # prints header with timestamp and version number
+
+  _output printf '\n%s\n' "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  _output echo "+"
+  _output echo "+  $(date) --> START calcardbackup ver. ${version}"
 }
 
 set_required_paths() {
@@ -123,10 +131,6 @@ read_config_file() {
 preparations() {
   # checks for needed packages, reads config-file and validates user given values:
 
-  # print timestamp
-  _output printf '\n%s\n' "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-  _output echo "+"
-  _output echo "+  $(date) --> START calcardbackup ver. ${version}"
   _output echo "+  Checking dependencies and preparing..."
 
   # if option -c|--configfile or nothing at all or only -b is given - read config file (and overwrite default values):
@@ -1783,6 +1787,7 @@ check_argument() {
 ###
 
 
+print_header
 set_required_paths
 load_default_values
 
