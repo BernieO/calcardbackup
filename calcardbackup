@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.7-1 (23.03.2019), AGPL-3.0"
+version="0.8.7-2 (26.03.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1755,9 +1755,13 @@ error_exit() {
 print_help() {
   # prints short help text
 
-  echo "calcardbackup version ${version}"
-  echo "Usage: ./calcardbackup [DIRECTORY] [option [argument]] [option [argument]] [option [argument]] ..."
-  echo "Find more details in attached file 'README.md' or visit 'https://github.com/BernieO/calcardbackup'"
+  _output echo "+  Bash script to backup calendars and addressbooks from a local ownCloud/Nextcloud installation."
+  _output echo "+"
+  _output echo "+  Usage: ./calcardbackup [DIRECTORY] [option [argument]] [option [argument]] [option [argument]] ..."
+  _output echo "+  Find more details in attached file 'README.md' or visit 'https://github.com/BernieO/calcardbackup'"
+  _output echo "+"
+  _output echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  _output echo
 }
 
 check_argument() {
