@@ -1,5 +1,6 @@
 vX.X.X (XX.XX.XXXX)
 - improved: prettify output for option -h|--help
+- improved: minor code optimization when file with usernames is used
 
 v0.8.7 (20.03.2019)
 - improved: unset arrays when not being needed anymore to free up some memory

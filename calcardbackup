@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.7-2 (26.03.2019), AGPL-3.0"
+version="0.8.7-3 (29.03.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -211,12 +211,12 @@ preparations() {
   # if $users_file is unset or empty and we fetch everything from database - do a complete backup:
   if [[ -z ${users_file:-} ]]; then
     if [[ ${fetch_from_database} == "yes" ]]; then
+      _output echo "+  no usersfile given:"
+      _output echo "+     - will fetch all available items from database"
       if [[ ${include_shares} == "yes" ]]; then
-        ignore="will not backup shared items additionally"
+        _output echo "+     - will not backup shared items additionally"
         include_shares="no"
       fi
-      _output printf '+  %s\n' "no usersfile given: will backup all available items" "${ignore:-}"
-      unset -v ignore
       complete_backup_from_database="yes"
     elif [[ ${fetch_from_database} == "no" ]]; then
       [[ -z "${config_file:-}" ]] && error_exit "file with usernames and according passwords must be passed to this script when using option '-g'!"
@@ -231,9 +231,11 @@ preparations() {
       if [[ "${complete_backup_from_database:-}" == "yes" ]]; then
         _output echo "+  file with usernames and passwords not found:"
         _output echo "+     - will fetch all available items from database"
+        # users_file needs to be unset, because it is not found or/and not readable:
+        unset -v users_file
         if [[ "${include_shares}" == "yes" ]]; then
           # don't include shared items when doing a complete backup - will backup everything anyway:
-          _output echo "+     - ignoring option to include shared items"
+          _output echo "+     - will not backup shared items additionally"
           include_shares="no"
         fi
       fi
