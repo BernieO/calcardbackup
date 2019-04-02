@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.7-3 (29.03.2019), AGPL-3.0"
+version="0.8.7-4 (02.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -945,8 +945,8 @@ query_database() {
     fi
     if [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]]; then
       fields="COALESCE(${row_calendarcolor},'NULL'), ${fields}"
-      # adjust regex:
-      regex="(#[0-9a-fA-F]{6}|NULL)\|${regex}"
+      # adjust regex (calendarcolor may contain more than 7 characters, see issue #20):
+      regex="(#[0-9a-fA-F]+|NULL)\|${regex}"
     fi
     if [[ "${item}" == "calendarsubscription" ]]; then
       fields="${row_id}, ${row_principaluri}, ${row_source}, ${row_displayname}"
