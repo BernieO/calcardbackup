@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.8.8 (03.04.2019)
 - improved: prettify output for option -h|--help
 - improved: minor code optimization when file with usernames is used
 - fixed: tolerate calendarcolor with more (or less) than 7 characters (fixes issue #20)
