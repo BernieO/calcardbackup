@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.8-1 (06.04.2019), AGPL-3.0"
+version="0.8.8-2 (06.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -952,7 +952,7 @@ query_database() {
       fields="${row_id}, ${row_principaluri}, ${row_source}, ${row_displayname}"
       # adjust regex:
       regex="[[:digit:]]+\|"
-      [[ "${mainversion}" -lt "${davchangeversion}" ]] && regex="${regex}principals(\/(system|users))?\/"
+      [[ "${mainversion}" -ge "${davchangeversion}" ]] && regex="${regex}principals(\/(system|users))?\/"
       regex="${regex}.+\|.+\|.+"
     fi
     # add beginning and end of line to regex:
