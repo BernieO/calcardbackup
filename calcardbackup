@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.8-3_no-fd (07.04.2019), AGPL-3.0"
+version="0.8.8-4_no-fd (08.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -669,6 +669,10 @@ detect_vendor() {
   patch_version="${patch_version%%.*}"    # cut everything from the end to only have patch versionnumber in $patchversion
   minor_version="${minor_version%%.*}"    # cut everything from the end to only have minor versionnumber in $minorversion
   server_version="${main_version}.${minor_version}.${patch_version}"
+
+  # only for owncloud 5.0 use versionstring from status.php (if possible), because versionstring uses "official" patch version number
+  # (for ownCloud >= 6.0 patch version number is the same in version and versionstring):
+  [[ "${fetch_from_database}" == "no" && "${main_version}" == "5" ]] && server_version="${versionstring_status_php}"
 
   # there is no Nextcloud < 9.0:
   [[ "${main_version}" -lt 9 ]] && productname="ownCloud"
