@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.8-4_no-fd (08.04.2019), AGPL-3.0"
+version="0.8.8-5_no-fd (08.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -616,7 +616,7 @@ read_status_php() {
       versionstring_status_php=${versionstring_status_php%%\"*}
 
       # check for missing version in status.php due to option in config.php introduced with ownCloud 10.0 ('version.hide' => true,):
-      [[ -z "${version_status_php:-}" || -z "${versionstring_status_php:-}" ]] && {
+      [[ -z "${version_status_php:-}" && -z "${versionstring_status_php:-}" ]] && {
         # print notice that version number is hidden (empty):
         _output echo "-- NOTICE: version number hidden in status.php."
       }
@@ -630,8 +630,10 @@ read_status_php() {
 
       # check whether version of config.php is the same than version of status.php:
       if [[ "${version_status_php}" != "${version_config_php}" ]]; then
-         [[ -z "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check given path and given url (option -a)"
-         [[ -n "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check configured path and url in config file '${config_file}'"
+        if [[ -n "${version_status_php:-}" && -n "${versionstring_status_php:-}" ]]; then
+          [[ -z "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check given path and given url (option -a)"
+          [[ -n "${config_file:-}" ]] && error_exit "ERROR: different versions detected:" "Version ${versionstring_status_php} found at ${nextcloud_url}" "Version ${version_config_php} found at ${nextcloud_path}" "check configured path and url in config file '${config_file}'"
+        fi
       fi
 
       # check for installed=true in status.php and exit if ownCloud/Nextcloud report installed:false:
@@ -679,7 +681,10 @@ detect_vendor() {
   # there is no ownCloud > 10 yet (needs to be changed once ownCloud 11.0 is released):
   [[ "${main_version}" -gt  10 ]] && productname="Nextcloud"
   # only ownCloud >= 10.0 is able to hide server version in status.php (version.hide in config.php)
-  [[ "${fetch_from_database}" == "no" && -z "${full_version:-}" ]] && productname="ownCloud"
+  if [[ "${fetch_from_database}" == "no" && -z "${full_version:-}" ]]; then
+    productname="ownCloud"
+    server_version="(hidden version)"
+  fi
 
   # try to detect vendor from user documentation (only if curl is installed):
   if [[ "${productname}" == "Server" && "${curl_installed}" == "yes" ]]; then
