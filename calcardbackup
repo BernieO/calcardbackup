@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.8-5_no-fd (08.04.2019), AGPL-3.0"
+version="0.8.8-6_no-fd (09.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -945,7 +945,7 @@ query_database() {
     fields="${row_principaluri}, ${row_uri}, ${row_displayname}"
     # regex for testing correct syntax of fields (in case a field contains a linebreak with eventually following characters):
     regex=".+\|.+\|.+"
-    # adjust regex for ownCloud/Nextcloud > 9.0
+    # adjust regex for ownCloud/Nextcloud >= 9.0
     [[ "${mainversion}" -ge "${davchangeversion}" ]] && regex="principals(\/(system|users))?\/${regex}"
     # If we want to get addressbooks from the database (instead of downloading from ownCloud/Nextcloud) or
     # to be able to include shares we also need to get id of item (needs to be compared to $share_resourceid from $table_shares):
@@ -961,10 +961,8 @@ query_database() {
     fi
     if [[ "${item}" == "calendarsubscription" ]]; then
       fields="${row_id}, ${row_principaluri}, ${row_source}, ${row_displayname}"
-      # adjust regex:
-      regex="[[:digit:]]+\|"
-      [[ "${mainversion}" -ge "${davchangeversion}" ]] && regex="${regex}principals(\/(system|users))?\/"
-      regex="${regex}.+\|.+\|.+"
+      # adjust regex (calendarsubscriptions are only supported by ownCloud/Nextcloud >= 9.0):
+      regex="[[:digit:]]+\|principals(\/(system|users))?\/.+\|.+\|.+"
     fi
     # add beginning and end of line to regex:
     regex="^${regex}$"
@@ -1577,14 +1575,19 @@ get_calendars() {
   [[ "${include_shares}" == "yes" && -n ${id:-} ]] && include_shares
   get_icsvcf_files "calendar" ".ics" "BEGIN:VCALENDAR" "${caldav}" ""
 
-  # get calendarsubscriptions as well:
-  query_database "${table_calendarsubscriptions}" "calendarsubscription"
-  if [[ -n "${source:-}" ]]; then
-    # create files with calendarsubscriptions, if table calendarsubscriptions is not empty:
-    create_calendarsubscription_files
+  # get calendarsubscriptions for ownCloud/Nextcloud >= 9.0 (older versions do not support calendarsubscriptions):
+  if [[ "${mainversion}" -ge "${davchangeversion}" ]]; then
+    query_database "${table_calendarsubscriptions}" "calendarsubscription"
+    if [[ -n "${source:-}" ]]; then
+      # create files with calendarsubscriptions, if table calendarsubscriptions is not empty:
+      create_calendarsubscription_files
+    else
+      # print info, that there are no calendarsubscriptions in the installation, (if table calendarsubscriptions is empty):
+      _output echo "+  No calendarsubscriptions found."
+    fi
   else
-    # print info, that there are no calendarsubscriptions in the installation, (if table calendarsubscriptions is empty):
-    _output echo "+  No calendarsubscriptions found."
+    # ownCloud < 9.0 has no support for calendarsubscriptions
+    _output echo "+  skipping calendarsubscriptions, because ownCloud < 9.0 does not support them."
   fi
 }
 

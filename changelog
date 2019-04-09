@@ -1,6 +1,7 @@
-vX.X.X (XX.XX.XXXX)
+vX.X.X_no-fd (XX.XX.XXXX)
 - improved: support for CSS3 color names according to RFC 7986
 - improved: use "official" patch version from versionstring as version for ownCloud 5.0
+- improved: look for calendarsubscriptions only in servers supporting them (>=9.0)
 - fixed: don't exit when running with deprecated option -g, if version is hidden (ownCloud)
 
 v0.8.8_no-fd (07.04.2019)
