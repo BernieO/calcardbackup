@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.9 (10.04.2019), AGPL-3.0"
+version="0.8.9-1 (10.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -488,12 +488,16 @@ read_config_php() {
     # (last conditional expression in if statement above: make sure overwrite.cli.url is present and not empty):
     _output echo "-- NOTICE: Configured URL differs from 'overwrite.cli.url' in config.php:"
     _output echo "-- '${nextcloud_url_overwrite}/'   ==>   detected in ${configphp}"
-    _output echo "-- '${nextcloud_url}/'   ==>   given with option -a/--address or found in config file."
+    _output printf '%s' "-- '${nextcloud_url}/'   ==>   "
+    [[ -z "${config_file:-}" ]] && _output printf '%s\n' "given with option -a|--address"
+    [[ -n "${config_file:-}" ]] && _output printf '%s\n' "found in config file ${config_file}"
 
     # test, if given URL is in trusted_domains array in config.php:
     if [[ "$(is_trusted_domain "${nextcloud_url}")" == "true" ]]; then
       _output echo "-- using second one, because found in 'trusted_domains' (config.php)."
     else
+      nextcloud_url="${nextcloud_url#*//}"
+      nextcloud_url="${nextcloud_url%%/*}"
       _output echo "-- using first one, because '${nextcloud_url}' does not belong to 'trusted_domains' (config.php)"
       # use overwrite.cli.url as URL, because given URL is not a trusted domain:
       nextcloud_url="${nextcloud_url_overwrite}"

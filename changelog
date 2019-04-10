@@ -1,3 +1,6 @@
+vX.X.X (XX.XX.XXXX)
+- improved: minor text corrections
+
 v0.8.9 (10.04.2019)
 - improved: support for CSS3 color names according to RFC 7986
 - improved: use "official" patch version from versionstring as version for ownCloud 5.0
