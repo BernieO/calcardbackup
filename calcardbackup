@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.8-6 (09.04.2019), AGPL-3.0"
+version="0.8.8-7 (10.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1795,6 +1795,12 @@ check_argument() {
 ###
 
 
+# as very first action check for option -b|--batch and set mode accordingly
+# (needed already here to supress printing of header when using option -b|--batch):
+for (( i=1; i <= ${#}; i++ )); do
+  [[ "${!i}" =~ ^(-b|--batch)$ ]] && mode="batch"
+done
+
 print_header
 set_required_paths
 load_default_values
@@ -1831,7 +1837,9 @@ do
       nextcloud_url="${1}"
     ;;
     -b | --batch )
-      mode="batch"
+      # this variable is already set (as very first action of this script)
+      # no need to set it again:
+      : # mode="batch"
     ;;
     -c | --configfile )
       shift

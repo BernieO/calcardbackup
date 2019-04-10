@@ -3,6 +3,7 @@ vX.X.X (XX.XX.XXXX)
 - improved: use "official" patch version from versionstring as version for ownCloud 5.0
 - improved: look for calendarsubscriptions only in servers supporting them (>=9.0)
 - fixed: don't exit when running with deprecated option -g, if version is hidden (ownCloud)
+- fixed: don't print header when running in batch mode
 
 v0.8.8 (03.04.2019)
 - improved: prettify output for option -h|--help
