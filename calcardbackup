@@ -229,7 +229,8 @@ preparations() {
       # either users.txt is found and readable OR do a complete backup from database:
       [[ -f "${users_file}" && -r "${users_file}" ]] || complete_backup_from_database="yes"
       if [[ "${complete_backup_from_database:-}" == "yes" ]]; then
-        _output echo "+  file with usernames and passwords not found:"
+        # file with usernames and passwords is not readable:
+        _output echo "+  file with usernames not readable:"
         _output echo "+     - will fetch all available items from database"
         # users_file needs to be unset, because it is not found or/and not readable:
         unset -v users_file
