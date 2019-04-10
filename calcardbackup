@@ -181,6 +181,11 @@ preparations() {
     _output echo "-- WARNING: Using default value instead: fetch_from_database=\"yes\""
     fetch_from_database="yes"
   fi
+  # print warning when using deprecated cli option -g|--get-via-http or value fetch_from_database="no" in config file:
+  if [[ "${fetch_from_database}" == "no" ]]; then
+    [[ -z "${config_file:-}" ]] && _output printf '%s\n' "-- WARNING: you are using deprecated option '-g|--get-via-http'" "-- WARNING: For security and performance reasons you might want to consider to not use this deprecated option!"
+    [[ -n "${config_file:-}" ]] && _output printf '%s\n' "-- WARNING: you are using deprecated value fetch_from_database=\"no\"" "-- WARNING: For security and performance reasons you might want to consider to use the default: fetch_from_database=\"yes\""
+  fi
 
   # check for package curl
   command -v curl > /dev/null || curl_installed="no"
