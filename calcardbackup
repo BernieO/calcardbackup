@@ -320,7 +320,7 @@ preparations() {
   fi
 
   # check value $compression_method (this needs to be after encryption-check, because config may have changed
-  # there from compress="no" to compress="yes":
+  # there from compress="no" to compress="yes"):
   if [[ "${compression_method:-}" == "zip" && "${compress}" == "yes" ]]; then
     # check for package zip:
     command -v zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
