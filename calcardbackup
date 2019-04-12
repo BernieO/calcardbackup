@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.9-2_no-fd (12.04.2019), AGPL-3.0"
+version="0.8.9-3_no-fd (12.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1765,7 +1765,8 @@ curl_error() {
     error_exit "ERROR: Curl error 6: could not resolve host \"${nextcloud_url}\"" "${problem}"
   elif [[ "${cerror}" -eq 60 ]]; then
     # curl error 60: cannot authenticate certificate (probably self-signed certificate):
-    error_exit "ERROR: Curl error 60: cannot authenticate peer certificate with known CA certificates." "You need to use option -s or configure trustful_certificate=\"no\" in config file."
+    [[ -z "${config_file:-}" ]] && error_exit "ERROR: Curl error 60: cannot authenticate peer certificate with known CA certificates." "You need to use option -s|--selfsigned"
+    [[ -n "${config_file:-}" ]] && error_exit "ERROR: Curl error 60: cannot authenticate peer certificate with known CA certificates." "You need to configure trustful_certificate=\"no\" in config file."
   fi
   # error message for any other (not 6 nor 60) curl error:
   error_exit "ERROR: Curl cannot get the requested file. This can have various reasons." "For clarification lookup Curl Error number ${cerror}"
