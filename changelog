@@ -1,5 +1,6 @@
 vX.X.X (XX.XX.XXXX)
 - improved: minor text corrections
+- improved: only check compression method, if backup shall be compressed
 
 v0.8.9_no-fd (12.04.2019)
 - improved: support for CSS3 color names according to RFC 7986
