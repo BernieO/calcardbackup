@@ -2,6 +2,7 @@ vX.X.X (XX.XX.XXXX)
 - added: print warning when using deprecated option -g
 - improved: minor text corrections
 - improved: only check compression method, if backup shall be compressed
+- improved: correct unsupported compression method when using encryption
 
 v0.8.9_no-fd (12.04.2019)
 - improved: support for CSS3 color names according to RFC 7986

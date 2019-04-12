@@ -22,7 +22,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.9-3_no-fd (12.04.2019), AGPL-3.0"
+version="0.8.9-4_no-fd (12.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -289,16 +289,6 @@ preparations() {
     compress="yes"
   fi
 
-  # check value $compression_method:
-  if [[ "${compression_method:-}" == "zip" && "${compress}" == "yes" ]]; then
-    # check for package zip:
-    command -v zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
-  elif [[ "${compression_method:-}" != "tar.gz" && "${compress}" == "yes" ]]; then
-    # if $compression_method is set to something else than "zip" or "tar.gz" - use "tar.gz":
-    _output echo "-- NOTICE: Parameter 'compression_method' is set to unsupported format. Using default value 'tar.gz'."
-    compression_method="tar.gz"
-  fi
-
   # check $encrypt_backup for valid value (could only be invalid when using config-file):
   if [[ ! "${encrypt_backup:-}" =~ ^(yes|no)$ ]]; then
     _output echo "-- WARNING: Parameter 'encrypt_backup' is not valid (only \"yes\" or \"no\" allowed)."
@@ -329,13 +319,23 @@ preparations() {
     fi
   fi
 
+  # check value $compression_method (this needs to be after encryption-check, because config may have changed
+  # there from compress="no" to compress="yes":
+  if [[ "${compression_method:-}" == "zip" && "${compress}" == "yes" ]]; then
+    # check for package zip:
+    command -v zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
+  elif [[ "${compression_method:-}" != "tar.gz" && "${compress}" == "yes" ]]; then
+    # if $compression_method is set to something else than "zip" or "tar.gz" - use "tar.gz":
+    _output echo "-- NOTICE: Parameter 'compression_method' is set to unsupported format. Using default value 'tar.gz'."
+    compression_method="tar.gz"
+  fi
+
   # check $snap for valid value (could only be invalid when using config-file):
   if [[ ! "${snap:-}" =~ ^(yes|no)$ ]]; then
     _output echo "-- WARNING: Parameter 'snap' is not valid (only \"yes\" or \"no\" allowed)."
     _output echo "-- WARNING: Using default value instead: snap=\"no\""
     snap="no"
   fi
-
   # make sure nextcloud.mysql-client is available when configured to use nextcloud-snap:
   if [[ "${snap}" == "yes" ]]; then
     command -v nextcloud.mysql-client > /dev/null || error_exit "ERROR: nextcloud-snaps cli-utility 'nextcloud.mysql-client' not found!" "To work with nextcloud-snap this script needs to be invoked  with sudo (even when root)." "If the script has been invoked with sudo: are you sure you are using nextcloud-snap?"
