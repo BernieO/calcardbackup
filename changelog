@@ -1,4 +1,5 @@
 vX.X.X (XX.XX.XXXX)
+- added: print warning when using deprecated option -g
 - improved: minor text corrections
 - improved: only check compression method, if backup shall be compressed
 
