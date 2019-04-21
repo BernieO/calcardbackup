@@ -234,6 +234,7 @@ Due to the new default behaviour of *calcardbackup* >= 0.8.0 (creating calendars
 #### Blog articles about *calcardbackup*
 - [bob.gatsmas.de](https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht) - October 2018 (german)
 - [strobelstefan.org](https://strobelstefan.org/?p=6094) - January 2019 (german)
+- [newtoypia.blogspot.com](https://newtoypia.blogspot.com/2019/04/nextcloud.html) - April 2019 (taiwanese)
 
 #### Docker Image for *calcardbackup*
 - [hub.docker.com](https://hub.docker.com/r/waja/calcardbackup) - Docker Image by waja

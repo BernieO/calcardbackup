@@ -236,6 +236,7 @@ Aufgrund des neuen Standardverhaltens von *calcardbackup* >= 0.8.0 (die Sicherun
 #### Blogartikel über *calcardbackup*
 - [bob.gatsmas.de](https://bob.gatsmas.de/articles/calcardbackup-jetzt-erst-recht) - Oktober 2018 (deutsch)
 - [strobelstefan.org](https://strobelstefan.org/?p=6094) - Januar 2019 (deutsch)
+- [newtoypia.blogspot.com](https://newtoypia.blogspot.com/2019/04/nextcloud.html) - April 2019 (taiwanisch)
 
 #### Docker Abbild für *calcardbackup*
 - [hub.docker.com](https://hub.docker.com/r/waja/calcardbackup) - Docker Abbild von waja
