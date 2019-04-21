@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.9-4 (11.04.2019), AGPL-3.0"
+version="0.8.9-5 (21.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1258,7 +1258,7 @@ get_icsvcf_files() {
         filename="${filename//[\/\\*? ]/_}"
 
         # create addressbook or calendar by reading data directly from database (option -f | --fetch-from-database):
-        _output printf '%s' "+  saving ${item} ${filename} (from database)..."
+        _output printf '%s' "+  Saving ${item} ${filename} (from db)..."
         [[ "${item}" == "calendar" ]] && create_calendar_from_db
         [[ "${item}" == "addressbook" ]] && create_addressbook_from_db
 
@@ -1303,7 +1303,7 @@ get_icsvcf_files() {
         if [[ "${fetch_from_database}" == "yes" ]]; then
 
           # create addressbook or calendar by reading data directly from database (option -f | --fetch-from-database):
-          _output printf '%s' "+  saving ${item} ${filename} (from database)..."
+          _output printf '%s' "+  Saving ${item} ${filename} (from db)..."
           [[ "${item}" == "calendar" ]] && create_calendar_from_db
           [[ "${item}" == "addressbook" ]] && create_addressbook_from_db
 
@@ -1530,7 +1530,7 @@ create_calendarsubscription_files() {
     filename="${filename//[\/\\*? ]/_}"
 
     # create file with URL to subscribed calendar:
-    _output printf '%s' "+  saving ${item} ${filename} ..."
+    _output printf '%s' "+  Saving ${item} ${filename}..."
     echo "${source[$i]}" > "${backupfolder_day}/${filename}"
     _output printf '%s\n' "...success!"
     exported=$((exported + 1))
