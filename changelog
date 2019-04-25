@@ -2,6 +2,7 @@ vX.X.X (XX.XX.XXXX)
 - added: print warning when using deprecated option -g
 - improved: minor text corrections
 - improved: only check compression method, if backup shall be compressed
+- verified: compatible with Nextcloud 16.0
 
 v0.8.9 (10.04.2019)
 - improved: support for CSS3 color names according to RFC 7986
