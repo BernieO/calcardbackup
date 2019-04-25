@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.9-6 (25.04.2019), AGPL-3.0"
+version="0.8.10 (25.04.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
