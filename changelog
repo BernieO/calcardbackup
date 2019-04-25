@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.8.10_no-fd (25.04.2019)
 - added: print warning when using deprecated option -g
 - improved: minor text corrections
 - improved: only check compression method, if backup shall be compressed
