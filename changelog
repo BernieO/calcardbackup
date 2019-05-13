@@ -1,3 +1,7 @@
+vX.X.XX (XX.XX.XXXX)
+- fixed: eliminated error due to pathname expansion when using option -ltm or -r
+- changed: use current timestamp to determine backups to be deleted with -ltm or -r
+
 v0.8.10 (25.04.2019)
 - added: print warning when using deprecated option -g
 - improved: minor text corrections
