@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-3 (13.05.2019), AGPL-3.0"
+version="0.8.10-4 (13.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1689,8 +1689,8 @@ keep_like_time_machine() {
 
   _output echo "+  deleting old backups like time machine (keep daily for the last ${keep_days_like_time_machine} days; weekly before):"
 
-  # get unix timestamp for today 00:00:
-  old=$(date +%s -d "today 00:00")
+  # get current unix timestamp:
+  old=$(date +%s -d "now")
   # substract days from today (1 day = 86400 seconds) - backups older than this which are not created on a monday will be deleted:
   old=$(( old - ( keep_days_like_time_machine * 86400 ) ))
 
@@ -1720,8 +1720,8 @@ delete_old_backups() {
 
   _output echo "+  deleting backups older than ${delete_backups_older_than} days:"
 
-  # get unix timestamp for today 00:00:
-  old=$(date +%s -d "today 00:00")
+  # get current unix timestamp:
+  old=$(date +%s -d "now")
   # substract days from today (1 day = 86400 seconds) - backups older than this will be deleted:
   old=$(( old - ( delete_backups_older_than * 86400 ) ))
 
