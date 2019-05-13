@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10 (25.04.2019), AGPL-3.0"
+version="0.8.10-1 (13.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1721,22 +1721,40 @@ keep_like_time_machine() {
 delete_old_backups() {
   # deletes backups older than the configured amount of days ($delete_backups_older_than)
 
-  local deleted
+  local deleted old i
   # delete backups older than $delete_backups_older_than days
-  # (use option -daystart to set beginning of day = 0:00 am in order
-  # to satisfy probably by users expected behavior of this function):
-  deleted="$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${delete_backups_older_than} -delete -exec echo "+     - " {} \;)" || error_exit "ERROR: deleting backups older than ${delete_backups_older_than} days produced above error."
 
-  if [[ "${deleted}" != "" ]]; then
-    # if there have been files deleted:
-    # print info about which older backups have been deleted:
-    _output echo "+  Those backups older than ${delete_backups_older_than} days have been deleted:"
-    _output echo "${deleted}"
-  else
-    # if nothing has been found to delete:
-    # print info that no backups were old enough to be deleted:
-    _output echo "+  No backups older than ${delete_backups_older_than} days found to delete."
-  fi
+  printf '%s' "+  Deleting backups older than ${delete_backups_older_than} days:"
+
+  # get unix timestamp for today 00:00:
+  old=$(date +%s -d "today 00:00")
+  # substract days from today (1 day = 86400 seconds) - backups older than this will be deleted:
+  old=$(( old - ( delete_backups_older_than * 86400 ) ))
+
+  # loop through files in backup directory:
+  for i in "${backupfolder}"/calcardbackup*; do
+    # get unix timestamp of last modification of this backup:
+    last_modified="$(stat -c %Y "${i}")"
+    # check, if last modification is old enough to be deleted:
+    if [[ ${last_modified} -lt ${old} ]]; then
+      # print filename and remove backup:
+      printf '\n%s' "+     -  ${i}"
+      rm -rf "${i}"
+      # set $deleted to 1, so we know that at least one file has been deleted:
+      deleted=1
+    fi
+  done
+
+  case "${deleted:-0}" in
+    0 )
+      # print notice, if nothing was found to be deleted:
+      printf '%s\n' " no backups older than ${delete_backups_older_than} days found to delete."
+    ;;
+    1 )
+      # print linebreak, if old backups have been deleted:
+      printf '%s\n' " "
+    ;;
+  esac
 }
 
 finish() {
