@@ -1721,7 +1721,7 @@ keep_like_time_machine() {
 delete_old_backups() {
   # deletes backups older than the configured amount of days ($delete_backups_older_than)
 
-  local deleted old i
+  local old i last_modified deleted
   # delete backups older than $delete_backups_older_than days
 
   printf '%s' "+  Deleting backups older than ${delete_backups_older_than} days:"
