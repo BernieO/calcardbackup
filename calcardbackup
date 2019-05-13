@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-2 (13.05.2019), AGPL-3.0"
+version="0.8.10-3 (13.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1687,7 +1687,7 @@ keep_like_time_machine() {
 
   local old i last_modified deleted
 
-  _output echo "+  Delete old backups like time machine (keep daily for the last ${keep_days_like_time_machine} days; weekly before):"
+  _output echo "+  deleting old backups like time machine (keep daily for the last ${keep_days_like_time_machine} days; weekly before):"
 
   # get unix timestamp for today 00:00:
   old=$(date +%s -d "today 00:00")
@@ -1698,7 +1698,7 @@ keep_like_time_machine() {
   for i in "${backupfolder}"/calcardbackup*; do
     # get unix timestamp of last modification of this backup:
     last_modified="$(stat -c %Y "${i}")"
-    # check, if last modification is old enough to be deleted:
+    # check, if last backup is old enough to be deleted and created not on a monday:
     if [[ ${last_modified} -lt ${old} && $(date +%u -d @"${last_modified}") -ne 1 ]]; then
       # print filename and remove backup:
       _output echo "+     -  ${i}"
@@ -1708,8 +1708,8 @@ keep_like_time_machine() {
     fi
   done
 
-  # print notice, if nothing has been found to be deleted:
-  [[ ${deleted:-0} -eq 1 ]] || _output echo "+  No backups found to be deleted like time machine."
+  # print notice, if nothing has been deleted:
+  [[ ${deleted:-0} -eq 1 ]] || _output echo "+     --> no backups found to be deleted like time machine."
 }
 
 delete_old_backups() {
@@ -1718,7 +1718,7 @@ delete_old_backups() {
   local old i last_modified deleted
   # delete backups older than $delete_backups_older_than days
 
-  printf '%s' "+  Deleting backups older than ${delete_backups_older_than} days:"
+  _output echo "+  deleting backups older than ${delete_backups_older_than} days:"
 
   # get unix timestamp for today 00:00:
   old=$(date +%s -d "today 00:00")
@@ -1732,23 +1732,15 @@ delete_old_backups() {
     # check, if last modification is old enough to be deleted:
     if [[ ${last_modified} -lt ${old} ]]; then
       # print filename and remove backup:
-      printf '\n%s' "+     -  ${i}"
+      _output echo "+     -  ${i}"
       rm -rf "${i}"
       # set $deleted to 1, so we know that at least one file has been deleted:
       deleted=1
     fi
   done
 
-  case "${deleted:-0}" in
-    0 )
-      # print notice, if nothing was found to be deleted:
-      printf '%s\n' " no backups older than ${delete_backups_older_than} days found to delete."
-    ;;
-    1 )
-      # print linebreak, if old backups have been deleted:
-      printf '%s\n' " "
-    ;;
-  esac
+  # print notice, if nothing has been deleted:
+  [[ ${deleted:-0} -eq 1 ]] || _output echo "+     --> no backups older than ${delete_backups_older_than} days found to delete."
 }
 
 finish() {
