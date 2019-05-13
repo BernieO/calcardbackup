@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-1 (13.05.2019), AGPL-3.0"
+version="0.8.10-2 (13.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1683,39 +1683,33 @@ gpg_encrypt_backup() {
 keep_like_time_machine() {
   # keeps old backups like apples timemachine:
   #   - keeps daily backups for the last $keep_days_like_time_machine days
-  #   - keeps weekly backups for the time before
+  #   - keeps weekly backups for the time before (backups created on mondays will be kept)
 
-  local deleted line dir
-  # delete backups not created on a monday and older than $keep_days_like_time_machine days
-  # (use option -daystart to set beginning of day = 0:00 am in order
-  # to satisfy from users probably expected behavior of this function):
+  local old i last_modified deleted
 
   _output echo "+  Delete old backups like time machine (keep daily for the last ${keep_days_like_time_machine} days; weekly before):"
 
-  deleted="no"
+  # get unix timestamp for today 00:00:
+  old=$(date +%s -d "today 00:00")
+  # substract days from today (1 day = 86400 seconds) - backups older than this which are not created on a monday will be deleted:
+  old=$(( old - ( keep_days_like_time_machine * 86400 ) ))
 
-  # find all files which are older than $keep_days_like_timemachine days and read them line by line:
-  while read -r line; do
-    # exit loop, if $line is empty
-    [[ -z "${line:-}" ]] && break
-    # continue, if $line contains $dir (because dir was already deleted, otherwise $(date) below complains about non existing files)
-    [[ -n "${dir:-}" && "${line}" =~ ^${dir:-}/.+ ]] && continue
-    # check, if line is a directory:
-    if [[ -d "${line}" ]]; then
-      dir="${line}"
+  # loop through files in backup directory:
+  for i in "${backupfolder}"/calcardbackup*; do
+    # get unix timestamp of last modification of this backup:
+    last_modified="$(stat -c %Y "${i}")"
+    # check, if last modification is old enough to be deleted:
+    if [[ ${last_modified} -lt ${old} && $(date +%u -d @"${last_modified}") -ne 1 ]]; then
+      # print filename and remove backup:
+      _output echo "+     -  ${i}"
+      rm -rf "${i}"
+      # set $deleted to 1, so we know that at least one file has been deleted:
+      deleted=1
     fi
-    # check if file was not created on a monday:
-    if [[ $(date +%u -r "$line") -ne 1 ]]; then
-      # print notice about file and delete file/folder:
-      _output echo "+     - ${line}"
-      rm -r "${line}"
-      # remember that something has been deleted:
-      [[ "${deleted}" == "no" ]] && deleted="yes"
-    fi
-  done <<<"$(find "${backupfolder}"/calcardbackup* -daystart -mtime +${keep_days_like_time_machine} -print)"
+  done
 
   # print notice, if nothing has been found to be deleted:
-  [[ "${deleted}" == "yes" ]] || _output echo "+  No backups found to be deleted like time machine."
+  [[ ${deleted:-0} -eq 1 ]] || _output echo "+  No backups found to be deleted like time machine."
 }
 
 delete_old_backups() {
