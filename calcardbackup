@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-5 (15.05.2019), AGPL-3.0"
+version="0.8.10-6 (15.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1680,6 +1680,28 @@ gpg_encrypt_backup() {
   _output echo "+  Find your encrypted backup here: ${path_to_backup}"
 }
 
+set_options() {
+  # sets options to commands depending on OS
+
+  case "$(uname)" in
+    Darwin|FreeBSD )
+      # Darwin is experimental and not working and not supported!
+      stat_options="-f %m"
+      date_options="-j -f %s "
+    ;;
+    * )
+      stat_options="-c %Y"
+      date_options="-d @"
+    ;;
+  esac
+}
+
+unset_options() {
+  # unsets options set in set_options()
+
+  unset -v stat_options date_options
+}
+
 keep_like_time_machine() {
   # keeps old backups like apples timemachine:
   #   - keeps daily backups for the last $keep_days_like_time_machine days
@@ -1687,19 +1709,22 @@ keep_like_time_machine() {
 
   local old i last_modified deleted
 
+  # set options depending on OS:
+  set_options
+
   _output echo "+  deleting old backups like time machine (keep daily for the last ${keep_days_like_time_machine} days; weekly before):"
 
   # get current unix timestamp:
-  old=$(date +%s -d "now")
+  old=$(date +%s)
   # substract days from today (1 day = 86400 seconds) - backups older than this which are not created on a monday will be deleted:
   old=$(( old - ( keep_days_like_time_machine * 86400 ) ))
 
   # loop through files in backup directory:
   for i in "${backupfolder}"/calcardbackup*; do
     # get unix timestamp of last modification of this backup:
-    last_modified="$(stat -c %Y "${i}")"
+    last_modified="$(stat ${stat_options} "${i}")"
     # check, if last backup is old enough to be deleted and created not on a monday:
-    if [[ ${last_modified} -lt ${old} && $(date +%u -d @"${last_modified}") -ne 1 ]]; then
+    if [[ ${last_modified} -lt ${old} && $(date ${date_options}${last_modified} +%u) -ne 1 ]]; then
       # print filename and remove backup:
       _output echo "+     -  ${i}"
       rm -rf "${i}"
@@ -1710,12 +1735,15 @@ keep_like_time_machine() {
 
   # print notice, if nothing has been deleted:
   [[ ${deleted:-0} -eq 1 ]] || _output echo "+     --> no backups found to be deleted like time machine."
+
+  # unset options, if not needed anymore:
+  [[ "${delete_backups_older_than}" -gt 0 ]] || unset_options
 }
 
 delete_old_backups() {
   # deletes backups older than the configured amount of days ($delete_backups_older_than)
 
-  local old stat_options i last_modified deleted
+  local old i last_modified deleted
 
   _output echo "+  deleting backups older than ${delete_backups_older_than} days:"
 
@@ -1724,14 +1752,8 @@ delete_old_backups() {
   # substract days from today (1 day = 86400 seconds) - backups older than this will be deleted:
   old=$(( old - ( delete_backups_older_than * 86400 ) ))
 
-  case "$(uname)" in
-    Darwin|FreeBSD )
-      stat_options="-f %m"
-    ;;
-    * )
-      stat_options="-c %Y"
-    ;;
-  esac
+  # set options depending on OS, if not already set (in function keep_like_time_machine())
+  [[ "${keep_days_like_time_machine}" -gt 0 ]] || set_options
 
   # loop through files in backup directory:
   for i in "${backupfolder}"/calcardbackup*; do
@@ -1746,6 +1768,8 @@ delete_old_backups() {
       deleted=1
     fi
   done
+
+  unset_options
 
   # print notice, if nothing has been deleted:
   [[ ${deleted:-0} -eq 1 ]] || _output echo "+     --> no backups older than ${delete_backups_older_than} days found to delete."
