@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-4 (13.05.2019), AGPL-3.0"
+version="0.8.10-5 (15.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1715,20 +1715,28 @@ keep_like_time_machine() {
 delete_old_backups() {
   # deletes backups older than the configured amount of days ($delete_backups_older_than)
 
-  local old i last_modified deleted
-  # delete backups older than $delete_backups_older_than days
+  local old stat_options i last_modified deleted
 
   _output echo "+  deleting backups older than ${delete_backups_older_than} days:"
 
   # get current unix timestamp:
-  old=$(date +%s -d "now")
+  old=$(date +%s)
   # substract days from today (1 day = 86400 seconds) - backups older than this will be deleted:
   old=$(( old - ( delete_backups_older_than * 86400 ) ))
+
+  case "$(uname)" in
+    Darwin|FreeBSD )
+      stat_options="-f %m"
+    ;;
+    * )
+      stat_options="-c %Y"
+    ;;
+  esac
 
   # loop through files in backup directory:
   for i in "${backupfolder}"/calcardbackup*; do
     # get unix timestamp of last modification of this backup:
-    last_modified="$(stat -c %Y "${i}")"
+    last_modified="$(stat ${stat_options} "${i}")"
     # check, if last modification is old enough to be deleted:
     if [[ ${last_modified} -lt ${old} ]]; then
       # print filename and remove backup:
