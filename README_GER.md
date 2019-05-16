@@ -199,6 +199,9 @@ Gehen Sie folgendermaßen vor:
       - die SQLite3 Datenbank in die Verzeichnisattrappe kopieren (der Dateiname der SQLite3 Datenbank muss `owncloud.db` lauten):  
       `cp /path/to/owncloud.db /usr/local/bin/nextcloud_dummy/owncloud.db`
 
+    - falls die Datenbank zu einer Installation von ownCloud <= 8.2 gehört, muss folgende Zeile hinzugefügt werden:  
+      `'version' => '8.0.0',`
+
 3. *calcardbackup* ausführen und als erstes Argument den Pfad zu der in Schritt 1 angelegten Nextcloud Verzeichnisattrappe angeben:  
 `./calcardbackup /usr/local/bin/nextcloud_dummy`
 

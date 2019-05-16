@@ -1,6 +1,8 @@
 vX.X.XX (XX.XX.XXXX)
 - fixed: eliminated error due to pathname expansion when using option -ltm or -r
-- changed: use current timestamp to determine backups to be deleted with -ltm or -r
+- fixed: use current timestamp to determine backups to be deleted with -ltm or -r
+- improved: minor addition to both READMEs about extracting from a broken ownCloud <= 8.2
+- improved: treat server as >= 9.0, if version is missing in config.php
 
 v0.8.10 (25.04.2019)
 - added: print warning when using deprecated option -g

@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-7 (16.05.2019), AGPL-3.0"
+version="0.8.10-8 (16.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -439,6 +439,15 @@ read_config_php() {
 
   # get version of ownCloud/Nextcloud and configure correct dav-endpoint:
   version_config_php="$(getvalue_from_configphp "version")"
+  if [[ "${version_config_php}" == "value is unset" ]]; then
+    # version not found in config.php: treat as a version >= 9.0 and print info.
+    # The exact version doesn't matter, because all versions >= 9.0 behave the same regarding calendar+addressbook data
+    # (as well as all versions <= 8.2 behave the same regarding calendar+addressbook data)
+    # version 9.1.0 has the advantage that the calcardbackup then can't find out, whether it is ownCloud/Nextcloud, if curl is not working:
+    _output printf "+  %s\n" "INFO: version information not found in config.php - treating as ownCloud/Nextcloud >= 9.0" "INFO: if you are using ownCloud <= 8.2, you need to give version information in config.php"
+    version_config_php="9.1.0"
+  fi
+
   mainversion=${version_config_php%%.*}   # $mainversion is only first number
   minimumversion="5"
   davchangeversion="9"

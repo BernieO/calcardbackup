@@ -197,6 +197,9 @@ Here is how this can be accomplished:
      - copy the SQLite3 database to the nexcloud_dummy directory (filename of the SQLite3 database must be `owncloud.db`):  
      `cp /path/to/owncloud.db /usr/local/bin/nextcloud_dummy/owncloud.db`
 
+   - if the database belongs to an installation of ownCloud <= 8.2, the following line needs to be added:  
+     `'version' => '8.0.0',`
+
 3. run *calcardbackup* and give as first argument the path to dummy Nextcloud directory created in step 1:  
 `./calcardbackup /usr/local/bin/nextcloud_dummy`
 
