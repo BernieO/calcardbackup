@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-6 (15.05.2019), AGPL-3.0"
+version="0.8.10-7 (16.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1684,14 +1684,12 @@ set_options() {
   # sets options to commands depending on OS
 
   case "$(uname)" in
-    Darwin|FreeBSD )
-      # Darwin is experimental and not working and not supported!
+    *BSD|Darwin )
+      # Darwin is experimental: currently not supported!
       stat_options="-f %m"
-      date_options="-j -f %s "
     ;;
     * )
       stat_options="-c %Y"
-      date_options="-d @"
     ;;
   esac
 }
@@ -1699,7 +1697,7 @@ set_options() {
 unset_options() {
   # unsets options set in set_options()
 
-  unset -v stat_options date_options
+  unset -v stat_options
 }
 
 keep_like_time_machine() {
@@ -1724,7 +1722,7 @@ keep_like_time_machine() {
     # get unix timestamp of last modification of this backup:
     last_modified="$(stat ${stat_options} "${i}")"
     # check, if last backup is old enough to be deleted and created not on a monday:
-    if [[ ${last_modified} -lt ${old} && $(date ${date_options}${last_modified} +%u) -ne 1 ]]; then
+    if [[ ${last_modified} -lt ${old} && $(printf '%(%u)T' "${last_modified}") -ne 1 ]]; then
       # print filename and remove backup:
       _output echo "+     -  ${i}"
       rm -rf "${i}"
