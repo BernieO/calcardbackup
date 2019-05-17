@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-9 (16.05.2019), AGPL-3.0"
+version="0.8.10-10 (17.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -487,6 +487,7 @@ read_config_php() {
       row_share_resourceid="item_source"
     fi
     if [[ "${fetch_from_database}" == "yes" ]]; then
+      # for some unknown reason shellcheck complains that the next two variables appear unused (but they are used later on!):
       # shellcheck disable=SC2034
       table_cards="${dbtableprefix}contacts_cards"
       # shellcheck disable=SC2034
