@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-10 (17.05.2019), AGPL-3.0"
+version="0.8.10-11 (19.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -262,6 +262,8 @@ preparations() {
 
   # if $backupfolder is empty or not set: set it to 'backups/' in script's dir
   [[ -z "${backupfolder:-}" ]] && backupfolder="${script_dir}/backups/"
+  # create backup folder (needs to be done here, because path can't be canonicalized on *BSD if not existing):
+  mkdir -p "${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
   # canonicalize path to backupfolder (writeable test will follow later):
   backupfolder="$(readlink -f "${backupfolder}")" || error_exit "ERROR: path to output directory '${backupfolder}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
 
@@ -921,10 +923,7 @@ read_users_txt() {
 }
 
 create_backup_folder() {
-  # creates backup folder and subfolder with date extension to store files
-
-  # create backup folder:
-  mkdir -p "${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
+  # creates subfolder of backupfolder with date extension to store files
 
   # check if backupfolder is writable (could happen, if backupfolder was already existing created from another user):
   [[ -w "${backupfolder}" ]] || error_exit "ERROR: Backupfolder is not writable."
