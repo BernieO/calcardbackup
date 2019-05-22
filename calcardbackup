@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-11 (19.05.2019), AGPL-3.0"
+version="0.8.10-12 (21.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -42,6 +42,17 @@ _output() {
 
   # use || instead of && so that function returns true in any case - corrected in ver. 0.1.2:
   [[ "${mode:-}" == "batch" ]] || "$@"
+}
+
+remove_trailing_slashes() {
+  # removes trailing slashes from a string passed as ${1} to this function
+  local slashes_removed
+
+  slashes_removed="${1}"
+  while [[ "${slashes_removed}" =~ /$ ]]; do
+    slashes_removed="${slashes_removed%/}"
+  done
+  echo "${slashes_removed}"
 }
 
 get_absolute_path() {
@@ -150,16 +161,14 @@ preparations() {
   # canonicalize and remove trailing slashes from $nextcloud_path:
   nextcloud_path="$(readlink -f "${nextcloud_path}")" || error_exit "ERROR: path to ownCloud/Nextcloud '${nextcloud_path}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
   # remove trailing slashes from $nextcloud_url:
-  while [[ "${nextcloud_url}" =~ /$ ]]; do
-    nextcloud_url="${nextcloud_url%/}"
-  done
+  nextcloud_url="$(remove_trailing_slashes "${nextcloud_url}")"
 
   # location of ownClouds/Nextclouds config.php:
   # take account of env-variables ${NEXTCLOUD_CONFIG_DIR} and ${OWNCLOUD_CONFIG_DIR}
   # for ${NEXTCLOUD_CONFIG_DIR} see: https://github.com/nextcloud/server/issues/300
   # for ${OWNCLOUD_CONFIG_DIR} see:  https://github.com/owncloud/core/pull/27874
   if [[ -n "${NEXTCLOUD_CONFIG_DIR:-}" && -n "${OWNCLOUD_CONFIG_DIR:-}" ]]; then
-    # if both environment variables are set: error and exit, because this script does not now which one to use:
+    # if both environment variables are set: error and exit, because this script does not know which one to use:
     error_exit "ERROR: both environment variables are set: NEXTCLOUD_CONFIG_DIR and OWNCLOUD_CONFIG_DIR" "Unset one of the two and run script again."
   elif [[ -z "${NEXTCLOUD_CONFIG_DIR:-}" && -z "${OWNCLOUD_CONFIG_DIR:-}" ]]; then
     # if both environment variables are empty or unset - use the standard as path to config.php:
@@ -170,9 +179,7 @@ preparations() {
     # if ${OWNCLOUD_CONFIG_DIR} is not empty, use it as pathname to config directory:
     [[ -n "${OWNCLOUD_CONFIG_DIR:-}" ]] && configphp="${OWNCLOUD_CONFIG_DIR}"
     # remove trailing slashes from pathname to config directory:
-    while [[ "${configphp}" =~ /$ ]]; do
-      configphp="${configphp%/}"
-    done
+    configphp="$(remove_trailing_slashes "${configphp}")"
     # add filename (config.php) to pathname:
     configphp="${configphp}/config.php"
   fi
@@ -512,9 +519,7 @@ read_config_php() {
   local nextcloud_url_default="https://www.my_nextcloud.net"
   nextcloud_url_overwrite="$(getvalue_from_configphp "overwrite.cli.url")"
   # remove trailing slashes from $nextcloud_url_overwrite:
-  while [[ "${nextcloud_url_overwrite}" =~ /$ ]]; do
-    nextcloud_url_overwrite="${nextcloud_url_overwrite%/}"
-  done
+  nextcloud_url_overwrite="$(remove_trailing_slashes "${nextcloud_url_overwrite}")"
 
   # nextcloud_url and nextcloud_url_overwrite are both set and they are different:
   if [[ "${nextcloud_url}" != "${nextcloud_url_default}" && "${nextcloud_url}" != "${nextcloud_url_overwrite}" && "${nextcloud_url_overwrite}" != "value is unset" ]]; then
