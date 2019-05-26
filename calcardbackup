@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-14 (26.05.2019), AGPL-3.0"
+version="0.8.10-15 (26.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -73,9 +73,9 @@ get_absolute_path() {
 
 get_absolute_path_ng() {
   # checks whether path is readable (if path is file) or executable (if path is directory) and
-  # returns the absolute path to a given file-/directory- path (which may be relative or absolute)
+  # returns the absolute path to a given file- or directory-path (which may be relative or absolute)
   # arguments:
-  #    ${1} = path
+  #    ${1} = path to file or directory (relative or absolute)
 
   local path in_config_file absolute_path
 
@@ -203,8 +203,9 @@ preparations() {
   # if neither configfile nor path to ownCloud/Nextcloud is given - error and exit:
   [[ -z "${config_file:-}" && -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
 
-  # canonicalize and remove trailing slashes from $nextcloud_path:
-  nextcloud_path="$(readlink -f "${nextcloud_path}")" || error_exit "ERROR: path to ownCloud/Nextcloud '${nextcloud_path}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
+  # resolve $nextcloud_path to absolute path and check readability of ownCloud/Nextcloud directory
+  # (when using config-file this is already done in function read_config_file):
+  [[ -z "${config_file:-}" ]] && nextcloud_path="$(get_absolute_path_ng "${nextcloud_path}")"
   # remove trailing slashes from $nextcloud_url:
   nextcloud_url="$(remove_trailing_slashes "${nextcloud_url}")"
 
