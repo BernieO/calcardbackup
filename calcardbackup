@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-13 (26.05.2019), AGPL-3.0"
+version="0.8.10-14 (26.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -72,6 +72,7 @@ get_absolute_path() {
 }
 
 get_absolute_path_ng() {
+  # checks whether path is readable (if path is file) or executable (if path is directory) and
   # returns the absolute path to a given file-/directory- path (which may be relative or absolute)
   # arguments:
   #    ${1} = path
@@ -82,7 +83,7 @@ get_absolute_path_ng() {
   path="$(remove_trailing_slashes "${1}")"
 
   # assign short text variable if calcardbackup runs with config-file:
-  [[ -n "${config_file:-}" ]] && in_config_file=" in config-file"
+  [[ -n "${config_file:-}" && "${path##*/}" != "calcardbackup.conf" ]] && in_config_file=" in config-file"
 
   # turn path into absolute path (approach is different, if directory or file):
   if [[ -d "${path}" ]]; then
@@ -123,10 +124,10 @@ set_required_paths() {
 
   # store current directory, because we have to change dir later and need to be able to come back to where we were:
   working_dir="$(pwd)"
-  # get path to scripts dir:
-  script_dir="$(readlink -f "${BASH_SOURCE[0]}")" || error_exit "ERROR: Can't convert scripts directory to absolute path." "I need to be able to read the full path of this scripts directory!"
 
-  script_dir="$(dirname "${script_dir}")"
+  # get path to scripts dir:
+  script_dir="$(get_absolute_path_ng "${BASH_SOURCE[0]}")"
+  script_dir="${script_dir%/*}"
 }
 
 load_default_values() {
@@ -151,17 +152,13 @@ load_default_values() {
 
 read_config_file() {
   # reads calcardbackups config file (if passed with option -c or in case script is run with no option at all or only option -b)
-  local temp
 
   # absolute path to config file:
-  temp="$(readlink -f "${config_file}")" || error_exit "ERROR: path to config file '${config_file}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
-  config_file="${temp}"
-  config_file_dir="$(dirname "${config_file}")"
+  config_file="$(get_absolute_path_ng "${config_file}")"
+  config_file_dir="${config_file%/*}"
   _output echo "+  Using configuration file ${config_file}, ignoring all other command line options."
   load_default_values # if more options have been passed to command: ignore all options except for -b
 
-  # check if config file is a file and readable:
-  check_readable_file "${config_file}" "calcardbackups config file."
   # check config file for correct syntax (only variable declarations, comments and empty lines allowed)
   regex='^([[:space:]]*|[[:space:]]*[a-z_]+="[^"]*"[[:space:]]*)(#.*)?$'
   while read -r line; do
@@ -172,11 +169,28 @@ read_config_file() {
   . "${config_file}"
   # make sure $nextcloud_path is set - otherwise print error and exit:
   [[ -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud to be configured." "Check value of variable 'nextcloud_path' in ${config_file}"
+
   # change given paths (they might be relative to $config_file_dir) to absolute paths:
   # (this is only needed when using config-file, because config-file might be in different directory from working dir or scripts dir)
-  nextcloud_path="$(get_absolute_path "${config_file_dir}" "${nextcloud_path}")"
-  [[ -z "${users_file:-}" ]] || users_file="$(get_absolute_path "${config_file_dir}" "${users_file}")"
-  [[ -z "${backupfolder:-}" ]] || backupfolder="$(get_absolute_path "${config_file_dir}" "${backupfolder}")"
+  if [[ "${nextcloud_path}" == /* ]]; then
+    nextcloud_path="$(get_absolute_path_ng "${nextcloud_path}")"
+  else
+    nextcloud_path="$(get_absolute_path_ng "${config_file_dir}/${nextcloud_path}")"
+  fi
+  if [[ -n "${users_file:-}" ]]; then
+    if [[ "${users_file}" == /* ]]; then
+      users_file="$(get_absolute_path_ng "${users_file}")"
+    else
+      users_file="$(get_absolute_path_ng "${config_file_dir}/${users_file}")"
+    fi
+  fi
+  if [[ -n "${backupfolder:-}" ]]; then
+    if [[ "${backupfolder}" == /* ]]; then
+      backupfolder="$(get_absolute_path_ng "${backupfolder}")"
+    else
+      backupfolder="$(get_absolute_path_ng "${config_file_dir}/${backupfolder}")"
+    fi
+  fi
 }
 
 preparations() {
@@ -300,10 +314,12 @@ preparations() {
 
   # if $backupfolder is empty or not set: set it to 'backups/' in script's dir
   [[ -z "${backupfolder:-}" ]] && backupfolder="${script_dir}/backups/"
-  # create backup folder (needs to be done here, because path can't be canonicalized on *BSD if not existing):
+  # create backup folder (needs to be done here, because path can't be resolved to absolulute path if not existing):
   mkdir -p "${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
-  # canonicalize path to backupfolder (writeable test will follow later):
-  backupfolder="$(readlink -f "${backupfolder}")" || error_exit "ERROR: path to output directory '${backupfolder}' can't be canonicalized." "I need to be able to read the full path. Check given path!"
+  # get absolute path to backupfolder:
+  backupfolder="$(get_absolute_path_ng "${backupfolder}")"
+  # check, if I am able to write files into backupfolder (could happen, if backupfolder was existing and was created from a another user):
+  [[ -w "${backupfolder}" ]] || error_exit "ERROR: can't write files into '${backupfolder}'." "I need to be able to have the according permissions for the directory (+wx). Check given path!"
 
   # make sure the configured date format in $date_extension is valid:
   if [[ ! "$(date +"${date_extension}" 2>/dev/null)" ]]; then
@@ -958,11 +974,8 @@ read_users_txt() {
   unset -v users
 }
 
-create_backup_folder() {
+create_backup_subfolder() {
   # creates subfolder of backupfolder with date extension to store files
-
-  # check if backupfolder is writable (could happen, if backupfolder was already existing created from another user):
-  [[ -w "${backupfolder}" ]] || error_exit "ERROR: Backupfolder is not writable."
 
   day="$(date +"${date_extension}")"
   backupfolder_day="${backupfolder}/calcardbackup${day}"
@@ -2043,7 +2056,7 @@ detect_vendor
 get_database_details
 # only read file with user credentials, if we are not doing a complete backup from database:
 [[ "${complete_backup_from_database:-}" == "yes" ]] || read_users_txt
-create_backup_folder
+create_backup_subfolder
 if [[ "${backup_calendars}" != "no" ]]
   then get_calendars
   else _output echo "+  Not backing up calenders as configured."
