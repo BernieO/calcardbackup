@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-15 (26.05.2019), AGPL-3.0"
+version="0.8.10-16 (26.05.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -53,22 +53,6 @@ remove_trailing_slashes() {
     slashes_removed="${slashes_removed%/}"
   done
   echo "${slashes_removed}"
-}
-
-get_absolute_path() {
-  # returns the absolute path to a given filepath which may be absolute or relative to a directory.
-  # this is only needed and used for paths given by user via config-file (because config-file could be in a different dir from working dir or script dir)
-  # arguments: ${1}=directory; ${2}=path to file (relative to ${1} or absolute)
-  local absolute_path
-
-  if [[ "${2}" != /* ]]; then
-    # change path of ${2} (file) relative to ${1} (dir) to absolute path and remove trailing slashes:
-    absolute_path="$(readlink -f "${1}/${2}")" || error_exit "ERROR: ${1}/${2} can't be canonicalized. Check given path in config-file!" "I need to be able to read the full path!"
-  else
-    # if ${2} contains already absolute path, then only remove trailing slashes:
-    absolute_path="$(readlink -f "${2}")" || error_exit "ERROR: ${2} can't be canonicalized. Check given path in config-file!" "I need to be able to read the full path!"
-  fi
-  echo "${absolute_path}"
 }
 
 get_absolute_path_ng() {
