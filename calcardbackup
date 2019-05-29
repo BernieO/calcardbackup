@@ -840,7 +840,7 @@ detect_vendor() {
 get_database_details() {
   # reads database configuration from config.php and assigns variable $dbcommand which is used to issue database queries later on
 
-  # read type of database being used (SQLite or MySQL/MariaDB)
+  # read type of database being used (SQLite or MySQL/MariaDB or PostgreSQL)
   dbtype="$(getvalue_from_configphp "dbtype")"
   [[ "${dbtype}" == "value is unset" ]] && dbtype="sqlite3" # use default if unset in config.php
 
