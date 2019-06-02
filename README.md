@@ -25,6 +25,8 @@ If only calendars/addressbooks of certain users shall be backed up, list them in
 
 - local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
 - the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, to the script itself and all used configuration files
+- GNU Bash >= 4.2 (check with `bash --version`)
+- *optional*: package `gnupg` to encrypt backup
 - *optional*: package `zip` to compress backup as zip-file  (instead of tar.gz)
 - *optional*: package `curl` when using deprecated option `-g|--get-via-http`
 

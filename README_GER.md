@@ -24,6 +24,8 @@ Falls Kalender/Adressbücher nur von ausgewählten Benutzern gesichert werden so
 ## Voraussetzungen
 - lokale Installation von ownCloud/Nextcloud >= 5.0 mit MySQL/MariaDB, PostgreSQL oder SQLite3
 - der das Skript startende User muss Leserechte für den gesamten Pfad zu ownClouds/Nextclouds `config.php`, zum Skript selbst und zu allen benutzten Konfigurationsdateien haben
+- GNU Bash >= 4.2 (prüfen mit `bash --version`)
+- *optional*: das Paket `gnupg`, um Backups zu verschlüsseln
 - *optional*: das Paket `zip`, um Backups als zip-Datei zu komprimieren (anstelle tar.gz)
 - *optional*: das Paket `curl`, wenn die nicht empfohlene Option `-g|--get-via-http` gesetzt wird
 

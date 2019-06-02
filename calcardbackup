@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-16 (26.05.2019), AGPL-3.0"
+version="0.8.10-17 (03.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1723,24 +1723,38 @@ gpg_encrypt_backup() {
   _output echo "+  Find your encrypted backup here: ${path_to_backup}"
 }
 
-set_options() {
-  # sets options to commands depending on OS
+set_mtime_command() {
+  # creates command to retrieve last modification time of file depending on Operating System
+  # *BSD, Darwin, Minix use different options to stat than Linux
 
   case "$(uname)" in
-    *BSD|Darwin )
-      # Darwin is experimental: currently not supported!
-      stat_options="-f %m"
+
+    *BSD|Darwin|Minix )
+      # this is for BSD (FreeBSD, OpenBSD, NetBSD, DragonflyBSD), Darwin (Mac OS X) and Minix
+      mtime_cmd="stat"
+      mtime_pre_options="-f %m"
     ;;
-    * )
-      stat_options="-c %Y"
+
+    * ) # Linux|GNU|SunOS and others
+       # this is for Linux, GNU Hurd and successors of OpenSolaris (OpenIndiana, SmartOS, OmniOSce)
+      if [[ $(command -v stat) ]]; then
+        mtime_cmd="stat"
+        mtime_pre_options="-c %Y"
+      else
+        # OpenIndiana (illumos) doesn't have command 'stat', so we need to use 'date -r [FILE] +%s' instead:
+        mtime_cmd="date"
+        mtime_pre_options="-r"
+        mtime_post_options="+%s"
+      fi
     ;;
+
   esac
 }
 
-unset_options() {
-  # unsets options set in set_options()
+unset_mtime_command() {
+  # unsets variables used for command to retrieve last modification time of file (set in set_mtime_command)
 
-  unset -v stat_options
+  unset -v mtime_cmd mtime_pre_options mtime_post_options
 }
 
 keep_like_time_machine() {
@@ -1751,7 +1765,7 @@ keep_like_time_machine() {
   local old i last_modified deleted
 
   # set options depending on OS:
-  set_options
+  set_mtime_command
 
   _output echo "+  deleting old backups like time machine (keep daily for the last ${keep_days_like_time_machine} days; weekly before):"
 
@@ -1763,7 +1777,7 @@ keep_like_time_machine() {
   # loop through files in backup directory:
   for i in "${backupfolder}"/calcardbackup*; do
     # get unix timestamp of last modification of this backup:
-    last_modified="$(stat "${stat_options}" "${i}")"
+    last_modified="$(${mtime_cmd} ${mtime_pre_options} "${i}" ${mtime_post_options:-})"
     # check, if last backup is old enough to be deleted and created not on a monday:
     if [[ ${last_modified} -lt ${old} && $(printf '%(%u)T' "${last_modified}") -ne 1 ]]; then
       # print filename and remove backup:
@@ -1778,7 +1792,7 @@ keep_like_time_machine() {
   [[ ${deleted:-0} -eq 1 ]] || _output echo "+     --> no backups found to be deleted like time machine."
 
   # unset options, if not needed anymore:
-  [[ "${delete_backups_older_than}" -gt 0 ]] || unset_options
+  [[ "${delete_backups_older_than}" -gt 0 ]] || unset_mtime_command
 }
 
 delete_old_backups() {
@@ -1794,12 +1808,12 @@ delete_old_backups() {
   old=$(( old - ( delete_backups_older_than * 86400 ) ))
 
   # set options depending on OS, if not already set (in function keep_like_time_machine())
-  [[ "${keep_days_like_time_machine}" -gt 0 ]] || set_options
+  [[ "${keep_days_like_time_machine}" -gt 0 ]] || set_mtime_command
 
   # loop through files in backup directory:
   for i in "${backupfolder}"/calcardbackup*; do
     # get unix timestamp of last modification of this backup:
-    last_modified="$(stat "${stat_options}" "${i}")"
+    last_modified="$(${mtime_cmd} ${mtime_pre_options} "${i}" ${mtime_post_options:-})"
     # check, if last modification is old enough to be deleted:
     if [[ ${last_modified} -lt ${old} ]]; then
       # print filename and remove backup:
@@ -1810,7 +1824,7 @@ delete_old_backups() {
     fi
   done
 
-  unset_options
+  unset_mtime_command
 
   # print notice, if nothing has been deleted:
   [[ ${deleted:-0} -eq 1 ]] || _output echo "+     --> no backups older than ${delete_backups_older_than} days found to delete."
