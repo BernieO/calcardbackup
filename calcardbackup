@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-17 (03.06.2019), AGPL-3.0"
+version="0.8.10-18 (03.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -63,11 +63,11 @@ get_absolute_path_ng() {
 
   local path in_config_file absolute_path
 
+  # assign short text variable if calcardbackup runs with config-file:
+  [[ -n "${config_file:-}" && "${1}" != "${config_file:-}" ]] && in_config_file=" in config-file"
+
   # remove trailing slashes from path:
   path="$(remove_trailing_slashes "${1}")"
-
-  # assign short text variable if calcardbackup runs with config-file:
-  [[ -n "${config_file:-}" && "${path##*/}" != "calcardbackup.conf" ]] && in_config_file=" in config-file"
 
   # turn path into absolute path (approach is different, if directory or file):
   if [[ -d "${path}" ]]; then
@@ -77,7 +77,8 @@ get_absolute_path_ng() {
   elif [[ -f "${path}" ]]; then
     # make sure file is readable (then there will not be an error, when changing into directory containing the file):
     [[ -r "${path}" ]] || error_exit "ERROR: can't read '${1}'. Check given path${in_config_file:-}!" "I need to be able to read the full path!"
-    absolute_path="$( cd "${path%/*}" && echo "$(pwd)/${path##*/}")"
+    [[ "${path}" == */* ]] && cd "${path%/*}"
+    absolute_path="$(pwd)/${path##*/}"
   else
     # print error and exit, if path is not readable:
     error_exit "ERROR: can't read '${1}'. Check given path${in_config_file:-}!" "I need to be able to read the full path!"
