@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.8.10-18 (03.06.2019), AGPL-3.0"
+version="0.8.10-19 (03.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -171,8 +171,14 @@ read_config_file() {
   fi
   if [[ -n "${backupfolder:-}" ]]; then
     if [[ "${backupfolder}" == /* ]]; then
+      # ${backupfolder} is an absolute path:
+      # create backup folder (needs to be done here when run with config-file, because path can't be resolved to absolulute path if not existing):
+      mkdir -p "${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
       backupfolder="$(get_absolute_path_ng "${backupfolder}")"
     else
+      # ${backupfolder} is a relative path:
+      # create backup folder (needs to be done here when run with config-file, because path can't be resolved to absolulute path if not existing):
+      mkdir -p "${config_file_dir}/${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
       backupfolder="$(get_absolute_path_ng "${config_file_dir}/${backupfolder}")"
     fi
   fi
@@ -300,7 +306,7 @@ preparations() {
 
   # if $backupfolder is empty or not set: set it to 'backups/' in script's dir
   [[ -z "${backupfolder:-}" ]] && backupfolder="${script_dir}/backups/"
-  # create backup folder (needs to be done here, because path can't be resolved to absolulute path if not existing):
+  # create backup folder (needs to be done here when run with options, because path can't be resolved to absolulute path if not existing):
   mkdir -p "${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
   # get absolute path to backupfolder:
   backupfolder="$(get_absolute_path_ng "${backupfolder}")"
