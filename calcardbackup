@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.0 (03.06.2019), AGPL-3.0"
+version="0.9.0-1 (03.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -77,8 +77,10 @@ get_absolute_path_ng() {
   elif [[ -f "${path}" ]]; then
     # make sure file is readable (then there will not be an error, when changing into directory containing the file):
     [[ -r "${path}" ]] || error_exit "ERROR: can't read '${1}'. Check given path${in_config_file:-}!" "I need to be able to read the full path!"
+    # if there is a slash in the path, it contains a directory so we need to change directory:
     [[ "${path}" == */* ]] && cd "${path%/*}"
     absolute_path="$(pwd)/${path##*/}"
+    # switching back to $working_dir not necessary, because this function is always run in a subshell
   else
     # print error and exit, if path is not readable:
     error_exit "ERROR: can't read '${1}'. Check given path${in_config_file:-}!" "I need to be able to read the full path!"
