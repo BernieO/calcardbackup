@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.0-2 (03.06.2019), AGPL-3.0"
+version="0.9.0-3 (03.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -158,31 +158,12 @@ read_config_file() {
   [[ -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud to be configured." "Check value of variable 'nextcloud_path' in ${config_file}"
 
   # change given paths (they might be relative to $config_file_dir) to absolute paths:
-  # (this is only needed when using config-file, because config-file might be in different directory from working dir or scripts dir)
-  if [[ "${nextcloud_path}" == /* ]]; then
-    nextcloud_path="$(get_absolute_path_ng "${nextcloud_path}")"
-  else
-    nextcloud_path="$(get_absolute_path_ng "${config_file_dir}/${nextcloud_path}")"
-  fi
+  [[ "${nextcloud_path}" == /* ]] || nextcloud_path="${config_file_dir}/${nextcloud_path}"
   if [[ -n "${users_file:-}" ]]; then
-    if [[ "${users_file}" == /* ]]; then
-      users_file="$(get_absolute_path_ng "${users_file}")"
-    else
-      users_file="$(get_absolute_path_ng "${config_file_dir}/${users_file}")"
-    fi
+    [[ "${users_file:-}" == /* ]] || users_file="${config_file_dir}/${users_file}"
   fi
   if [[ -n "${backupfolder:-}" ]]; then
-    if [[ "${backupfolder}" == /* ]]; then
-      # ${backupfolder} is an absolute path:
-      # create backup folder (needs to be done here when run with config-file, because path can't be resolved to absolulute path if not existing):
-      mkdir -p "${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
-      backupfolder="$(get_absolute_path_ng "${backupfolder}")"
-    else
-      # ${backupfolder} is a relative path:
-      # create backup folder (needs to be done here when run with config-file, because path can't be resolved to absolulute path if not existing):
-      mkdir -p "${config_file_dir}/${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
-      backupfolder="$(get_absolute_path_ng "${config_file_dir}/${backupfolder}")"
-    fi
+    [[ "${backupfolder:-}" == /* ]] || backupfolder="${config_file_dir}/${backupfolder}"
   fi
 }
 
@@ -197,8 +178,8 @@ preparations() {
   [[ -z "${config_file:-}" && -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud as first argument!"
 
   # resolve $nextcloud_path to absolute path and check readability of ownCloud/Nextcloud directory
-  # (when using config-file this is already done in function read_config_file):
-  [[ -z "${config_file:-}" ]] && nextcloud_path="$(get_absolute_path_ng "${nextcloud_path}")"
+  nextcloud_path="$(get_absolute_path_ng "${nextcloud_path}")"
+
   # remove trailing slashes from $nextcloud_url:
   nextcloud_url="$(remove_trailing_slashes "${nextcloud_url}")"
 
@@ -301,7 +282,8 @@ preparations() {
         fi
       fi
     elif [[ "${fetch_from_database}" == "no" ]]; then
-      # check if users.txt is a file and readable and error and exit if not, because we need that file when not fetching things from database:
+      # check if users.txt is a file and readable and error and exit if not, because we need that file when not fetching things from database
+      # (this is also done when converting the path to an absolute path, but check_readable_file stays here because of nicer output):
       check_readable_file "${users_file}" "file with usernames and passwords."
       # get absolute path to file with usernames and passwords:
       users_file="$(get_absolute_path_ng "${users_file}")"
@@ -310,7 +292,7 @@ preparations() {
 
   # if $backupfolder is empty or not set: set it to 'backups/' in script's dir
   [[ -z "${backupfolder:-}" ]] && backupfolder="${script_dir}/backups/"
-  # create backup folder (needs to be done here when run with options, because path can't be resolved to absolulute path if not existing):
+  # create backup folder (needs to be done before resolving to absolute path, because path can't be resolved if not existing):
   mkdir -p "${backupfolder}" || error_exit "ERROR: Backupfolder could not be created."
   # get absolute path to backupfolder:
   backupfolder="$(get_absolute_path_ng "${backupfolder}")"
