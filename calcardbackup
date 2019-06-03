@@ -1020,7 +1020,7 @@ query_database() {
     fi
     if [[ "${item}" == "calendar" && "${fetch_from_database}" == "yes" ]]; then
       fields="COALESCE(${row_calendarcolor},'NULL'), ${fields}"
-      # adjust regex (changed to support CSS3 color names according to RFC 7986 (see also issue #20))
+      # adjust regex (changed to support CSS3 color names according to RFC 7986 (see also issue #20)):
       regex="[^|]+\|${regex}"
     fi
     if [[ "${item}" == "calendarsubscription" ]]; then
