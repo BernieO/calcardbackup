@@ -24,6 +24,8 @@ __Allen, die *calcardbackup* von einer früheren Version auf 0.8.0 aktualisieren
 ## Voraussetzungen
 - lokale Installation von ownCloud/Nextcloud >= 5.0 mit MySQL/MariaDB, PostgreSQL oder SQLite3
 - der das Skript startende User muss Leserechte für das Skript selbst, die `config.php` der ownCloud/Nextcloud-Installation und alle Konfigurationsdateien haben
+- GNU Bash >= 4.2 (prüfen mit `bash --version`)
+- *optional*: das Paket `gnupg`, um Backups zu verschlüsseln
 - *optional*: das Paket `zip`, um Backups als zip-Datei zu komprimieren (anstelle tar.gz)
 - *optional*: das Paket `curl`, wenn die nicht empfohlene Option `-g|--get-via-http` gesetzt wird
 
@@ -198,6 +200,9 @@ Gehen Sie folgendermaßen vor:
       - den Pfad zum der in Schritt 1 angelegten Attrappe eines Nextcloud Verzeichnisses als 'datadirectory' wie in [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L76-L82)
       - die SQLite3 Datenbank in die Verzeichnisattrappe kopieren (der Dateiname der SQLite3 Datenbank muss `owncloud.db` lauten):  
       `cp /path/to/owncloud.db /usr/local/bin/nextcloud-dummy/owncloud.db`
+
+    - falls die Datenbank zu einer Installation von ownCloud <= 8.2 gehört, muss folgende Zeile hinzugefügt werden:  
+      `'version' => '8.0.0',`
 
 3. *calcardbackup* ausführen und als erstes Argument den Pfad zu der in Schritt 1 angelegten Nextcloud Verzeichnisattrappe angeben:
 `/path/to/calcardbackup /usr/local/bin/nextcloud-dummy`

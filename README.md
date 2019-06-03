@@ -25,6 +25,8 @@ __All users upgrading *calcardbackup* from a previous version to version 0.8.0 o
 
 - local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
 - the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, all used configuration files and to the script itself
+- GNU Bash >= 4.2 (check with `bash --version`)
+- *optional*: package `gnupg` to encrypt backup
 - *optional*: package `zip` to compress backup as zip-file  (instead of tar.gz)
 - *optional*: package `curl` when using deprecated option `-g|--get-via-http`
 
@@ -196,6 +198,9 @@ Here is how this can be accomplished:
      - add path to the nextcloud-dummy folder as 'datadirectory' according to [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L76-L82)
      - copy the SQLite3 database to the nexcloud-dummy directory (filename of the SQLite3 database must be `owncloud.db`):  
      `cp /path/to/owncloud.db /usr/local/bin/nextcloud-dummy/owncloud.db`
+
+   - if the database belongs to an installation of ownCloud <= 8.2, the following line needs to be added:  
+     `'version' => '8.0.0',`
 
 3. run *calcardbackup* and give as first argument the path to dummy Nextcloud directory created in step 1:  
 `/path/to/calcardbackup /usr/local/bin/nextcloud-dummy`
