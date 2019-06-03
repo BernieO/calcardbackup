@@ -1,13 +1,13 @@
 # calcardbackup
 
-[zur deutschen Version dieses README...](README_GER.md)
+[:de: auf deutsch lesen...](README_GER.md)
 
 This Bash script exports calendars and addressbooks from ownCloud/Nextcloud to .ics and .vcf files and saves them to a compressed file. Additional options are available.
 
-__IMPORTANT__: starting with version 0.8.0, there is no need anymore for a file with user credentials because all data is fetched directly from the database.  
+:warning: Starting with version 0.8.0, there is no need anymore for a file with user credentials because all data is fetched directly from the database.  
 If only calendars/addressbooks of certain users shall be backed up, list them in `users.txt` without any passwords.
 
-__All users upgrading *calcardbackup* from a previous version to version 0.8.0 or above are strongly advised to delete the file with users credentials - or at least to remove the cleartext passwords from this file!__
+:bangbang: __All users upgrading *calcardbackup* from a previous version to version 0.8.0 or above are strongly advised to delete the file with users credentials - or at least to remove the cleartext passwords from this file!__
 
 ## Contents
 - [Requirements](#requirements)
@@ -24,7 +24,7 @@ __All users upgrading *calcardbackup* from a previous version to version 0.8.0 o
 ## Requirements
 
 - local installation of ownCloud/Nextcloud >= 5.0 with MySQL/MariaDB, PostgreSQL or SQLite3
-- the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, all used configuration files and to the script itself
+- the user running the script needs to be able to read the full path to ownClouds/Nextclouds `config.php`, to the script itself and all used configuration files
 - GNU Bash >= 4.2 (check with `bash --version`)
 - *optional*: package `gnupg` to encrypt backup
 - *optional*: package `zip` to compress backup as zip-file  (instead of tar.gz)
@@ -154,11 +154,11 @@ This example is for [nextcloud-snap](https://github.com/nextcloud/nextcloud-snap
 
 7. `./calcardbackup /var/www/nextcloud -ltm 30 -r 180`  
 Keep all backups for the last 30 days, but keep only backups created on mondays for the time before (`-ltm 30`) and remove all backups older than 180 days (`-r 180`).  
-__NOTE__: make sure backups are also created on mondays when using option `-ltm`
+:warning: Make sure backups are also created on mondays when using option `-ltm`
 
 8. `./calcardbackup /var/www/nextcloud -g -u /etc/calcardbackupusers -s -i`  
 Use the deprecated method and get the addressbook/calendar files via https-request from the ownCloud/Nextcloud webinterface (`-g`, deprecated), find usernames and according cleartext passwords of users to be backed up in file /etc/calcardbackupusers (`-u calcardbackupusers`, mandatory with option -g), tell *calcardbackup* that the server is using a selfsigned certificate (`-s`, only needed with option -g) and include shared items (`-i`). The backup will be saved as compressed `*.tar.gz` file named `calcardbackup-YYYY-MM-DD.tar.gz` (default) in folder `./backups/` (default).  
-__NOTE__: using option `-g` is deprecated and not recommended anymore, due to the mandatory file with user credentials and other drawbacks (see [About Option -g|--get-via-http](#about-option--g----get-via-http))!
+:warning: Using option `-g` is deprecated and not recommended anymore, due to the mandatory file with user credentials and other drawbacks (see [About Option -g|--get-via-http](#about-option--g----get-via-http))!
 
 ## Nextcloud-snap Users
 
@@ -169,7 +169,7 @@ As path to Nextcloud use the path to the configuration files of nextcloud. In a 
 ## Considerations about Encryption
 
 If you want to use the included encryption possibility, be aware that:
-- the files are encrypted by [GnuPG](https://gnupg.org/), [AES256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) with the passphrase given in a separate file
+- the files are encrypted by [GnuPG](https://en.wikipedia.org/wiki/GNU_Privacy_Guard), [AES256](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard) with the passphrase given in a separate file
 - the passphrase is stored in a file. Other users with access to the server might be able to see the passphrase.
 - *calcardbackup* is designed to run without user interaction, so there can't be a rock solid encryption. I consider the offered one as sufficient in most cases though.
 - if you need rock solid encryption, don't let *calcardbackup* encrypt the backup. Instead, encrypt it yourself.
@@ -183,11 +183,11 @@ __Yes, it does!__
 *calcardbackup* only needs the database (and access to it) from an ownCloud/Nextcloud installation to be able to extract calendars/addressbooks from the database and save them as .ics and .vcf files.  
 Here is how this can be accomplished:
 
-1. create a dummy Nextcloud directory structure:  
-`mkdir -p /usr/local/bin/nextcloud-dummy/config`
+1. create a dummy Nextcloud directory including subdirectory `config`:  
+`mkdir -p /usr/local/bin/nextcloud_dummy/config`
 
 2. create and edit file `config.php` to fit your needs as follows:  
-`nano /usr/local/bin/nextcloud-dummy/config/config.php`
+`nano /usr/local/bin/nextcloud_dummy/config/config.php`
 
    - add database type according to [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L90-L101)
 
@@ -195,19 +195,19 @@ Here is how this can be accomplished:
      - add according database values according to [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L103-L135)
 
    - for SQLite3:
-     - add path to the nextcloud-dummy folder as 'datadirectory' according to [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L76-L82)
-     - copy the SQLite3 database to the nexcloud-dummy directory (filename of the SQLite3 database must be `owncloud.db`):  
-     `cp /path/to/owncloud.db /usr/local/bin/nextcloud-dummy/owncloud.db`
+     - add path to the nextcloud_dummy folder as 'datadirectory' according to [config.sample.php](https://github.com/nextcloud/server/blob/v14.0.3/config/config.sample.php#L76-L82)
+     - copy the SQLite3 database to the nexcloud_dummy directory (filename of the SQLite3 database must be `owncloud.db`):  
+     `cp /path/to/owncloud.db /usr/local/bin/nextcloud_dummy/owncloud.db`
 
    - if the database belongs to an installation of ownCloud <= 8.2, the following line needs to be added:  
      `'version' => '8.0.0',`
 
 3. run *calcardbackup* and give as first argument the path to dummy Nextcloud directory created in step 1:  
-`/path/to/calcardbackup /usr/local/bin/nextcloud-dummy`
+`./calcardbackup /usr/local/bin/nextcloud_dummy`
 
 ## About Option -g | -\-get-via-http
 
-__NOTE__: this option is deprecated and not recommended anymore due to the necessity to give cleartext passwords in a separate file.
+:warning: This option is deprecated and not recommended anymore due to the necessity to give cleartext passwords in a separate file.
 
 As its default, *calcardbackup* creates calendar and addressbook backups by fetching the according data directly from the database. However, if invoked with option `-g|--get-via-http`, *calcardbackup* is using the legacy method of backing up addressbooks and calendars by downloading the according files from the ownCloud/Nextcloud webinterface. Thus, a file with usernames and passwords is necessary, passed to the script via option `-u|--usersfile`.
 
@@ -217,7 +217,7 @@ __To make a long story short__: all you need to know about option `-g|--get-via-
 
 ## About Option -i | -\-include-shares
 
-__NOTE:__ there is no need to read this section unless you want to run *calcardbackup* with the deprecated option `-g|--get-via-http`, which is not recommended (see [About Option -g|--get-via-http](#about-option--g----get-via-http)).  
+:warning: There is no need to read this section unless you want to run *calcardbackup* with the deprecated option `-g|--get-via-http`, which is not recommended (see [About Option -g|--get-via-http](#about-option--g----get-via-http)).  
 
 If, for whatever reason, *calcardbackup* is being run with option `-g|--get-via-http` (not recommended!), this method may be used as follows to keep passwords of the main users secret:
 - create a new user in your ownCloud/Nextcloud
