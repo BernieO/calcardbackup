@@ -1,3 +1,6 @@
+vX.X.X (XX.XX.XXXX)
+- improved: some redundant code has been removed to increase code readability
+
 v0.9.0_no-fd (03.06.2019)
 - fixed: eliminated error due to pathname expansion when using option -ltm or -r
 - fixed: use current timestamp to determine backups to be deleted with -ltm or -r
