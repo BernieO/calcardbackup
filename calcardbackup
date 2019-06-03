@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.0-1 (03.06.2019), AGPL-3.0"
+version="0.9.0-2 (03.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -286,8 +286,8 @@ preparations() {
   # if $users_file is set: check for file with usernames (+passwords)
   if [[ -n ${users_file:-} ]]; then
     if [[ "${fetch_from_database}" == "yes" ]]; then
-      # either users.txt is found and readable OR do a complete backup from database:
-      [[ -f "${users_file}" && -r "${users_file}" ]] || complete_backup_from_database="yes"
+      # either $users_file is a file, readable and converted to an absolute path OR do a complete backup from database:
+      users_file="$(get_absolute_path_ng "${users_file}" 2>/dev/null)" || complete_backup_from_database="yes"
       if [[ "${complete_backup_from_database:-}" == "yes" ]]; then
         # file with usernames and passwords is not readable:
         _output echo "+  file with usernames not readable:"
@@ -303,6 +303,8 @@ preparations() {
     elif [[ "${fetch_from_database}" == "no" ]]; then
       # check if users.txt is a file and readable and error and exit if not, because we need that file when not fetching things from database:
       check_readable_file "${users_file}" "file with usernames and passwords."
+      # get absolute path to file with usernames and passwords:
+      users_file="$(get_absolute_path_ng "${users_file}")"
     fi
   fi
 
