@@ -670,6 +670,7 @@ read_status_php() {
         # curls exit code and print according message to stderr:
         [[ -n ${cerror:-} ]] && curl_error
         if [[ -z ${cerror:-} ]]; then
+          # if no valid status.php was found, print according message to stderr and exit:
           [[ -z "${config_file:-}" ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again without using option '-g|--get-via-http'"
           [[ -n "${config_file:-}" ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again using 'fetch_from_database=\"yes\"' in config file."
         fi
@@ -799,7 +800,7 @@ detect_vendor() {
         else
           # running with option -g|--get-via-http - check versionstring from status.php:
           if [[ "${versionstring_status_php%%.*}" == "10" ]]; then
-            # Nextcloud 10.0 reports itself as version 9.1 in version and as 10.0 in versionstring from status.php:
+            # Nextcloud 10.0 reports itself as 9.1 in version and as 10.0 in versionstring from status.php:
             productname="Nextcloud"
             # use versionstring from status.php as version information (will be 10.0.X for Nextcloud 10.0):
             server_version="${versionstring_status_php}"
@@ -870,7 +871,7 @@ get_database_details() {
           dbhost="--host=${dbhost%%:*}"
         }
       else
-        # dbhost contains only hostname - use empty value to tell mysql/psql to use default value:
+        # dbhost contains only hostname - use empty value to tell mysql to use default value:
         dbprotocol=""
         # make sure to also pass --host assignment to psql, if dbhost contains neither socket nor port:
         [[ "${dbtype}" == "pgsql" ]] && dbhost="--host=${dbhost}"
@@ -882,6 +883,7 @@ get_database_details() {
 
       # create command $dbcommand for database queries depending on database found in config.php:
       [[ "${dbtype}" == "mysql" ]] && {
+        # set database command for MySQL:
         # mysql>=5.6 throws a warning when using password on command line interface: https://bugs.mysql.com/bug.php?id=66546
         # avoiding that with option --defaults-extra-file and printf as suggested by Dave James Miller: https://stackoverflow.com/questions/20751352/suppress-warning-messages-using-mysql-from-within-terminal-but-password-written/20854048#comment42372603_22933056
         # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
@@ -901,7 +903,8 @@ get_database_details() {
       [[ "${dbtype}" == "pgsql" ]] && {
         # set database command for PostgreSQL:
         # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
-        # no need to quote $dbhost and $dbprotocol here, because they can't contain spaces. Saves some lines of code (v0.7.2-22):
+        # actually no need to quote $dbhost and $dbprotocol here, because they can't contain spaces. Saves some lines of code (v0.7.2-22), but
+        # quoted both values again in v0.8.10-9 to make shellcheck happy!
         # if $dbhost contains a socket, this will not be treated as a network connection by psql and this error may occur:
         # 'psql: FATAL: Peer authentication failed for user "USERNAME"'
         # see https://stackoverflow.com/a/26183931 and https://stackoverflow.com/a/21889759 to solve this error message.
@@ -941,8 +944,10 @@ read_users_txt() {
   # reads file with user credentials
 
   # split each line at the first colon (username:password) and store usernames and according passwords in separate arrays:
+  # (ownCloud and Nextcloud don‘t allow colons to be part of a username - that is why calcardbackup uses a colon as separator)
   readarray -t users < "${users_file}"
   for i in "${!users[@]}"; do
+    # keep beginning of line until first colon as username:
     user[$i]="${users[$i]%%:*}"
     # only store password in array, when we are going to get calendars/addressbooks via http(s)-request:
     [[ "${fetch_from_database}" == "no" ]] && pass[$i]="${users[$i]#*:}"
@@ -1242,10 +1247,10 @@ include_shares() {
 }
 
 get_icsvcf_files() {
-  # looks for matches between array with usernames and arrays created by database-queries and then downloads addressbooks/calendars
+  # looks for matches between array with usernames and arrays created by database-queries and then creates/downloads addressbooks/calendars
   # see next lines for description of arguments:
 
-  local item="${1}"            # items to be downloaded: "addressbook" or "calendar"
+  local item="${1}"            # items to be created/downloaded: "addressbook" or "calendar"
   local item_extension="${2}"  # filename extension: ".vcf" or ".ics"
   local item_header="${3}"     # valid vcf/ics-header (first line of vcf/ics-file): "BEGIN:VCARD" or "BEGIN:VCALENDAR"
   local calcarddav="${4}"      # dav-endpoint: "dav" for ownCloud/Nextcloud >= 9.0; "carddav"/"caldav" for ownCloud < 9.0
@@ -1312,6 +1317,7 @@ get_icsvcf_files() {
     fi
 
     # loop through array with usernames given in file with users credentials (users.txt):
+    # (this for-loop will never be run, if $complete_backup_from_database=="yes")
     for index in "${!user[@]}"; do
       # compare prinicpal with username. If there is a match, we found an item to be downloaded
       # (exclude birthday calendar (contact_birthdays), because it is an automatically created calendar from ownCloud/Nextcloud):
@@ -1390,15 +1396,16 @@ create_calendar_from_db() {
   local -a tz_temp tz_data tz_ids
 
   # an iCalender file consists of calendar properties and calendar components.
-  # Nextcloud/ownCloud store every event/todo completely as an iCalender item in a single table cell. We need to get those events,
-  # ignore the calendar properties (they are generated separately from other database entries) and collect the components. Each
-  # event contains the according timezone-components. They are unique for each timezone, so we only need to collect each timezone once.
+  # Nextcloud/ownCloud store every event/todo completely as an iCalender item in a single table cell in table [PREFIX]calendarobjects.
+  # We need to get those events, ignore the calendar properties (calcardbackup generates them separately from table [PREFIX]calendars)
+  # and collect the components. Every single event contains the according timezone-components. They are unique for each timezone,
+  # so we only need to collect each timezone once.
 
-  # prepare database query (variable convert is needed for PostgreSQL) to collect all events from according calendarid:
+  # prepare database query to collect all events from according calendarid (variable convert is needed for PostgreSQL):
   # shellcheck disable=SC2016
   db_query='"SELECT ${convert:-calendardata} FROM ${table_calendarobjects} WHERE calendarid=${id[$i]};"'
 
-  # print generic iCalendar properties (BEGIN, VERSION, PRODID, CALSCALE):
+  # print generic iCalendar properties (BEGIN, VERSION, PRODID, CALSCALE) (according to RFC5545 each line needs end with CR+LF):
   printf '%s\r\n' "BEGIN:VCALENDAR" "VERSION:2.0" "PRODID:https://github.com/BernieO/calcardbackup v${version%% *}" "CALSCALE:GREGORIAN" > "${backupfolder_day}/${filename}"
 
   # also calendarname and calendarcolor (if existent in database):
@@ -1410,7 +1417,7 @@ create_calendar_from_db() {
   # property names and property parameters are case insensitive, so let's switch to nocasematch for comparing strings:
   shopt -s nocasematch
 
-  # store IFS (Intenal Field Separator) and set it to the null string (to prevent read from stripping leading and trailing whitespace from the line)
+  # store IFS (Intenal Field Separator) and set it to the null string (to prevent 'read' from stripping leading and trailing whitespace from the line)
   # of course it is much more performant to do this outside of the loop (instead of 'while IFS= read -r line; do' as suggested often):
   ifs_original="${IFS}"
   IFS=
@@ -1523,7 +1530,7 @@ create_calendar_from_db() {
 
   done< <(eval "${dbcommand}" "${db_query}")
 
-  # reset IFS to its original value (was set to null string before to prevent read from stripping leading and trailing whitespace from the line):
+  # reset IFS to its original value (was set to null string before to prevent 'read' from stripping leading and trailing whitespace from the line):
   IFS="${ifs_original}"
 
   # at this point of stage  all components (except for VTIMEZONES) are saved in $backupfolder_day/$filename
@@ -1546,6 +1553,7 @@ create_calendarsubscription_files() {
 
   local i index filename exported
 
+  # counter for exported items:
   exported=0
 
   for (( i=0; i<${#id[@]}; i++ )); do      # go through array with calendarsubscriptions
@@ -1570,6 +1578,7 @@ create_calendarsubscription_files() {
     _output printf '%s' "+  Saving ${item} ${filename}..."
     echo "${source[$i]}" > "${backupfolder_day}/${filename}"
     _output printf '%s\n' "...success!"
+    # increase counter $exported:
     exported=$((exported + 1))
   done
 
@@ -1584,13 +1593,13 @@ create_addressbook_from_db() {
   # create vCard addressbook (.vcf file) by reading cards directly from database (option -f | --fetch-from-database):
   # according to: https://tools.ietf.org/html/rfc6350
 
-  # prepare database query (variable convert is needed for PostgreSQL) to collect all cards belonging to addressbookid:
+  # prepare database query to collect all cards belonging to addressbookid (variable convert is needed for PostgreSQL):
   # shellcheck disable=SC2016
   db_query='"SELECT ${convert:-carddata} FROM ${table_cards} WHERE addressbookid=${id[$i]};"'
 
   # this is much less complex than iCalendar: a vCard addressbook is just single vCards stuck together one after the other.
-  # so we just need to pipe the output the column carddata with id of the according addressbook to the addressbook file.
-  # for more details see: https://tools.ietf.org/html/rfc6350:
+  # so we just need to pipe the output of the column 'carddata' from table [PREFIX]cards with id of the according addressbook
+  # to the addressbook-backup-file. For more details see: https://tools.ietf.org/html/rfc6350:
   eval "${dbcommand}" "${db_query}" > "${backupfolder_day}/${filename}"
 }
 
@@ -1625,7 +1634,7 @@ get_calendars() {
   # gets calendars and saves them in backup-folder. Have a look at used functions for more detailed explanations.
 
   query_database "${table_calendars}" "calendar"
-  # run include_shares only if configured and calendars found in database:
+  # run include_shares only, if configured and calendars found in database:
   [[ "${include_shares}" == "yes" && -n ${id:-} ]] && include_shares
   get_icsvcf_files "calendar" ".ics" "BEGIN:VCALENDAR" "${caldav}" ""
 
@@ -1649,13 +1658,13 @@ get_addressbooks() {
   # gets addressbooks and saves them in backup-folder. Have a look at used functions for more detailed explanations.
 
   query_database "${table_addressbooks}" "addressbook"
-  # run include_shares only if configured and addressbooks found in database:
+  # run include_shares only, if configured and addressbooks found in database:
   [[ "${include_shares}" == "yes" && -n ${id:-} ]] && include_shares
   get_icsvcf_files "addressbook" ".vcf" "BEGIN:VCARD" "${carddav}" "${extra_users}"
 }
 
 check_for_backup_files() {
-  # checks for files in backup-directory and prints warning, if there are no files (meaning absolutely nothing has been downloaded).
+  # checks for files in backup-directory and prints warning, if there are no files (meaning absolutely nothing has been created/downloaded).
   local backupfolder_content
 
   backupfolder_content="$(ls -A "${backupfolder_day}")"
@@ -1694,7 +1703,7 @@ pack_it() {
 
   # if backup shall NOT be encrypted, print path to backup:
   # (use || instead of && so that function returns true in any case - corrected in ver. 0.1.2)
-  [[ "${encrypt_backup}" == "yes" ]] || _output echo "+  Find your backup here: ${path_to_backup}"
+  [[ "${encrypt_backup}" == "yes" ]] || _output echo "+  Find your compressed backup here: ${path_to_backup}"
 }
 
 gpg_encrypt_backup() {
@@ -1717,8 +1726,8 @@ gpg_encrypt_backup() {
 }
 
 set_mtime_command() {
-  # creates command to retrieve last modification time of file depending on Operating System
-  # *BSD, Darwin, Minix use different options to stat than Linux
+  # creates command to retrieve last modification time of file depending on Operating System (needed for deleting old backups)
+  # *BSD, Darwin, Minix use different options to stat than Linux or SunOS
 
   case "$(uname)" in
 
@@ -1771,7 +1780,7 @@ keep_like_time_machine() {
   for i in "${backupfolder}"/calcardbackup*; do
     # get unix timestamp of last modification of this backup:
     last_modified="$(${mtime_cmd} ${mtime_pre_options} "${i}" ${mtime_post_options:-})"
-    # check, if last backup is old enough to be deleted and created not on a monday:
+    # check, if backup is old enough to be deleted and has not been created on a monday:
     if [[ ${last_modified} -lt ${old} && $(printf '%(%u)T' "${last_modified}") -ne 1 ]]; then
       # print filename and remove backup:
       _output echo "+     -  ${i}"
@@ -1807,7 +1816,7 @@ delete_old_backups() {
   for i in "${backupfolder}"/calcardbackup*; do
     # get unix timestamp of last modification of this backup:
     last_modified="$(${mtime_cmd} ${mtime_pre_options} "${i}" ${mtime_post_options:-})"
-    # check, if last modification is old enough to be deleted:
+    # check, if modification time is old enough for backup to be deleted:
     if [[ ${last_modified} -lt ${old} ]]; then
       # print filename and remove backup:
       _output echo "+     -  ${i}"
@@ -1825,7 +1834,7 @@ delete_old_backups() {
 
 finish() {
   # last function to be executed. This is the end of calcardbackup
-  # prints END-message or if in batch-mode (-b) only path to backup
+  # prints END-message or, if in batch-mode (-b), only path to backup:
 
   # print timestamp and END-message:
   _output echo "+  $(date) --> END calcardbackup"
@@ -1863,11 +1872,11 @@ curl_error() {
 
 error_exit() {
   # prints error message and exits script
-  # if any arguments are passed, they all will be printed as error message
+  # if any arguments are passed, they all will be printed as error message to stderr
 
   echo "-- calcardbackup: ERROR --" >&2
 
-  # print all arguments that have been passed to this function as error message:
+  # print all arguments that have been passed to this function as error message to stderr:
   for message in "$@"; do
     echo "-- ${message}" >&2
   done
