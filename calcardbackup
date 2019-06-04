@@ -1053,7 +1053,7 @@ query_database() {
       principal+=("${line%%|*}")   # store principal (=username, is first field) in array
       line="${line#*|}"            # cut first field (principal)
       if [[ "${item}" == "calendarsubscription" ]]; then
-        source+=("${line%%|*}")    # store source (URL to calendarsubscription, is now first field) in array
+        source_url+=("${line%%|*}") # store URL to source (URL to calendarsubscription, is now first field) in array
       else
         uri+=("${line%%|*}")       # store uri (is now first field) in array
       fi
@@ -1556,7 +1556,7 @@ create_calendarsubscription_files() {
 
     # create file with URL to subscribed calendar:
     _output printf '%s' "+  Saving ${item} ${filename}..."
-    echo "${source[$i]}" > "${backupfolder_day}/${filename}"
+    echo "${source_url[$i]}" > "${backupfolder_day}/${filename}"
     _output printf '%s\n' "...success!"
     # increase counter $exported:
     exported=$((exported + 1))
@@ -1566,7 +1566,7 @@ create_calendarsubscription_files() {
   [[ ${exported} == 0 ]] && _output echo "+  no calendarsubscriptions found for users given in '${users_file}'."
 
   # unset arrays (to not include data of calendarsubscriptions for addressbook export):
-  unset -v id principal displayname source
+  unset -v id principal displayname source_url
 }
 
 create_addressbook_from_db() {
@@ -1621,7 +1621,7 @@ get_calendars() {
   # get calendarsubscriptions for ownCloud/Nextcloud >= 9.0 (older versions do not support calendarsubscriptions):
   if [[ "${mainversion}" -ge "${davchangeversion}" ]]; then
     query_database "${table_calendarsubscriptions}" "calendarsubscription"
-    if [[ -n "${source:-}" ]]; then
+    if [[ -n "${source_url:-}" ]]; then
       # create files with calendarsubscriptions, if table calendarsubscriptions is not empty:
       create_calendarsubscription_files
     else
