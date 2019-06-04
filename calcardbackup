@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.0-3 (03.06.2019), AGPL-3.0"
+version="0.9.0-4 (04.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -817,10 +817,8 @@ detect_vendor() {
       ;;
 
       * )
-        # vendor can't be detected:
+        # vendor can't be detected (productname is already set to generic value "Server"):
         _output echo "+  can't detect vendor."
-        # set productname to a generic value
-        productname="Server"
         # use $fullversion for output
         server_version="${full_version}"
       ;;
