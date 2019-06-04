@@ -921,6 +921,7 @@ get_database_details() {
       sqlite3_database="${datadirectory}/owncloud.db"
       # use options '-list' and '-separator "|"' for sqlite3 command, to override eventually existing user-specific config-file '~/.sqlite3rc':
       # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
+      # shellcheck disable=SC2016
       dbcommand='sqlite3 -list -separator "|" "${sqlite3_database}" '
       # store type of database for output of script:
       database="SQLite3"
