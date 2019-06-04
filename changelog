@@ -1,13 +1,14 @@
 vX.X.X (XX.XX.XXXX)
 - improved: some redundant code has been removed to increase code readability
+- fixed: use tempfile instead of here-document also for vendor detection
 
 v0.9.0_no-fd (03.06.2019)
-- fixed: eliminated error due to pathname expansion when using option -ltm or -r
-- fixed: use current timestamp to determine backups to be deleted with -ltm or -r
-- fixed: eliminate error on non GNU-systems with non existend backup folder
 - improved: minor addition to both READMEs about extracting from a broken ownCloud <= 8.2
 - improved: treat server as >= 9.0, if version is missing in config.php
 - improved: calcardbackup now runs on various systems (Linux, *BSD, SunOS, Darwin, Minix)
+- fixed: eliminated error due to pathname expansion when using option -ltm or -r
+- fixed: use current timestamp to determine backups to be deleted with -ltm or -r
+- fixed: eliminate error on non GNU-systems with non existend backup folder
 
 v0.8.10_no-fd (25.04.2019)
 - added: print warning when using deprecated option -g

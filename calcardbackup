@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.0-3_no-fd (03.06.2019), AGPL-3.0"
+version="0.9.0-4_no-fd (03.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -759,11 +759,12 @@ detect_vendor() {
   # try to detect vendor from user documentation (only if curl is installed):
   if [[ "${productname}" == "Server" && "${curl_installed}" == "yes" ]]; then
     regex="([Nn]extcloud|own[Cc]loud)"
+    curl -s ${trust} "${nextcloud_url}/core/doc/user/index.html" > "${tempfile}"
     line=""
     while read -r line; do
       [[ "${line}" =~ $regex ]] && break
       line=""
-    done <<<"$(curl -s ${trust} "${nextcloud_url}/core/doc/user/index.html")"
+    done < "${tempfile}"
 
     if [[ "${line}" =~ [Nn]extcloud ]]; then
       productname="Nextcloud"
