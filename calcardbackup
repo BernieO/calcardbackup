@@ -77,7 +77,7 @@ get_absolute_path_ng() {
   elif [[ -f "${path}" ]]; then
     # make sure file is readable (then there will not be an error, when changing into directory containing the file):
     [[ -r "${path}" ]] || error_exit "ERROR: can't read '${1}'. Check given path${in_config_file:-}!" "I need to be able to read the full path!"
-    # if there is a slash in the path, it contains a directory so we need to change directory:
+    # we need to change directory, if $path contains a directory (this is the case if $path contains a slash):
     [[ "${path}" == */* ]] && cd "${path%/*}"
     absolute_path="$(pwd)/${path##*/}"
     # switching back to $working_dir not necessary, because this function is always run in a subshell
@@ -157,7 +157,7 @@ read_config_file() {
   # make sure $nextcloud_path is set - otherwise print error and exit:
   [[ -z "${nextcloud_path:-}" ]] && error_exit "ERROR: calcardbackup needs path to ownCloud/Nextcloud to be configured." "Check value of variable 'nextcloud_path' in ${config_file}"
 
-  # change given paths (they might be relative to $config_file_dir) to absolute paths:
+  # change given paths, if they are relative to $config_file_dir:
   [[ "${nextcloud_path}" == /* ]] || nextcloud_path="${config_file_dir}/${nextcloud_path}"
   if [[ -n "${users_file:-}" ]]; then
     [[ "${users_file:-}" == /* ]] || users_file="${config_file_dir}/${users_file}"
@@ -168,7 +168,7 @@ read_config_file() {
 }
 
 preparations() {
-  # checks for needed packages, reads config-file and validates user given values:
+  # checks for required packages, reads config-file and validates user given values:
 
   _output echo "+  Checking dependencies and preparing..."
 
@@ -231,7 +231,7 @@ preparations() {
       [[ -z "${config_file:-}" ]] && error_exit "ERROR: Package 'curl' is needed for running this script with option -g." "Run script again without option '-g' or install cURL with 'apt-get install curl'."
       [[ -n "${config_file:-}" ]] && error_exit "ERROR: Package 'curl' is needed for running this script with 'fetch_from_database=\"no\"'." "Run script again with 'fetch_from_database=\"yes\"' or install cURL with 'apt-get install curl'."
     fi
-    # for certain server versions the vendor (ownCloud/Netcloud) can't be detected, if cURL is missing:
+    # for certain server versions the vendor (ownCloud/Nextcloud) can't be detected, if cURL is missing:
     _output echo "+  cURL not installed - vendor detection might fail."
   else
     curl_installed="yes"
@@ -273,7 +273,7 @@ preparations() {
         # file with usernames and passwords is not readable:
         _output echo "+  file with usernames not readable:"
         _output echo "+     - will fetch all available items from database"
-        # users_file needs to be unset, because it is not found or/and not readable:
+        # users_file needs to be unset, because it is not readable:
         unset -v users_file
         if [[ "${include_shares}" == "yes" ]]; then
           # don't include shared items when doing a complete backup - will backup everything anyway:
@@ -360,7 +360,7 @@ preparations() {
     fi
   fi
 
-  # check value $compression_method (this needs to be after encryption-check, because config may have changed
+  # check value $compression_method (this needs to be done after encryption-check, because config may have changed
   # there from compress="no" to compress="yes"):
   if [[ "${compression_method:-}" == "zip" && "${compress}" == "yes" ]]; then
     # check for package zip:
@@ -437,7 +437,7 @@ is_trusted_domain() {
       ;;
 
       1)
-        # regex matches end of trusted_domains array, so no need to loop any further:
+        # don’t loop any further, if regex matches end of trusted_domains array:
         [[ "${line}" =~ ${regex} ]] && break
 
         line="${line%\'*}"       # throw away end including last '
@@ -477,7 +477,7 @@ read_config_php() {
     # version not found in config.php: treat as a version >= 9.0 and print info.
     # The exact version doesn't matter, because all versions >= 9.0 behave the same regarding calendar+addressbook data
     # (as well as all versions <= 8.2 behave the same regarding calendar+addressbook data)
-    # version 9.1.0 has the advantage that the calcardbackup then can't find out, whether it is ownCloud/Nextcloud, if curl is not working:
+    # version 9.1.0 has the advantage that calcardbackup then can't find out, whether it is ownCloud/Nextcloud, if curl is not working:
     _output printf "+  %s\n" "INFO: version information not found in config.php - treating as ownCloud/Nextcloud >= 9.0" "INFO: if you are using ownCloud <= 8.2, you need to give version information in config.php"
     version_config_php="9.1.0"
   fi
@@ -504,7 +504,7 @@ read_config_php() {
       table_cards="${dbtableprefix}cards"
       table_calendarobjects="${dbtableprefix}calendarobjects"
     fi
-    # next line is needed for addressbook-export from ownCloud/Nextcloud >= 9.0:
+    # next line is only needed for addressbook-export via http(s) from ownCloud/Nextcloud >= 9.0:
     extra_users="users/"
   else
     # Values for ownCloud < 9.0:
@@ -527,7 +527,7 @@ read_config_php() {
       # shellcheck disable=SC2034
       table_calendarobjects="${dbtableprefix}clndr_objects"
     fi
-    # must be empty for ownCloud < 9.0:
+    # must be empty to get addressbooks via http(s) for ownCloud < 9.0:
     extra_users=""
   fi
   # those values are the same for ownCloud < 9.0 and ownCloud/Nextcloud >= 9.0
