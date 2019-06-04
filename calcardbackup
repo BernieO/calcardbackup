@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.0-5 (04.06.2019), AGPL-3.0"
+version="0.9.0-6 (04.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1069,8 +1069,8 @@ include_shares() {
 
   # database only needs to be queried once for table with infos about shares ($table_shares)
   # (because same table for shared calendars and shared addressbooks):
-  if [[ "${read_shared:-}" == "" ]]; then
-    read_shared=1
+  if [[ -z "${read_shared:-}" ]]; then
+    read_shared="yes"
 
     # check if table $table_shares exists:
     # for checking tables with MySQL: option -r is not needed but an additional option -s is used to produce less output:
@@ -1223,12 +1223,11 @@ include_shares() {
     done
   fi
 
-  # unset arrays with infos about shares (from $table_shares), only after second run of this function:
-  [[ ${read_shared} -eq 2 ]] && unset -v share_type_group share_principal share_type share_resourceid grouplist
-
-  # set $read_shared to 2 for eventually second run of this function
-  read_shared=2
-
+  # unset arrays with infos about shares (from $table_shares), after second run with addressbooks or if addressbooks shall
+  # not be backed up (it is the same data for calendars + addressbooks, so make sure, we do not need it again before unsetting):
+  if [[ "${item}" == "addressbook" || "${backup_addressbooks}" == "no" ]]; then
+    unset -v share_type_group share_principal share_type share_resourceid grouplist
+  fi
 }
 
 get_icsvcf_files() {
@@ -1361,8 +1360,9 @@ get_icsvcf_files() {
 
   # unset arrays (to not include calendardata for calendarsubscriptions or addressbook export):
   unset -v id principal uri displayname already_saved_as calendarcolor
-  # unset arrays with usernames (and eventually also array with passwords), after second run with addressbooks:
-  if [[ "${item}" == "addressbook" ]]; then
+  # unset arrays with usernames (and eventually also array with passwords), after second run with addressbooks of if addessbooks shall
+  # not be backed up (it is the same data for calendars + addressbooks, so make sure, we do not need it again before unsetting):
+  if [[ "${item}" == "addressbook" || "${backup_addressbooks}" == "no" ]]; then
     [[ "${fetch_from_database}" == "no" ]] && unset -v pass
     unset -v user
   fi
