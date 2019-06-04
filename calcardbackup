@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.0-7 (04.06.2019), AGPL-3.0"
+version="0.9.0-10 (05.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1080,9 +1080,9 @@ include_shares() {
     # this check is a bit more complicated for PostgreSQL:
     if [[ "${dbtype}" == "pgsql" ]]; then
       # first let us assume that the desired table exists (variable needs to be set for check later):
-      check_table="table ${table} exists"
+      check_table="table ${table_shares} exists"
       # then querie for the first line in that table, suppress any output and set ${check_table} to empty string, if psql throws an error:
-      PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
+      PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table_shares} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
     fi
 
     if [[ "${check_table:-}" == "" ]]; then
@@ -1132,9 +1132,9 @@ include_shares() {
       # this check is a bit more complicated for PostgreSQL:
       if [[ "${dbtype}" == "pgsql" ]]; then
         # first let us assume that the desired table exists (variable needs to be set for check later):
-        check_table="table ${table} exists"
+        check_table="table ${table_group_user} exists"
         # then querie for the first line in that table, suppress any output and set ${check_table} to empty string, if psql throws an error:
-        PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
+        PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table_group_user} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
       fi
 
       if [[ "${check_table:-}" != "" ]]; then
