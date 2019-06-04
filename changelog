@@ -2,6 +2,7 @@ vX.X.X (XX.XX.XXXX)
 - improved: some redundant code has been removed to increase code readability
 - improved: use absolute path to sqlite3 database to simplify code
 - improved: do not keep arrays longer than needed in memory
+- fixed: using option -u, calendarsubscriptions of the last user were not backed up
 
 v0.9.0 (03.06.2019)
 - fixed: eliminated error due to pathname expansion when using option -ltm or -r

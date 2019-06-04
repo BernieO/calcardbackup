@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.0-6 (04.06.2019), AGPL-3.0"
+version="0.9.0-7 (04.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1248,11 +1248,6 @@ get_icsvcf_files() {
     _output echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
     # unset arrays (to not include calendardata for addressbook export):
     unset -v id principal uri displayname already_saved_as calendarcolor
-    # unset arrays with usernames (and eventually also array with passwords), after second run with addressbooks:
-    if [[ "${item}" == "addressbook" ]]; then
-      [[ "${fetch_from_database}" == "no" ]] && unset -v pass
-      unset -v user
-    fi
     # there is not a single item to export, let's return from this function and proceed:
     return
   fi
@@ -1360,12 +1355,14 @@ get_icsvcf_files() {
 
   # unset arrays (to not include calendardata for calendarsubscriptions or addressbook export):
   unset -v id principal uri displayname already_saved_as calendarcolor
-  # unset arrays with usernames (and eventually also array with passwords), after second run with addressbooks of if addessbooks shall
-  # not be backed up (it is the same data for calendars + addressbooks, so make sure, we do not need it again before unsetting):
-  if [[ "${item}" == "addressbook" || "${backup_addressbooks}" == "no" ]]; then
-    [[ "${fetch_from_database}" == "no" ]] && unset -v pass
-    unset -v user
-  fi
+}
+
+unset_user_array() {
+  # unsets array with usernames (and eventually also array with passwords)
+  # this array is needed for calendars, calendarsubscriptions + addressbooks, so: before calling this function make sure, that
+  # we do not need it again before unsetting):
+  [[ "${fetch_from_database}" == "no" ]] && unset -v pass
+  unset -v user
 }
 
 create_calendar_from_db() {
@@ -1531,7 +1528,7 @@ create_calendar_from_db() {
 create_calendarsubscription_files() {
   # creates textfiles with URLs to subscribed calendars
 
-  local i index filename exported
+  local i index filename exported match
 
   # counter for exported items:
   exported=0
@@ -1541,25 +1538,27 @@ create_calendarsubscription_files() {
     if [[ -n "${users_file:-}" ]]; then
       # loop through array with usernames given in file with users credentials (users.txt):
       for index in "${!user[@]}"; do
-        # compare prinicpal with username. If there is a match: break out of this for-loop:
-        [[ "${principal[$i]}" == "${user[$index]}" ]] && break
+        # compare prinicpal with username. If there is a match --> assign variable:
+        [[ "${principal[$i]}" == "${user[$index]}" ]] && match="yes"
+        [[ -n "${match:-}" ]] && break
       done
-      # continue with next id of calendarsubscriptions, if no matching user was found
-      # (this is the case, if (index_of_users-array + 1) equals the number of elements of that array):
-      [[ $(( index + 1 )) -eq ${#user[@]} ]] && continue
     fi
 
-    # create filename like: username-(calendar-/addressbook-)name.webcal:
-    filename="${principal[$i]}-${displayname[$i]}.webcal"
-    # remove funky characters from filename:
-    filename="${filename//[\/\\*? ]/_}"
+    if [[ -n "${match:-}" || "${complete_backup_from_database:-}" == "yes" ]]; then
+      # create filename like: username-(calendar-/addressbook-)name.webcal:
+      filename="${principal[$i]}-${displayname[$i]}.webcal"
+      # remove funky characters from filename:
+      filename="${filename//[\/\\*? ]/_}"
 
-    # create file with URL to subscribed calendar:
-    _output printf '%s' "+  Saving ${item} ${filename}..."
-    echo "${source_url[$i]}" > "${backupfolder_day}/${filename}"
-    _output printf '%s\n' "...success!"
-    # increase counter $exported:
-    exported=$((exported + 1))
+      # create file with URL to subscribed calendar:
+      _output printf '%s' "+  Saving ${item} ${filename}..."
+      echo "${source_url[$i]}" > "${backupfolder_day}/${filename}"
+      _output printf '%s\n' "...success!"
+      # increase counter $exported:
+      exported=$((exported + 1))
+      # unset match-variable for next run of for-loop with usernames
+      [[ -n "${match:-}" ]] && unset -v match
+    fi
   done
 
   # print notice, if there are calendarsubscriptions in database but nothing has been exported:
@@ -1632,6 +1631,11 @@ get_calendars() {
     # ownCloud < 9.0 has no support for calendarsubscriptions
     _output echo "+  skipping calendarsubscriptions, because ownCloud < 9.0 does not support them."
   fi
+
+  # if set: unset array with usernames (and eventually passwords), if we do not plan to get addressbooks as well:
+  if [[ -n "${user:-}" ]]; then
+    [[ "${backup_addressbooks}" == "yes" ]] || unset_user_array
+  fi
 }
 
 get_addressbooks() {
@@ -1641,6 +1645,8 @@ get_addressbooks() {
   # run include_shares only, if configured and addressbooks found in database:
   [[ "${include_shares}" == "yes" && -n ${id:-} ]] && include_shares
   get_icsvcf_files "addressbook" ".vcf" "BEGIN:VCARD" "${carddav}" "${extra_users}"
+  # unset array with usernames (and eventually also passwords) if run with option -u:
+  [[ -z "${user:-}" ]] || unset_user_array
 }
 
 check_for_backup_files() {
