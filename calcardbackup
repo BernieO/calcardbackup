@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.0-10 (05.06.2019), AGPL-3.0"
+version="0.9.0-11 (05.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1537,12 +1537,17 @@ create_calendarsubscription_files() {
   for (( i=0; i<${#id[@]}; i++ )); do      # go through array with calendarsubscriptions
 
     if [[ -n "${users_file:-}" ]]; then
+      # in case match-variable was set in a previous run of this for loop,
+      # unset match-variable (will be set, if principal matches username):
+      unset -v match
+
       # loop through array with usernames given in file with users credentials (users.txt):
       for index in "${!user[@]}"; do
         # compare prinicpal with username. If there is a match --> assign variable:
         [[ "${principal[$i]}" == "${user[$index]}" ]] && match="yes"
         [[ -n "${match:-}" ]] && break
       done
+
     fi
 
     if [[ -n "${match:-}" || "${complete_backup_from_database:-}" == "yes" ]]; then
@@ -1557,8 +1562,6 @@ create_calendarsubscription_files() {
       _output printf '%s\n' "...success!"
       # increase counter $exported:
       exported=$((exported + 1))
-      # unset match-variable for next run of for-loop with usernames
-      [[ -n "${match:-}" ]] && unset -v match
     fi
   done
 
