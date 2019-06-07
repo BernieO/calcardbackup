@@ -1383,7 +1383,7 @@ create_calendar_from_db() {
   # shellcheck disable=SC2016
   db_query='"SELECT ${convert:-calendardata} FROM ${table_calendarobjects} WHERE calendarid=${id[$i]};"'
 
-  # print generic iCalendar properties (BEGIN, VERSION, PRODID, CALSCALE) (according to RFC5545 each line needs end with CR+LF):
+  # print generic iCalendar properties (BEGIN, VERSION, PRODID, CALSCALE) (according to RFC5545 each line has to end with CR+LF):
   printf '%s\r\n' "BEGIN:VCALENDAR" "VERSION:2.0" "PRODID:https://github.com/BernieO/calcardbackup v${version%% *}" "CALSCALE:GREGORIAN" > "${backupfolder_day}/${filename}"
 
   # also calendarname and calendarcolor (if existent in database):
