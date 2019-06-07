@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.9.1 (08.06.2019)
 - improved: some redundant code has been removed to increase code readability
 - improved: use absolute path to sqlite3 database to simplify code
 - improved: do not keep arrays longer than needed in memory
