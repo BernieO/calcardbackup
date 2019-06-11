@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.0-4_no-fd (03.06.2019), AGPL-3.0"
+version="0.9.1_no-fd (11.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -673,6 +673,7 @@ read_status_php() {
         # curls exit code and print according message to stderr:
         [[ -n ${cerror:-} ]] && curl_error
         if [[ -z ${cerror:-} ]]; then
+          # if no valid status.php was found, print according message to stderr and exit:
           [[ -z "${config_file:-}" ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again without using option '-g|--get-via-http'"
           [[ -n "${config_file:-}" ]] && error_exit "ERROR: No ownCloud/Nextcloud Installation found at ${nextcloud_url} !" "Try to run script again using 'fetch_from_database=\"yes\"' in config file."
         fi
@@ -803,7 +804,7 @@ detect_vendor() {
         else
           # running with option -g|--get-via-http - check versionstring from status.php:
           if [[ "${versionstring_status_php%%.*}" == "10" ]]; then
-            # Nextcloud 10.0 reports itself as version 9.1 in version and as 10.0 in versionstring from status.php:
+            # Nextcloud 10.0 reports itself as 9.1 in version and as 10.0 in versionstring from status.php:
             productname="Nextcloud"
             # use versionstring from status.php as version information (will be 10.0.X for Nextcloud 10.0):
             server_version="${versionstring_status_php}"
@@ -820,10 +821,8 @@ detect_vendor() {
       ;;
 
       * )
-        # vendor can't be detected:
+        # vendor can't be detected (productname is already set to generic value "Server"):
         _output echo "+  can't detect vendor."
-        # set productname to a generic value
-        productname="Server"
         # use $fullversion for output
         server_version="${full_version}"
       ;;
@@ -874,7 +873,7 @@ get_database_details() {
           dbhost="--host=${dbhost%%:*}"
         }
       else
-        # dbhost contains only hostname - use empty value to tell mysql/psql to use default value:
+        # dbhost contains only hostname - use empty value to tell mysql to use default value:
         dbprotocol=""
         # make sure to also pass --host assignment to psql, if dbhost contains neither socket nor port:
         [[ "${dbtype}" == "pgsql" ]] && dbhost="--host=${dbhost}"
@@ -886,6 +885,7 @@ get_database_details() {
 
       # create command $dbcommand for database queries depending on database found in config.php:
       [[ "${dbtype}" == "mysql" ]] && {
+        # set database command for MySQL:
         # mysql>=5.6 throws a warning when using password on command line interface: https://bugs.mysql.com/bug.php?id=66546
         # avoiding that with option --defaults-extra-file and printf as suggested by Dave James Miller: https://stackoverflow.com/questions/20751352/suppress-warning-messages-using-mysql-from-within-terminal-but-password-written/20854048#comment42372603_22933056
         # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
@@ -905,7 +905,8 @@ get_database_details() {
       [[ "${dbtype}" == "pgsql" ]] && {
         # set database command for PostgreSQL:
         # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
-        # no need to quote $dbhost and $dbprotocol here, because they can't contain spaces. Saves some lines of code (v0.7.2-22):
+        # actually no need to quote $dbhost and $dbprotocol here, because they can't contain spaces. Saves some lines of code (v0.7.2-22), but
+        # quoted both values again in v0.8.10-9 to make shellcheck happy!
         # if $dbhost contains a socket, this will not be treated as a network connection by psql and this error may occur:
         # 'psql: FATAL: Peer authentication failed for user "USERNAME"'
         # see https://stackoverflow.com/a/26183931 and https://stackoverflow.com/a/21889759 to solve this error message.
@@ -924,7 +925,8 @@ get_database_details() {
       sqlite3_database="${datadirectory}/owncloud.db"
       # use options '-list' and '-separator "|"' for sqlite3 command, to override eventually existing user-specific config-file '~/.sqlite3rc':
       # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
-      dbcommand='sqlite3 -list -separator "|" owncloud.db ' # for database queries we do "cd ${datadirectory}" later so no need to use absolute path
+      # shellcheck disable=SC2016
+      dbcommand='sqlite3 -list -separator "|" "${sqlite3_database}" '
       # store type of database for output of script:
       database="SQLite3"
       # check if sqlite3 database file is readable:
@@ -945,8 +947,10 @@ read_users_txt() {
   # reads file with user credentials
 
   # split each line at the first colon (username:password) and store usernames and according passwords in separate arrays:
+  # (ownCloud and Nextcloud don‘t allow colons to be part of a username - that is why calcardbackup uses a colon as separator)
   readarray -t users < "${users_file}"
   for i in "${!users[@]}"; do
+    # keep beginning of line until first colon as username:
     user[$i]="${users[$i]%%:*}"
     # only store password in array, when we are going to get calendars/addressbooks via http(s)-request:
     [[ "${fetch_from_database}" == "no" ]] && pass[$i]="${users[$i]#*:}"
@@ -978,15 +982,11 @@ query_database() {
 
   _output echo "+  Looking for ${item}s in your ${productname}:"
 
-  # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
-  # sqlite3 would then need "${dboptions}" (double quoted) to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
-  [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
-
   # check if table exists:
   # for checking tables with MySQL: option -r is not needed but an additional option -s is used to produce less output:
   [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -sse "SHOW TABLES LIKE '${table}';")"
   [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sse "SHOW TABLES LIKE '${table}';")"
-  [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}';")"
+  [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 "${sqlite3_database}" "SELECT name FROM sqlite_master WHERE type='table' AND name='${table}';")"
   # this check is a bit more complicated for PostgreSQL:
   if [[ "${dbtype}" == "pgsql" ]]; then
     # first let us assume that the desired table exists (variable needs to be set for check later):
@@ -1059,7 +1059,7 @@ query_database() {
       principal+=("${line%%|*}")   # store principal (=username, is first field) in array
       line="${line#*|}"            # cut first field (principal)
       if [[ "${item}" == "calendarsubscription" ]]; then
-        source+=("${line%%|*}")    # store source (URL to calendarsubscription, is now first field) in array
+        source_url+=("${line%%|*}") # store URL to source (URL to calendarsubscription, is now first field) in array
       else
         uri+=("${line%%|*}")       # store uri (is now first field) in array
       fi
@@ -1068,9 +1068,6 @@ query_database() {
       displayname+=("${line%[[:space:]]}")
     done < "${tempfile}"
   fi
-
-  # switch back to original directory when using sqlite3 (use OR instead of AND to return true in any case - changed in 0.4.2-8):
-  [[ "${dbtype}" != "sqlite3" ]] || cd "${working_dir}"
 }
 
 include_shares() {
@@ -1078,24 +1075,20 @@ include_shares() {
 
   # database only needs to be queried once for table with infos about shares ($table_shares)
   # (because same table for shared calendars and shared addressbooks):
-  if [[ "${read_shared:-}" == "" ]]; then
-    read_shared=1
-
-    # change of directory needed for SQLite3, because ${datadirectory} could contain spaces and
-    # sqlite3 would then need "${dboptions}" (double quoted!) to avoid bashs word splitting, but mysql needs ${dboptions} word-splitted:
-    [[ "${dbtype}" == "sqlite3" ]] && cd "${datadirectory}"
+  if [[ -z "${read_shared:-}" ]]; then
+    read_shared="yes"
 
     # check if table $table_shares exists:
     # for checking tables with MySQL: option -r is not needed but an additional option -s is used to produce less output:
     [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -sse "SHOW TABLES LIKE '${table_shares}';")"
     [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sse "SHOW TABLES LIKE '${table_shares}';")"
-    [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}';")"
+    [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 "${sqlite3_database}" "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_shares}';")"
     # this check is a bit more complicated for PostgreSQL:
     if [[ "${dbtype}" == "pgsql" ]]; then
       # first let us assume that the desired table exists (variable needs to be set for check later):
-      check_table="table ${table} exists"
+      check_table="table ${table_shares} exists"
       # then querie for the first line in that table, suppress any output and set ${check_table} to empty string, if psql throws an error:
-      PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
+      PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table_shares} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
     fi
 
     if [[ "${check_table:-}" == "" ]]; then
@@ -1142,13 +1135,13 @@ include_shares() {
       # for checking tables with MySQL: option -r is not needed but an additional option -s is used to produce less output:
       [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -sse "SHOW TABLES LIKE '${table_group_user}';")"
       [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sse "SHOW TABLES LIKE '${table_group_user}';")"
-      [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 owncloud.db "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}';")"
+      [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite "${sqlite3_database}" "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}';")"
       # this check is a bit more complicated for PostgreSQL:
       if [[ "${dbtype}" == "pgsql" ]]; then
         # first let us assume that the desired table exists (variable needs to be set for check later):
-        check_table="table ${table} exists"
+        check_table="table ${table_group_user} exists"
         # then querie for the first line in that table, suppress any output and set ${check_table} to empty string, if psql throws an error:
-        PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
+        PGPASSWORD="${dbpassword}" psql ${dbhost} ${dbprotocol} -U "${dbuser}" -d "${dbname}" -Aqtc "SELECT * FROM ${table_group_user} LIMIT 1;" 1>/dev/null 2>&1 || check_table=""
       fi
 
       if [[ "${check_table:-}" != "" ]]; then
@@ -1172,8 +1165,6 @@ include_shares() {
       fi
 
     fi
-    # switch back to original directory when using sqlite3 (use OR instead of AND to return true in any case - changed in 0.4.2-8):
-    [[ "${dbtype}" != "sqlite3" ]] || cd "${working_dir}"
   fi
 
   # print notice, if no results were found (table $table_shares is empty) and return from this function (includ_shares):
@@ -1240,19 +1231,18 @@ include_shares() {
     done
   fi
 
-  # unset arrays with infos about shares (from $table_shares), only after second run of this function:
-  [[ ${read_shared} -eq 2 ]] && unset -v share_type_group share_principal share_type share_resourceid grouplist
-
-  # set $read_shared to 2 for eventually second run of this function
-  read_shared=2
-
+  # unset arrays with infos about shares (from $table_shares), after second run with addressbooks or if addressbooks shall
+  # not be backed up (it is the same data for calendars + addressbooks, so make sure, we do not need it again before unsetting):
+  if [[ "${item}" == "addressbook" || "${backup_addressbooks}" == "no" ]]; then
+    unset -v share_type_group share_principal share_type share_resourceid grouplist
+  fi
 }
 
 get_icsvcf_files() {
-  # looks for matches between array with usernames and arrays created by database-queries and then downloads addressbooks/calendars
+  # looks for matches between array with usernames and arrays created by database-queries and then creates/downloads addressbooks/calendars
   # see next lines for description of arguments:
 
-  local item="${1}"            # items to be downloaded: "addressbook" or "calendar"
+  local item="${1}"            # items to be created/downloaded: "addressbook" or "calendar"
   local item_extension="${2}"  # filename extension: ".vcf" or ".ics"
   local item_header="${3}"     # valid vcf/ics-header (first line of vcf/ics-file): "BEGIN:VCARD" or "BEGIN:VCALENDAR"
   local calcarddav="${4}"      # dav-endpoint: "dav" for ownCloud/Nextcloud >= 9.0; "carddav"/"caldav" for ownCloud < 9.0
@@ -1266,11 +1256,6 @@ get_icsvcf_files() {
     _output echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
     # unset arrays (to not include calendardata for addressbook export):
     unset -v id principal uri displayname already_saved_as calendarcolor
-    # unset arrays with usernames (and eventually also array with passwords), after second run with addressbooks:
-    if [[ "${item}" == "addressbook" ]]; then
-      [[ "${fetch_from_database}" == "no" ]] && unset -v pass
-      unset -v user
-    fi
     # there is not a single item to export, let's return from this function and proceed:
     return
   fi
@@ -1279,8 +1264,6 @@ get_icsvcf_files() {
   # (to be able to print message that there is no valid user in users.txt, if no calendar/addressbook was exported)
   exported=0
 
-  # switch to datadirectory if we want to get addressbooks directly from database:
-  [[ "${dbtype}" == "sqlite3" && "${fetch_from_database}" == "yes" ]] && cd "${datadirectory}"
   # set convert variable for PostgreSQL if we want to get addressbooks directly from database:
   if [[ "${dbtype}" == "pgsql" && "${fetch_from_database}" == "yes" ]]; then
     [[ "${item}" == "addressbook" ]] && convert="CONVERT_FROM(carddata,'UTF8')"
@@ -1319,6 +1302,7 @@ get_icsvcf_files() {
     fi
 
     # loop through array with usernames given in file with users credentials (users.txt):
+    # (this for-loop will never be run, if $complete_backup_from_database=="yes")
     for index in "${!user[@]}"; do
       # compare prinicpal with username. If there is a match, we found an item to be downloaded
       # (exclude birthday calendar (contact_birthdays), because it is an automatically created calendar from ownCloud/Nextcloud):
@@ -1373,9 +1357,6 @@ get_icsvcf_files() {
     done
   done
 
-  # switch back to original directory when using SQLite3:
-  [[ "${dbtype}" == "sqlite3" && "${fetch_from_database}" == "yes" ]] && cd "${working_dir}"
-
   # there is no matching Nextcloud user, if there are calendars/addressbooks in database table but nothing has been exported:
   # print notice, if there are calendars/addressbooks in database but nothing has been exported:
   [[ ${exported} == 0 ]] && _output echo "+  no ${item}s found for users given in '${users_file}'."
@@ -1385,11 +1366,14 @@ get_icsvcf_files() {
 
   # unset arrays (to not include calendardata for calendarsubscriptions or addressbook export):
   unset -v id principal uri displayname already_saved_as calendarcolor
-  # unset arrays with usernames (and eventually also array with passwords), after second run with addressbooks:
-  if [[ "${item}" == "addressbook" ]]; then
-    [[ "${fetch_from_database}" == "no" ]] && unset -v pass
-    unset -v user
-  fi
+}
+
+unset_user_array() {
+  # unsets array with usernames (and eventually also array with passwords)
+  # this array is needed for calendars, calendarsubscriptions + addressbooks, so: before calling this function make sure, that
+  # we do not need it again before unsetting):
+  [[ "${fetch_from_database}" == "no" ]] && unset -v pass
+  unset -v user
 }
 
 create_calendar_from_db() {
@@ -1400,15 +1384,16 @@ create_calendar_from_db() {
   local -a tz_temp tz_data tz_ids
 
   # an iCalender file consists of calendar properties and calendar components.
-  # Nextcloud/ownCloud store every event/todo completely as an iCalender item in a single table cell. We need to get those events,
-  # ignore the calendar properties (they are generated separately from other database entries) and collect the components. Each
-  # event contains the according timezone-components. They are unique for each timezone, so we only need to collect each timezone once.
+  # Nextcloud/ownCloud store every event/todo completely as an iCalender item in a single table cell in table [PREFIX]calendarobjects.
+  # We need to get those events, ignore the calendar properties (calcardbackup generates them separately from table [PREFIX]calendars)
+  # and collect the components. Every single event contains the according timezone-components. They are unique for each timezone,
+  # so we only need to collect each timezone once.
 
-  # prepare database query (variable convert is needed for PostgreSQL) to collect all events from according calendarid:
+  # prepare database query to collect all events from according calendarid (variable convert is needed for PostgreSQL):
   # shellcheck disable=SC2016
   db_query='"SELECT ${convert:-calendardata} FROM ${table_calendarobjects} WHERE calendarid=${id[$i]};"'
 
-  # print generic iCalendar properties (BEGIN, VERSION, PRODID, CALSCALE):
+  # print generic iCalendar properties (BEGIN, VERSION, PRODID, CALSCALE) (according to RFC5545 each line has to end with CR+LF):
   printf '%s\r\n' "BEGIN:VCALENDAR" "VERSION:2.0" "PRODID:https://github.com/BernieO/calcardbackup v${version%% *}" "CALSCALE:GREGORIAN" > "${backupfolder_day}/${filename}"
 
   # also calendarname and calendarcolor (if existent in database):
@@ -1420,7 +1405,7 @@ create_calendar_from_db() {
   # property names and property parameters are case insensitive, so let's switch to nocasematch for comparing strings:
   shopt -s nocasematch
 
-  # store IFS (Intenal Field Separator) and set it to the null string (to prevent read from stripping leading and trailing whitespace from the line)
+  # store IFS (Intenal Field Separator) and set it to the null string (to prevent 'read' from stripping leading and trailing whitespace from the line)
   # of course it is much more performant to do this outside of the loop (instead of 'while IFS= read -r line; do' as suggested often):
   ifs_original="${IFS}"
   IFS=
@@ -1534,7 +1519,7 @@ create_calendar_from_db() {
 
   done < "${tempfile}"
 
-  # reset IFS to its original value (was set to null string before to prevent read from stripping leading and trailing whitespace from the line):
+  # reset IFS to its original value (was set to null string before to prevent 'read' from stripping leading and trailing whitespace from the line):
   IFS="${ifs_original}"
 
   # at this point of stage  all components (except for VTIMEZONES) are saved in $backupfolder_day/$filename
@@ -1555,53 +1540,60 @@ create_calendar_from_db() {
 create_calendarsubscription_files() {
   # creates textfiles with URLs to subscribed calendars
 
-  local i index filename exported
+  local i index filename exported match
 
+  # counter for exported items:
   exported=0
 
   for (( i=0; i<${#id[@]}; i++ )); do      # go through array with calendarsubscriptions
 
     if [[ -n "${users_file:-}" ]]; then
+      # in case match-variable was set in a previous run of this for loop,
+      # unset match-variable (will be set, if principal matches username):
+      unset -v match
+
       # loop through array with usernames given in file with users credentials (users.txt):
       for index in "${!user[@]}"; do
-        # compare prinicpal with username. If there is a match: break out of this for-loop:
-        [[ "${principal[$i]}" == "${user[$index]}" ]] && break
+        # compare prinicpal with username. If there is a match --> assign variable:
+        [[ "${principal[$i]}" == "${user[$index]}" ]] && match="yes"
+        [[ -n "${match:-}" ]] && break
       done
-      # continue with next id of calendarsubscriptions, if no matching user was found
-      # (this is the case, if (index_of_users-array + 1) equals the number of elements of that array):
-      [[ $(( index + 1 )) -eq ${#user[@]} ]] && continue
+
     fi
 
-    # create filename like: username-(calendar-/addressbook-)name.webcal:
-    filename="${principal[$i]}-${displayname[$i]}.webcal"
-    # remove funky characters from filename:
-    filename="${filename//[\/\\*? ]/_}"
+    if [[ -n "${match:-}" || "${complete_backup_from_database:-}" == "yes" ]]; then
+      # create filename like: username-(calendar-/addressbook-)name.webcal:
+      filename="${principal[$i]}-${displayname[$i]}.webcal"
+      # remove funky characters from filename:
+      filename="${filename//[\/\\*? ]/_}"
 
-    # create file with URL to subscribed calendar:
-    _output printf '%s' "+  Saving ${item} ${filename}..."
-    echo "${source[$i]}" > "${backupfolder_day}/${filename}"
-    _output printf '%s\n' "...success!"
-    exported=$((exported + 1))
+      # create file with URL to subscribed calendar:
+      _output printf '%s' "+  Saving ${item} ${filename}..."
+      echo "${source_url[$i]}" > "${backupfolder_day}/${filename}"
+      _output printf '%s\n' "...success!"
+      # increase counter $exported:
+      exported=$((exported + 1))
+    fi
   done
 
   # print notice, if there are calendarsubscriptions in database but nothing has been exported:
   [[ ${exported} == 0 ]] && _output echo "+  no calendarsubscriptions found for users given in '${users_file}'."
 
   # unset arrays (to not include data of calendarsubscriptions for addressbook export):
-  unset -v id principal displayname source
+  unset -v id principal displayname source_url
 }
 
 create_addressbook_from_db() {
   # create vCard addressbook (.vcf file) by reading cards directly from database (option -f | --fetch-from-database):
   # according to: https://tools.ietf.org/html/rfc6350
 
-  # prepare database query (variable convert is needed for PostgreSQL) to collect all cards belonging to addressbookid:
+  # prepare database query to collect all cards belonging to addressbookid (variable convert is needed for PostgreSQL):
   # shellcheck disable=SC2016
   db_query='"SELECT ${convert:-carddata} FROM ${table_cards} WHERE addressbookid=${id[$i]};"'
 
   # this is much less complex than iCalendar: a vCard addressbook is just single vCards stuck together one after the other.
-  # so we just need to pipe the output the column carddata with id of the according addressbook to the addressbook file.
-  # for more details see: https://tools.ietf.org/html/rfc6350:
+  # so we just need to pipe the output of the column 'carddata' from table [PREFIX]cards with id of the according addressbook
+  # to the addressbook-backup-file. For more details see: https://tools.ietf.org/html/rfc6350:
   eval "${dbcommand}" "${db_query}" > "${backupfolder_day}/${filename}"
 }
 
@@ -1636,14 +1628,14 @@ get_calendars() {
   # gets calendars and saves them in backup-folder. Have a look at used functions for more detailed explanations.
 
   query_database "${table_calendars}" "calendar"
-  # run include_shares only if configured and calendars found in database:
+  # run include_shares only, if configured and calendars found in database:
   [[ "${include_shares}" == "yes" && -n ${id:-} ]] && include_shares
   get_icsvcf_files "calendar" ".ics" "BEGIN:VCALENDAR" "${caldav}" ""
 
   # get calendarsubscriptions for ownCloud/Nextcloud >= 9.0 (older versions do not support calendarsubscriptions):
   if [[ "${mainversion}" -ge "${davchangeversion}" ]]; then
     query_database "${table_calendarsubscriptions}" "calendarsubscription"
-    if [[ -n "${source:-}" ]]; then
+    if [[ -n "${source_url:-}" ]]; then
       # create files with calendarsubscriptions, if table calendarsubscriptions is not empty:
       create_calendarsubscription_files
     else
@@ -1654,19 +1646,26 @@ get_calendars() {
     # ownCloud < 9.0 has no support for calendarsubscriptions
     _output echo "+  skipping calendarsubscriptions, because ownCloud < 9.0 does not support them."
   fi
+
+  # if set: unset array with usernames (and eventually passwords), if we do not plan to get addressbooks as well:
+  if [[ -n "${user:-}" ]]; then
+    [[ "${backup_addressbooks}" == "yes" ]] || unset_user_array
+  fi
 }
 
 get_addressbooks() {
   # gets addressbooks and saves them in backup-folder. Have a look at used functions for more detailed explanations.
 
   query_database "${table_addressbooks}" "addressbook"
-  # run include_shares only if configured and addressbooks found in database:
+  # run include_shares only, if configured and addressbooks found in database:
   [[ "${include_shares}" == "yes" && -n ${id:-} ]] && include_shares
   get_icsvcf_files "addressbook" ".vcf" "BEGIN:VCARD" "${carddav}" "${extra_users}"
+  # unset array with usernames (and eventually also passwords) if run with option -u:
+  [[ -z "${user:-}" ]] || unset_user_array
 }
 
 check_for_backup_files() {
-  # checks for files in backup-directory and prints warning, if there are no files (meaning absolutely nothing has been downloaded).
+  # checks for files in backup-directory and prints warning, if there are no files (meaning absolutely nothing has been created/downloaded).
   local backupfolder_content
 
   backupfolder_content="$(ls -A "${backupfolder_day}")"
@@ -1705,7 +1704,7 @@ pack_it() {
 
   # if backup shall NOT be encrypted, print path to backup:
   # (use || instead of && so that function returns true in any case - corrected in ver. 0.1.2)
-  [[ "${encrypt_backup}" == "yes" ]] || _output echo "+  Find your backup here: ${path_to_backup}"
+  [[ "${encrypt_backup}" == "yes" ]] || _output echo "+  Find your compressed backup here: ${path_to_backup}"
 }
 
 gpg_encrypt_backup() {
@@ -1728,8 +1727,8 @@ gpg_encrypt_backup() {
 }
 
 set_mtime_command() {
-  # creates command to retrieve last modification time of file depending on Operating System
-  # *BSD, Darwin, Minix use different options to stat than Linux
+  # creates command to retrieve last modification time of file depending on Operating System (needed for deleting old backups)
+  # *BSD, Darwin, Minix use different options to stat than Linux or SunOS
 
   case "$(uname)" in
 
@@ -1782,7 +1781,7 @@ keep_like_time_machine() {
   for i in "${backupfolder}"/calcardbackup*; do
     # get unix timestamp of last modification of this backup:
     last_modified="$(${mtime_cmd} ${mtime_pre_options} "${i}" ${mtime_post_options:-})"
-    # check, if last backup is old enough to be deleted and created not on a monday:
+    # check, if backup is old enough to be deleted and has not been created on a monday:
     if [[ ${last_modified} -lt ${old} && $(printf '%(%u)T' "${last_modified}") -ne 1 ]]; then
       # print filename and remove backup:
       _output echo "+     -  ${i}"
@@ -1818,7 +1817,7 @@ delete_old_backups() {
   for i in "${backupfolder}"/calcardbackup*; do
     # get unix timestamp of last modification of this backup:
     last_modified="$(${mtime_cmd} ${mtime_pre_options} "${i}" ${mtime_post_options:-})"
-    # check, if last modification is old enough to be deleted:
+    # check, if modification time is old enough for backup to be deleted:
     if [[ ${last_modified} -lt ${old} ]]; then
       # print filename and remove backup:
       _output echo "+     -  ${i}"
@@ -1836,7 +1835,7 @@ delete_old_backups() {
 
 finish() {
   # last function to be executed. This is the end of calcardbackup
-  # prints END-message or if in batch-mode (-b) only path to backup
+  # prints END-message or, if in batch-mode (-b), only path to backup:
 
   # print timestamp and END-message:
   _output echo "+  $(date) --> END calcardbackup"
@@ -1874,11 +1873,11 @@ curl_error() {
 
 error_exit() {
   # prints error message and exits script
-  # if any arguments are passed, they all will be printed as error message
+  # if any arguments are passed, they all will be printed as error message to stderr
 
   echo "-- calcardbackup: ERROR --" >&2
 
-  # print all arguments that have been passed to this function as error message:
+  # print all arguments that have been passed to this function as error message to stderr:
   for message in "$@"; do
     echo "-- ${message}" >&2
   done

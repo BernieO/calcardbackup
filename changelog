@@ -1,6 +1,8 @@
-vX.X.X (XX.XX.XXXX)
+v0.9.1_no-fd (11.06.2019)
 - improved: some redundant code has been removed to increase code readability
-- fixed: use tempfile instead of here-document also for vendor detection
+- improved: use absolute path to sqlite3 database to simplify code
+- improved: do not keep arrays longer than needed in memory
+- fixed: using option -u, calendarsubscriptions of the last user were not backed up
 
 v0.9.0_no-fd (03.06.2019)
 - improved: minor addition to both READMEs about extracting from a broken ownCloud <= 8.2
