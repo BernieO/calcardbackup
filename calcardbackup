@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.2 (11.06.2019), AGPL-3.0"
+version="0.9.2-1 (14.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -52,7 +52,7 @@ remove_trailing_slashes() {
   while [[ "${slashes_removed}" =~ /$ ]]; do
     slashes_removed="${slashes_removed%/}"
   done
-  echo "${slashes_removed}"
+  printf '%s\n' "${slashes_removed}"
 }
 
 get_absolute_path_ng() {
@@ -87,7 +87,7 @@ get_absolute_path_ng() {
   fi
 
   # return absolute path:
-  echo "${absolute_path}"
+  printf '%s\n' "${absolute_path}"
 }
 
 check_readable_file() {
@@ -102,8 +102,8 @@ print_header() {
   # prints header with timestamp and version number
 
   _output printf '\n%s\n' "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-  _output echo "+"
-  _output echo "+  $(date) --> START calcardbackup ver. ${version}"
+  _output printf '%s\n' "+"
+  _output printf '%s\n' "+  $(date) --> START calcardbackup ver. ${version}"
 }
 
 set_required_paths() {
@@ -143,7 +143,7 @@ read_config_file() {
   # absolute path to config file:
   config_file="$(get_absolute_path_ng "${config_file}")"
   config_file_dir="${config_file%/*}"
-  _output echo "+  Using configuration file ${config_file}, ignoring all other command line options."
+  _output printf '%s\n' "+  Using configuration file ${config_file}, ignoring all other command line options."
   load_default_values # if more options have been passed to command: ignore all options except for -b
 
   # check config file for correct syntax (only variable declarations, comments and empty lines allowed)
@@ -170,7 +170,7 @@ read_config_file() {
 preparations() {
   # checks for required packages, reads config-file and validates user given values:
 
-  _output echo "+  Checking dependencies and preparing..."
+  _output printf '%s\n' "+  Checking dependencies and preparing..."
 
   # if option -c|--configfile or nothing at all or only -b is given - read config file (and overwrite default values):
   [[ -n "${config_file:-}" ]] && read_config_file
@@ -206,15 +206,15 @@ preparations() {
 
   # check $include_shares for valid value (could only be invalid when using config-file):
   if [[ ! "${include_shares}" =~ ^(yes|no)$ ]]; then
-    _output echo "-- WARNING: Parameter 'include_shares' is not valid (only \"yes\" or \"no\" allowed)."
-    _output echo "-- WARNING: Using default value instead: include_shares=\"no\""
+    _output printf '%s\n' "-- WARNING: Parameter 'include_shares' is not valid (only \"yes\" or \"no\" allowed)."
+    _output printf '%s\n' "-- WARNING: Using default value instead: include_shares=\"no\""
     include_shares="no"
   fi
 
   # check $fetch_from_database for valid value (could only be invalid when using config-file):
   if [[ ! "${fetch_from_database}" =~ ^(yes|no)$ ]]; then
-    _output echo "-- WARNING: Parameter 'fetch_from_database' is not valid (only \"yes\" or \"no\" allowed)."
-    _output echo "-- WARNING: Using default value instead: fetch_from_database=\"yes\""
+    _output printf '%s\n' "-- WARNING: Parameter 'fetch_from_database' is not valid (only \"yes\" or \"no\" allowed)."
+    _output printf '%s\n' "-- WARNING: Using default value instead: fetch_from_database=\"yes\""
     fetch_from_database="yes"
   fi
   # print warning when using deprecated cli option -g|--get-via-http or value fetch_from_database="no" in config file:
@@ -232,14 +232,14 @@ preparations() {
       [[ -n "${config_file:-}" ]] && error_exit "ERROR: Package 'curl' is needed for running this script with 'fetch_from_database=\"no\"'." "Run script again with 'fetch_from_database=\"yes\"' or install cURL with 'apt-get install curl'."
     fi
     # for certain server versions the vendor (ownCloud/Nextcloud) can't be detected, if cURL is missing:
-    _output echo "+  cURL not installed - vendor detection might fail."
+    _output printf '%s\n' "+  cURL not installed - vendor detection might fail."
   else
     curl_installed="yes"
     # this is only needed, if curl is installed:
     # check $trustful_certificate for valid value (could only be invalid when using config-file):
     if [[ ! "${trustful_certificate}" =~ ^(yes|no)$ ]]; then
-      _output echo "-- NOTICE: Parameter 'trustful_certificate' is not valid (allowed is only \"yes\" or \"no\")."
-      _output echo "-- NOTICE: Using default value instead: trustful_certificate=\"yes\""
+      _output printf '%s\n' "-- NOTICE: Parameter 'trustful_certificate' is not valid (allowed is only \"yes\" or \"no\")."
+      _output printf '%s\n' "-- NOTICE: Using default value instead: trustful_certificate=\"yes\""
       trustful_certificate="yes"
     fi
     # assign insecure option for curl (depending on value given by user):
@@ -252,10 +252,10 @@ preparations() {
   # if $users_file is unset or empty and we fetch everything from database - do a complete backup:
   if [[ -z ${users_file:-} ]]; then
     if [[ ${fetch_from_database} == "yes" ]]; then
-      _output echo "+  no usersfile given:"
-      _output echo "+     - will fetch all available items from database"
+      _output printf '%s\n' "+  no usersfile given:"
+      _output printf '%s\n' "+     - will fetch all available items from database"
       if [[ ${include_shares} == "yes" ]]; then
-        _output echo "+     - will not backup shared items additionally"
+        _output printf '%s\n' "+     - will not backup shared items additionally"
         include_shares="no"
       fi
       complete_backup_from_database="yes"
@@ -271,13 +271,13 @@ preparations() {
       users_file="$(get_absolute_path_ng "${users_file}" 2>/dev/null)" || complete_backup_from_database="yes"
       if [[ "${complete_backup_from_database:-}" == "yes" ]]; then
         # file with usernames and passwords is not readable:
-        _output echo "+  file with usernames not readable:"
-        _output echo "+     - will fetch all available items from database"
+        _output printf '%s\n' "+  file with usernames not readable:"
+        _output printf '%s\n' "+     - will fetch all available items from database"
         # users_file needs to be unset, because it is not readable:
         unset -v users_file
         if [[ "${include_shares}" == "yes" ]]; then
           # don't include shared items when doing a complete backup - will backup everything anyway:
-          _output echo "+     - will not backup shared items additionally"
+          _output printf '%s\n' "+     - will not backup shared items additionally"
           include_shares="no"
         fi
       fi
@@ -301,39 +301,39 @@ preparations() {
 
   # make sure the configured date format in $date_extension is valid:
   if [[ ! "$(date +"${date_extension}" 2>/dev/null)" ]]; then
-    [[ -z "${config_file:-}" ]] && _output echo "-- NOTICE: Argument to option '-d|--date' has no valid format (check 'man date' for valid formats)."
-    [[ -n "${config_file:-}" ]] && _output echo "-- NOTICE: Parameter 'date_extension' has no valid format (check 'man date' for valid formats)."
-    _output echo "-- NOTICE: Using default value instead: \"-%Y-%m-%d\""
+    [[ -z "${config_file:-}" ]] && _output printf '%s\n' "-- NOTICE: Argument to option '-d|--date' has no valid format (check 'man date' for valid formats)."
+    [[ -n "${config_file:-}" ]] && _output printf '%s\n' "-- NOTICE: Parameter 'date_extension' has no valid format (check 'man date' for valid formats)."
+    _output printf '%s\n' "-- NOTICE: Using default value instead: \"-%Y-%m-%d\""
     date_extension="-%Y-%m-%d"
   fi
 
   # make sure $keep_days_like_time_machine is a positive integer and set it to the default (0) if not:
   if [[ ! "${keep_days_like_time_machine:-}" =~ ^[0-9]+$ ]]; then
-    [[ -z "${config_file:-}" ]] && _output echo "-- NOTICE: Argument to option '-ltm/--like-time-machine' is not a positive number."
-    [[ -n "${config_file:-}" ]] && _output echo "-- NOTICE: Parameter 'keep_days_like_time_machine' is not a positive number."
-    _output echo "-- NOTICE: Using default value of 0 instead (keeping everything)."
+    [[ -z "${config_file:-}" ]] && _output printf '%s\n' "-- NOTICE: Argument to option '-ltm/--like-time-machine' is not a positive number."
+    [[ -n "${config_file:-}" ]] && _output printf '%s\n' "-- NOTICE: Parameter 'keep_days_like_time_machine' is not a positive number."
+    _output printf '%s\n' "-- NOTICE: Using default value of 0 instead (keeping everything)."
     keep_days_like_time_machine="0"
   fi
 
   # make sure $delete_backups_older_than is a positive integer and set it to default (0) if not:
   if [[ ! "${delete_backups_older_than:-}" =~ ^[0-9]+$ ]]; then
-    [[ -z "${config_file:-}" ]] && _output echo "-- NOTICE: Argument to option '-r/--remove' is not a positive number."
-    [[ -n "${config_file:-}" ]] && _output echo "-- NOTICE: Parameter 'delete_backups_older_than' is not a positive number."
-    _output echo "-- NOTICE: Using default value of 0 instead (not deleting anything)."
+    [[ -z "${config_file:-}" ]] && _output printf '%s\n' "-- NOTICE: Argument to option '-r/--remove' is not a positive number."
+    [[ -n "${config_file:-}" ]] && _output printf '%s\n' "-- NOTICE: Parameter 'delete_backups_older_than' is not a positive number."
+    _output printf '%s\n' "-- NOTICE: Using default value of 0 instead (not deleting anything)."
     delete_backups_older_than="0"
   fi
 
   # check $compress for valid value (could only be invalid when using config-file):
   if [[ ! "${compress:-}" =~ ^(yes|no)$ ]]; then
-    _output echo "-- NOTICE: Parameter 'compress' is not valid (only \"yes\" or \"no\" allowed)."
-    _output echo "-- NOTICE: Using default value instead: compress=\"yes\""
+    _output printf '%s\n' "-- NOTICE: Parameter 'compress' is not valid (only \"yes\" or \"no\" allowed)."
+    _output printf '%s\n' "-- NOTICE: Using default value instead: compress=\"yes\""
     compress="yes"
   fi
 
   # check $encrypt_backup for valid value (could only be invalid when using config-file):
   if [[ ! "${encrypt_backup:-}" =~ ^(yes|no)$ ]]; then
-    _output echo "-- WARNING: Parameter 'encrypt_backup' is not valid (only \"yes\" or \"no\" allowed)."
-    _output echo "-- WARNING: Using default value instead: encrypt_backup=\"no\""
+    _output printf '%s\n' "-- WARNING: Parameter 'encrypt_backup' is not valid (only \"yes\" or \"no\" allowed)."
+    _output printf '%s\n' "-- WARNING: Using default value instead: encrypt_backup=\"no\""
     encrypt_backup="no"
   elif [[ "${encrypt_backup:-}" == "yes" ]]; then
     # check for package gpg (if installed, prefer gpg2 over gpg)::
@@ -341,8 +341,8 @@ preparations() {
     command -v gpg2 > /dev/null && gpgcommand="gpg2"
     [[ -z "${gpgcommand:-}" ]] && error_exit "ERROR: You chose to encrypt your backup." "Therefore package 'gnupg' is needed. Install with 'apt-get install gnupg' and run script again"
     if [[ "${compress:-}" == "no" ]]; then
-      _output echo "-- WARNING: Can't encrypt uncompressed backup."
-      _output echo "-- WARNING: Changing from uncompress to compress backup"
+      _output printf '%s\n' "-- WARNING: Can't encrypt uncompressed backup."
+      _output printf '%s\n' "-- WARNING: Changing from uncompress to compress backup"
       compress="yes"
     fi
     if [[ -z "${config_file:-}" ]]; then
@@ -367,14 +367,14 @@ preparations() {
     command -v zip > /dev/null || error_exit "ERROR: You chose to compress backed up files with 'zip' instead of 'tar.gz'." "Therefore package 'zip' is needed. Install with 'apt-get install zip' and run script again"
   elif [[ "${compression_method:-}" != "tar.gz" && "${compress}" == "yes" ]]; then
     # if $compression_method is set to something else than "zip" or "tar.gz" - use "tar.gz":
-    _output echo "-- NOTICE: Parameter 'compression_method' is set to unsupported format. Using default value 'tar.gz'."
+    _output printf '%s\n' "-- NOTICE: Parameter 'compression_method' is set to unsupported format. Using default value 'tar.gz'."
     compression_method="tar.gz"
   fi
 
   # check $snap for valid value (could only be invalid when using config-file):
   if [[ ! "${snap:-}" =~ ^(yes|no)$ ]]; then
-    _output echo "-- WARNING: Parameter 'snap' is not valid (only \"yes\" or \"no\" allowed)."
-    _output echo "-- WARNING: Using default value instead: snap=\"no\""
+    _output printf '%s\n' "-- WARNING: Parameter 'snap' is not valid (only \"yes\" or \"no\" allowed)."
+    _output printf '%s\n' "-- WARNING: Using default value instead: snap=\"no\""
     snap="no"
   fi
   # make sure nextcloud.mysql-client is available when configured to use nextcloud-snap:
@@ -384,7 +384,7 @@ preparations() {
 }
 
 getvalue_from_configphp() {
-  # reads a line with a given paramter from config.php and echoes the parameters value
+  # reads a line with a given paramter from config.php and returns the parameters value
   # arguments: ${1} is parameter which value should be returned
 
   local regex line
@@ -404,7 +404,7 @@ getvalue_from_configphp() {
   else
     line="value is unset"
   fi
-  echo "${line}"
+  printf '%s\n' "${line}"
 }
 
 is_trusted_domain() {
@@ -457,7 +457,7 @@ is_trusted_domain() {
   done <"${configphp}"
 
   # return "true", if passed URL is a trusted_domain, otherwise return "false":
-  echo "${result:-false}"
+  printf '%s\n' "${result:-false}"
 }
 
 read_config_php() {
@@ -550,19 +550,19 @@ read_config_php() {
   if [[ "${nextcloud_url}" != "${nextcloud_url_default}" && "${nextcloud_url}" != "${nextcloud_url_overwrite}" && "${nextcloud_url_overwrite}" != "value is unset" ]]; then
     # use given URL but print notice, if $nextcloud_url has been configured to something other than default or overwrite.cli.url:
     # (last conditional expression in if statement above: make sure overwrite.cli.url is present and not empty):
-    _output echo "-- NOTICE: Configured URL differs from 'overwrite.cli.url' in config.php:"
-    _output echo "-- '${nextcloud_url_overwrite}/'   ==>   detected in ${configphp}"
+    _output printf '%s\n' "-- NOTICE: Configured URL differs from 'overwrite.cli.url' in config.php:"
+    _output printf '%s\n' "-- '${nextcloud_url_overwrite}/'   ==>   detected in ${configphp}"
     _output printf '%s' "-- '${nextcloud_url}/'   ==>   "
     [[ -z "${config_file:-}" ]] && _output printf '%s\n' "given with option -a|--address"
     [[ -n "${config_file:-}" ]] && _output printf '%s\n' "found in config file ${config_file}"
 
     # test, if given URL is in trusted_domains array in config.php:
     if [[ "$(is_trusted_domain "${nextcloud_url}")" == "true" ]]; then
-      _output echo "-- using second one, because found in 'trusted_domains' (config.php)."
+      _output printf '%s\n' "-- using second one, because found in 'trusted_domains' (config.php)."
     else
       nextcloud_url="${nextcloud_url#*//}"
       nextcloud_url="${nextcloud_url%%/*}"
-      _output echo "-- using first one, because '${nextcloud_url}' does not belong to 'trusted_domains' (config.php)"
+      _output printf '%s\n' "-- using first one, because '${nextcloud_url}' does not belong to 'trusted_domains' (config.php)"
       # use overwrite.cli.url as URL, because given URL is not a trusted domain:
       nextcloud_url="${nextcloud_url_overwrite}"
     fi
@@ -577,8 +577,8 @@ read_config_php() {
     else
       # if we fetch everything from database, we do not need the url of the ownCloud/Nextcloud server,
       # so avoid requests for ownCloud/Nextclouds in this case unknown URL with curl_installed="no"
-      _output echo "+  Can't retrieve url from ${configphp}"
-      _output echo "+  Continuing anyway, because fetching everything from database."
+      _output printf '%s\n' "+  Can't retrieve url from ${configphp}"
+      _output printf '%s\n' "+  Continuing anyway, because fetching everything from database."
       # For this scenario this variable name is a bit misleading, but the script needs to act as if curl wasn't installed:
       curl_installed="no"
     fi
@@ -595,8 +595,8 @@ read_config_php() {
         [[ -n "${config_file:-}" ]] && error_exit "ERROR: configured URL '${nextcloud_url}' does not belong to 'trusted_domains' (config.php)!" "Check value 'nextcloud_url' or use 'fetch_from_database=\"yes\"'."
       fi
       # print notice, if given URL is not in trusted_domains array in config.php:
-      _output echo "-- NOTICE: given URL '${nextcloud_url}' does not belong to 'trusted_domains' (config.php)"
-      _output echo "+  Continuing without given URL, because fetching everything from database."
+      _output printf '%s\n' "-- NOTICE: given URL '${nextcloud_url}' does not belong to 'trusted_domains' (config.php)"
+      _output printf '%s\n' "+  Continuing without given URL, because fetching everything from database."
       # For this scenario this variable name is a bit misleading, but the script needs to act as if curl wasn't installed:
       curl_installed="no"
     fi
@@ -608,7 +608,7 @@ read_config_php() {
   fi
 
   # Print url which will be used only, if curl is installed (use || instead of && to not return false!):
-  [[ ${curl_installed} == "no" ]] || _output echo "+  Using URL: ${nextcloud_url}"
+  [[ ${curl_installed} == "no" ]] || _output printf '%s\n' "+  Using URL: ${nextcloud_url}"
 }
 
 read_status_php() {
@@ -655,8 +655,8 @@ read_status_php() {
       if [[ ! "${status_php}" =~ ${regex} || -n ${cerror:-} ]]; then
         # if we fetch everything from database, this script can run anyway, even if ownCloud/Nextcloud is not online,
         # in this case no further requests to ownCloud/Nextclouds unusable URL with curl_installed="no":
-        [[ -n ${cerror:-} ]] && _output echo "+  can't read status.php (cURL code '${cerror}')."
-        [[ -z ${cerror:-} ]] && _output echo "+  no valid status.php found at ${nextcloud_url}."
+        [[ -n ${cerror:-} ]] && _output printf '%s\n' "+  can't read status.php (cURL code '${cerror}')."
+        [[ -z ${cerror:-} ]] && _output printf '%s\n' "+  no valid status.php found at ${nextcloud_url}."
         # For this scenario this variable name is a bit misleading, but the script needs to act as if curl wasn't installed:
         curl_installed="no"
       fi
@@ -686,7 +686,7 @@ read_status_php() {
       # check for missing version in status.php due to option in config.php introduced with ownCloud 10.0 ('version.hide' => true,):
       [[ -z "${version_status_php:-}" && -z "${versionstring_status_php:-}" ]] && {
         # print notice that version number is hidden (empty):
-        _output echo "-- NOTICE: version number hidden in status.php."
+        _output printf '%s\n' "-- NOTICE: version number hidden in status.php."
       }
 
       # check for "needsDbUpgrade":true in status.php and exit if ownCloud/Nextcloud needs a DbUpgrade:
@@ -793,7 +793,7 @@ detect_vendor() {
             productname="ownCloud"
           else
             # Nextcloud 10.0s version in config.php is 9.1.X, as well as ownCloud 9.1 - can't detect vendor then:
-            echo "+  can't detect vendor"
+            _output printf '%s\n' "+  can't detect vendor"
             # use $fullversion for output
             server_version="${full_version}"
           fi
@@ -818,7 +818,7 @@ detect_vendor() {
 
       * )
         # vendor can't be detected (productname is already set to generic value "Server"):
-        _output echo "+  can't detect vendor."
+        _output printf '%s\n' "+  can't detect vendor."
         # use $fullversion for output
         server_version="${full_version}"
       ;;
@@ -826,7 +826,7 @@ detect_vendor() {
     esac
   fi
 
-  _output echo "+  ${productname} ${server_version} detected."
+  _output printf '%s\n' "+  ${productname} ${server_version} detected."
 }
 
 get_database_details() {
@@ -936,7 +936,7 @@ get_database_details() {
 
   esac
 
-  _output echo "+  Database of chosen ${productname} installation is ${database}."
+  _output printf '%s\n' "+  Database of chosen ${productname} installation is ${database}."
 }
 
 read_users_txt() {
@@ -976,7 +976,7 @@ query_database() {
   # declare local variables:
   local check_table fields regex db_query line
 
-  _output echo "+  Looking for ${item}s in your ${productname}:"
+  _output printf '%s\n' "+  Looking for ${item}s in your ${productname}:"
 
   # check if table exists:
   # for checking tables with MySQL: option -r is not needed but an additional option -s is used to produce less output:
@@ -994,8 +994,8 @@ query_database() {
   if [[ "${check_table:-}" == "" ]]; then
     if [[ "${item}" != "calendarsubscription" ]]; then
       # print notice, if table doesn't exist (unnecessary for calendarsubscriptions):
-      _output echo "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
-      _output echo "-- NOTICE: Looks like your ${productname} did not create any ${item}s yet."
+      _output printf '%s\n' "-- NOTICE: table '${table}' containing ${item}s does not exist in database."
+      _output printf '%s\n' "-- NOTICE: Looks like your ${productname} did not create any ${item}s yet."
     fi
 
   else
@@ -1088,8 +1088,8 @@ include_shares() {
 
     if [[ "${check_table:-}" == "" ]]; then
       # print notice, if $table_shares doesn't exist:
-      _output echo "-- NOTICE: table '${table_shares}' containing shared calendars/addressbooks does not exist in database."
-      _output echo "-- NOTICE: Looks like there are no shared calenders/addressbooks in your ${productname}."
+      _output printf '%s\n' "-- NOTICE: table '${table_shares}' containing shared calendars/addressbooks does not exist in database."
+      _output printf '%s\n' "-- NOTICE: Looks like there are no shared calenders/addressbooks in your ${productname}."
 
     else
       # table with info about shares ($table_shares) exists - read required fields from table and assign values to share_arrays
@@ -1162,7 +1162,7 @@ include_shares() {
 
   # print notice, if no results were found (table $table_shares is empty) and return from this function (includ_shares):
   if [[ -z ${share_principal:-} ]]; then
-    _output echo "-- NOTICE: Table '${table_shares}' is empty. There are no shared ${item}s in your ${productname}."
+    _output printf '%s\n' "-- NOTICE: Table '${table_shares}' is empty. There are no shared ${item}s in your ${productname}."
     return
   fi
 
@@ -1246,7 +1246,7 @@ get_icsvcf_files() {
 
   # check whether database returned 0 entries (meaning there is not a single calendar/addressbook in the database):
   if [[ -z ${uri:-} ]]; then
-    _output echo "-- INFO: Couldn't find a single ${item} in your ${productname}!"
+    _output printf '%s\n' "-- INFO: Couldn't find a single ${item} in your ${productname}!"
     # unset arrays (to not include calendardata for addressbook export):
     unset -v id principal uri displayname already_saved_as calendarcolor
     # there is not a single item to export, let's return from this function and proceed:
@@ -1315,7 +1315,7 @@ get_icsvcf_files() {
             # create name of item for message (use $filename without (.ics/.vcf):
             item_name="${filename%.*}"
             # print message that item is already downloaded and break the for-loop going through usernames to continue with next addressbook/calendar:
-            _output echo "+  Skipping ${item} '${item_name}': already saved as '${already_saved_as[$z]}'." && break
+            _output printf '%s\n' "+  Skipping ${item} '${item_name}': already saved as '${already_saved_as[$z]}'." && break
           fi
           # item has not yet been downloaded, but it will be downloaded, so let's add it to the arraay $already_saved_as:
           already_saved_as[$z]="${filename}"
@@ -1352,7 +1352,7 @@ get_icsvcf_files() {
 
   # there is no matching Nextcloud user, if there are calendars/addressbooks in database table but nothing has been exported:
   # print notice, if there are calendars/addressbooks in database but nothing has been exported:
-  [[ ${exported} == 0 ]] && _output echo "+  no ${item}s found for users given in '${users_file}'."
+  [[ ${exported} == 0 ]] && _output printf '%s\n' "+  no ${item}s found for users given in '${users_file}'."
 
   # unset arrays (to not include calendardata for calendarsubscriptions or addressbook export):
   unset -v id principal uri displayname already_saved_as calendarcolor
@@ -1558,7 +1558,7 @@ create_calendarsubscription_files() {
 
       # create file with URL to subscribed calendar:
       _output printf '%s' "+  Saving ${item} ${filename}..."
-      echo "${source_url[$i]}" > "${backupfolder_day}/${filename}"
+      printf '%s\r\n' "${source_url[$i]}" > "${backupfolder_day}/${filename}"
       _output printf '%s\n' "...success!"
       # increase counter $exported:
       exported=$((exported + 1))
@@ -1566,7 +1566,7 @@ create_calendarsubscription_files() {
   done
 
   # print notice, if there are calendarsubscriptions in database but nothing has been exported:
-  [[ ${exported} == 0 ]] && _output echo "+  no calendarsubscriptions found for users given in '${users_file}'."
+  [[ ${exported} == 0 ]] && _output printf '%s\n' "+  no calendarsubscriptions found for users given in '${users_file}'."
 
   # unset arrays (to not include data of calendarsubscriptions for addressbook export):
   unset -v id principal displayname source_url
@@ -1629,11 +1629,11 @@ get_calendars() {
       create_calendarsubscription_files
     else
       # print info, that there are no calendarsubscriptions in the installation, (if table calendarsubscriptions is empty):
-      _output echo "+  No calendarsubscriptions found."
+      _output printf '%s\n' "+  No calendarsubscriptions found."
     fi
   else
     # ownCloud < 9.0 has no support for calendarsubscriptions
-    _output echo "+  skipping calendarsubscriptions, because ownCloud < 9.0 does not support them."
+    _output printf '%s\n' "+  skipping calendarsubscriptions, because ownCloud < 9.0 does not support them."
   fi
 
   # if set: unset array with usernames (and eventually passwords), if we do not plan to get addressbooks as well:
@@ -1659,7 +1659,7 @@ check_for_backup_files() {
 
   backupfolder_content="$(ls -A "${backupfolder_day}")"
   if [[ -z "${backupfolder_content}" ]]; then
-    echo "-- WARNING: No files in backup directory - meaning no backup created !!" >&2
+    printf '%s\n' "-- WARNING: No files in backup directory - meaning no backup created !!" >&2
     backup_files_present="no"
     rm -r "${backupfolder_day}"  # remove empty backup folder
   else
@@ -1670,7 +1670,7 @@ check_for_backup_files() {
 pack_it() {
   # compresses backup
 
-  _output echo "+  Compressing backup as *.${compression_method} file. Be patient - this may take a while."
+  _output printf '%s\n' "+  Compressing backup as *.${compression_method} file. Be patient - this may take a while."
   # change to backupfolder to make sure there won't be any funky paths in compressed file:
   cd "${backupfolder}"
 
@@ -1689,11 +1689,11 @@ pack_it() {
   rm -r "${backupfolder_day}"
   # path to backup needs to be stored in case backup shall be encrypted or calcardbackup is running in batch-mode (-b):
   path_to_backup="${backupfolder}/calcardbackup${day}.${compression_method}"
-  _output echo "+  Backup successfully compressed!"
+  _output printf '%s\n' "+  Backup successfully compressed!"
 
   # if backup shall NOT be encrypted, print path to backup:
   # (use || instead of && so that function returns true in any case - corrected in ver. 0.1.2)
-  [[ "${encrypt_backup}" == "yes" ]] || _output echo "+  Find your compressed backup here: ${path_to_backup}"
+  [[ "${encrypt_backup}" == "yes" ]] || _output printf '%s\n' "+  Find your compressed backup here: ${path_to_backup}"
 }
 
 gpg_encrypt_backup() {
@@ -1702,8 +1702,8 @@ gpg_encrypt_backup() {
   # compose path to encrypted backup by adding ".gpg" to the path/filename of compressed backup:
   local path_encrypted_backup="${path_to_backup}.gpg"
   # encrypt compressed backup file:
-  ${gpgcommand} --passphrase-file <(echo "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_to_backup}" || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
-  # command to decrypt: gpg --passphrase-file <(echo "${gpg_passphrase}") --batch --output decrypted_output_file --decrypt encrypted_file
+  ${gpgcommand} --passphrase-file <(printf '%s\n' "${gpg_passphrase}") --cipher-algo AES256 --batch --no-tty --yes --output "${path_encrypted_backup}" -c "${path_to_backup}" || error_exit "ERROR: Encrypting the compressed backup did not work!" "Check messages above."
+  # command to decrypt: gpg --passphrase-file <(printf '%s\n' "${gpg_passphrase}") --batch --output decrypted_output_file --decrypt encrypted_file
 
   # delete passphrase from memory:
   unset -v gpg_passphrase
@@ -1711,8 +1711,8 @@ gpg_encrypt_backup() {
   rm "${path_to_backup}"
   # path_to_backup has changed and needs to be stored, in case calcardbackup is running in batch-mode (-b):
   path_to_backup="${path_encrypted_backup}"
-  _output echo "+  Backup successfully encrypted!"
-  _output echo "+  Find your encrypted backup here: ${path_to_backup}"
+  _output printf '%s\n' "+  Backup successfully encrypted!"
+  _output printf '%s\n' "+  Find your encrypted backup here: ${path_to_backup}"
 }
 
 set_mtime_command() {
@@ -1759,7 +1759,7 @@ keep_like_time_machine() {
   # set options depending on OS:
   set_mtime_command
 
-  _output echo "+  deleting old backups like time machine (keep daily for the last ${keep_days_like_time_machine} days; weekly before):"
+  _output printf '%s\n' "+  deleting old backups like time machine (keep daily for the last ${keep_days_like_time_machine} days; weekly before):"
 
   # get current unix timestamp:
   old=$(date +%s)
@@ -1773,7 +1773,7 @@ keep_like_time_machine() {
     # check, if backup is old enough to be deleted and has not been created on a monday:
     if [[ ${last_modified} -lt ${old} && $(printf '%(%u)T' "${last_modified}") -ne 1 ]]; then
       # print filename and remove backup:
-      _output echo "+     -  ${i}"
+      _output printf '%s\n' "+     -  ${i}"
       rm -rf "${i}"
       # set $deleted to 1, so we know that at least one file has been deleted:
       deleted=1
@@ -1781,7 +1781,7 @@ keep_like_time_machine() {
   done
 
   # print notice, if nothing has been deleted:
-  [[ ${deleted:-0} -eq 1 ]] || _output echo "+     --> no backups found to be deleted like time machine."
+  [[ ${deleted:-0} -eq 1 ]] || _output printf '%s\n' "+     --> no backups found to be deleted like time machine."
 
   # unset options, if not needed anymore:
   [[ "${delete_backups_older_than}" -gt 0 ]] || unset_mtime_command
@@ -1792,7 +1792,7 @@ delete_old_backups() {
 
   local old i last_modified deleted
 
-  _output echo "+  deleting backups older than ${delete_backups_older_than} days:"
+  _output printf '%s\n' "+  deleting backups older than ${delete_backups_older_than} days:"
 
   # get current unix timestamp:
   old=$(date +%s)
@@ -1809,7 +1809,7 @@ delete_old_backups() {
     # check, if modification time is old enough for backup to be deleted:
     if [[ ${last_modified} -lt ${old} ]]; then
       # print filename and remove backup:
-      _output echo "+     -  ${i}"
+      _output printf '%s\n' "+     -  ${i}"
       rm -rf "${i}"
       # set $deleted to 1, so we know that at least one file has been deleted:
       deleted=1
@@ -1819,7 +1819,7 @@ delete_old_backups() {
   unset_mtime_command
 
   # print notice, if nothing has been deleted:
-  [[ ${deleted:-0} -eq 1 ]] || _output echo "+     --> no backups older than ${delete_backups_older_than} days found to delete."
+  [[ ${deleted:-0} -eq 1 ]] || _output printf '%s\n' "+     --> no backups older than ${delete_backups_older_than} days found to delete."
 }
 
 finish() {
@@ -1827,13 +1827,13 @@ finish() {
   # prints END-message or, if in batch-mode (-b), only path to backup:
 
   # print timestamp and END-message:
-  _output echo "+  $(date) --> END calcardbackup"
-  _output echo "+"
-  _output echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-  _output echo
+  _output printf '%s\n' "+  $(date) --> END calcardbackup"
+  _output printf '%s\n' "+"
+  _output printf '%s\n' "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  _output printf '%s\n'
 
   # if running in batch mode and there are backed up files - print path to backup:
-  [[ "${mode:-}" == "batch" && "${backup_files_present}" == "yes" ]] && echo "${path_to_backup}"
+  [[ "${mode:-}" == "batch" && "${backup_files_present}" == "yes" ]] && printf '%s\n' "${path_to_backup}"
 
   # exit without error, because script catches errors and exits on error with error-code:
   exit 0
@@ -1864,13 +1864,13 @@ error_exit() {
   # prints error message and exits script
   # if any arguments are passed, they all will be printed as error message to stderr
 
-  echo "-- calcardbackup: ERROR --" >&2
+  printf '%s\n' "-- calcardbackup: ERROR --" >&2
 
   # print all arguments that have been passed to this function as error message to stderr:
   for message in "$@"; do
-    echo "-- ${message}" >&2
+    printf '%s\n' "-- ${message}" >&2
   done
-  echo "-- calcardbackup: Exiting." >&2
+  printf '%s\n' "-- calcardbackup: Exiting." >&2
 
   # exit with error code 64, because I read somewhere that 1 is reserved.
   # Not so sure about that anymore though, but error code stays 64 for backwards compatibility:
@@ -1880,13 +1880,13 @@ error_exit() {
 print_help() {
   # prints short help text
 
-  _output echo "+  Bash script to backup calendars and addressbooks from a local ownCloud/Nextcloud installation."
-  _output echo "+"
-  _output echo "+  Usage: ./calcardbackup [DIRECTORY] [option [argument]] [option [argument]] [option [argument]] ..."
-  _output echo "+  Find more details in attached file 'README.md' or visit 'https://github.com/BernieO/calcardbackup'"
-  _output echo "+"
-  _output echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-  _output echo
+  _output printf '%s\n' "+  Bash script to backup calendars and addressbooks from a local ownCloud/Nextcloud installation."
+  _output printf '%s\n' "+"
+  _output printf '%s\n' "+  Usage: ./calcardbackup [DIRECTORY] [option [argument]] [option [argument]] [option [argument]] ..."
+  _output printf '%s\n' "+  Find more details in attached file 'README.md' or visit 'https://github.com/BernieO/calcardbackup'"
+  _output printf '%s\n' "+"
+  _output printf '%s\n' "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  _output printf '%s\n'
 }
 
 check_argument() {
@@ -2026,7 +2026,7 @@ do
       compression_method="zip"
     ;;
     * )
-      _output echo "-  WARNING! Unrecognized option: ${1}"
+      _output printf '%s\n' "-  WARNING! Unrecognized option: ${1}"
     ;;
   esac
   shift
@@ -2050,16 +2050,16 @@ get_database_details
 create_backup_subfolder
 if [[ "${backup_calendars}" != "no" ]]
   then get_calendars
-  else _output echo "+  Not backing up calenders as configured."
+  else _output printf '%s\n' "+  Not backing up calenders as configured."
 fi
 if [[ "${backup_addressbooks}" != "no" ]]
   then get_addressbooks
-  else _output echo "+  Not backing up addressbooks as configured."
+  else _output printf '%s\n' "+  Not backing up addressbooks as configured."
 fi
 check_for_backup_files
 if [[ "${backup_files_present}" == "yes" ]]; then
   if [[ "${compress}" == "no" ]]
-    then _output echo "+  Find your uncompressed backup in folder ${backupfolder_day}/"
+    then _output printf '%s\n' "+  Find your uncompressed backup in folder ${backupfolder_day}/"
     else pack_it
   fi
   [[ "${encrypt_backup}" == "yes" ]] && gpg_encrypt_backup
