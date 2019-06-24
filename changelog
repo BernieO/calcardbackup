@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.9.3 (24.06.2019)
 - improved: increased portability by using printf instead of echo
 - improved: various performance improvements
 
