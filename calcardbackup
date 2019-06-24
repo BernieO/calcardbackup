@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.2-1 (14.06.2019), AGPL-3.0"
+version="0.9.2-2 (24.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1512,11 +1512,9 @@ create_calendar_from_db() {
   IFS="${ifs_original}"
 
   # at this point of stage  all components (except for VTIMEZONES) are saved in $backupfolder_day/$filename
-  # loop through array containing all VTIMEZONES and save the VTIMEZONE components at the end of the iCalendar object $backupfolder_day/$filename:
+  # save the VTIMEZONE components at the end of the iCalendar object $backupfolder_day/$filename by expanding the array:
   if [[ -n ${tz_data:-} ]]; then
-    for (( k=0; k<${#tz_data[@]}; k++ )); do
-      printf '%s\r\n' "${tz_data[$k]}" >> "${backupfolder_day}/${filename}"
-    done
+    printf '%s\r\n' "${tz_data[@]}" >> "${backupfolder_day}/${filename}"
   fi
 
   # important: add END:VCALENDAR as last line to the iCalendar file:
