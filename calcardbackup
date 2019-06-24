@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.1-1_no-fd (24.06.2019), AGPL-3.0"
+version="0.9.3_no-fd (24.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -387,7 +387,7 @@ preparations() {
 }
 
 getvalue_from_configphp() {
-  # reads a line with a given paramter from config.php and printf '%s\n'es the parameters value
+  # reads a line with a given paramter from config.php and returns the parameters value
   # arguments: ${1} is parameter which value should be returned
 
   local regex line
@@ -405,6 +405,7 @@ getvalue_from_configphp() {
     line=${line%\'*}    # throw away end including last '
     line=${line##*\'}   # throw away beginning including last '
   else
+    # if parameter was not found in config.php: set line to dummy value, which may be tested against:
     line="value is unset"
   fi
   printf '%s\n' "${line}"
@@ -449,7 +450,7 @@ is_trusted_domain() {
         if [[ "${line}" == "${given_domain}" ]]; then
           # set result to true, if passed URL matches this trusted domain:
           result="true"
-          break   # passed URL is a trusted_domain, so no need to loop any furhter
+          break   # passed URL is a trusted_domain, so no need to loop any further
         fi
 
         continue
@@ -797,7 +798,7 @@ detect_vendor() {
             productname="ownCloud"
           else
             # Nextcloud 10.0s version in config.php is 9.1.X, as well as ownCloud 9.1 - can't detect vendor then:
-            printf '%s\n' "+  can't detect vendor"
+            _output printf '%s\n' "+  can't detect vendor"
             # use $fullversion for output
             server_version="${full_version}"
           fi
@@ -944,20 +945,27 @@ get_database_details() {
 }
 
 read_users_txt() {
-  # reads file with user credentials
+  # reads file with user credentials and assigns usernames and (if run with option -g) passwords to separate arrays
+  local line
 
-  # split each line at the first colon (username:password) and store usernames and according passwords in separate arrays:
-  # (ownCloud and Nextcloud don‘t allow colons to be part of a username - that is why calcardbackup uses a colon as separator)
-  readarray -t users < "${users_file}"
-  for i in "${!users[@]}"; do
-    # keep beginning of line until first colon as username:
-    user[$i]="${users[$i]%%:*}"
+  # read file with user credentials line by line
+  # (ownCloud and Nextcloud don‘t allow colons to be part of a username - that is why calcardbackup uses a colon as separator):
+  while read -r line; do
+    # don't process empty lines:
+    [[ "${line:-}" == "" ]] && continue
     # only store password in array, when we are going to get calendars/addressbooks via http(s)-request:
-    [[ "${fetch_from_database}" == "no" ]] && pass[$i]="${users[$i]#*:}"
-  done
-
-  # unset array with usernames (and maybe also passwords), because it is not needed anymore:
-  unset -v users
+    if [[ "${fetch_from_database}" == "no" ]]; then
+      if [[ "${line#*:}" == "" ]]; then
+        # continue with next line when using -g and no password for that user found in file with usernames and passwords:
+        _output printf '%s\n' "-  WARNING: skipping user '${line%%:*}' because of empty password!"
+        continue
+      fi
+      # otherwise keep end of line from first colon on as password:
+      pass+=("${line#*:}")
+    fi
+    # keep beginning of line until first colon as username:
+    user+=("${line%%:*}")
+  done < "${users_file}"
 }
 
 create_backup_subfolder() {
@@ -1135,7 +1143,7 @@ include_shares() {
       # for checking tables with MySQL: option -r is not needed but an additional option -s is used to produce less output:
       [[ "${dbtype}" == "mysql" && "${snap}" == "no" ]] && check_table="$(mysql -u "${dbuser}" -p"${dbpassword}" -h ${dbhost} ${dbprotocol} "${dbname}" -sse "SHOW TABLES LIKE '${table_group_user}';")"
       [[ "${dbtype}" == "mysql" && "${snap}" == "yes" ]] && check_table="$(nextcloud.mysql-client --defaults-extra-file=<(printf '[client]\nuser = %s\npassword = \"%s\"\nhost = %s\n%s' "${dbuser}" "${dbpassword}" "${dbhost}" "${dbprotocol}") "${dbname}" -sse "SHOW TABLES LIKE '${table_group_user}';")"
-      [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite "${sqlite3_database}" "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}';")"
+      [[ "${dbtype}" == "sqlite3" ]] && check_table="$(sqlite3 "${sqlite3_database}" "SELECT name FROM sqlite_master WHERE type='table' AND name='${table_group_user}';")"
       # this check is a bit more complicated for PostgreSQL:
       if [[ "${dbtype}" == "pgsql" ]]; then
         # first let us assume that the desired table exists (variable needs to be set for check later):
@@ -1380,7 +1388,7 @@ create_calendar_from_db() {
   # create iCalendar (.ics file) by reading calendardata directly from database (option -f | --fetch-from-database):
   # according to: https://tools.ietf.org/html/rfc5545
 
-  local line vtime component k ifs_original
+  local line vtime component ifs_original
   local -a tz_temp tz_data tz_ids
 
   # an iCalender file consists of calendar properties and calendar components.
@@ -1411,7 +1419,9 @@ create_calendar_from_db() {
   IFS=
 
   # prepare variables:
+  # set vtime indicator to 0 (see below. No VTIMEZONE component detected):
   vtime=0
+  # fill first array element with dummy value to later be able to avoid check for unset array (changed in 0.7.0-11)):
   tz_ids[0]="dummy"
 
   # read calendardata line by line and collect components:
@@ -1477,18 +1487,15 @@ create_calendar_from_db() {
 
       # does this line define an timezone-id (TZID)?
       if [[ ${line} == TZID:* ]]; then
-        # loop through array with collected timezone-ids and check whether TZID is already stored in $tz_ids
-        # (start with second array item, because 1st is dummy to avoid check for unset array (changed in 0.7.0-11)):
-        for (( k=1; k<${#tz_ids[@]}; k++ )); do
-          if [[ "${tz_ids[$k]}" == "${line}" ]]; then
-            # match: TZID is already present in array: remember that timezone is already saved (set vtime indicator to 2):
-            vtime=2
-            # unset temporary array (filled with partially collected timezone-data):
-            unset -v tz_temp
-            # current VTIMEZONE component is already collected, so let's continue with the next line from database:
-            continue 2
-          fi
-        done
+        # check whether TZID is already stored in $tz_ids (check expanded array against line):
+        if [[ "${tz_ids[*]}" == *${line}* ]]; then
+          # match: TZID is already present in array: remember that timezone is already saved (set vtime indicator to 2):
+          vtime=2
+          # unset temporary array (filled with partially collected timezone-data):
+          unset -v tz_temp
+          # current VTIMEZONE component is already collected, so let's continue with the next line from database:
+          continue
+        fi
 
         # save timezone_id, since it is not yet in the array for comparing timezone_ids:
         tz_ids+=("${line}")
@@ -1500,9 +1507,7 @@ create_calendar_from_db() {
       # check for END:VTIMEZONE:
       if [[ ${line} == END:VTI* ]]; then
         # transfer VTIMEZONE from the temporary array to the array containing all collected VTIMEZONE data:
-        for (( k=0; k<${#tz_temp[@]}; k++ )); do
-          tz_data+=("${tz_temp[$k]/%[[:space:]]}")
-        done
+        tz_data+=("${tz_temp[@]/%[[:space:]]}")
         # reset vtime indicator to 0:
         vtime=0
         # unset tz_temp, so there wont be any old data when collecting the next found timezone:
@@ -1523,11 +1528,9 @@ create_calendar_from_db() {
   IFS="${ifs_original}"
 
   # at this point of stage  all components (except for VTIMEZONES) are saved in $backupfolder_day/$filename
-  # loop through array containing all VTIMEZONES and save the VTIMEZONE components at the end of the iCalendar object $backupfolder_day/$filename:
+  # save the VTIMEZONE components at the end of the iCalendar object $backupfolder_day/$filename by expanding the array:
   if [[ -n ${tz_data:-} ]]; then
-    for (( k=0; k<${#tz_data[@]}; k++ )); do
-      printf '%s\r\n' "${tz_data[$k]}" >> "${backupfolder_day}/${filename}"
-    done
+    printf '%s\r\n' "${tz_data[@]}" >> "${backupfolder_day}/${filename}"
   fi
 
   # important: add END:VCALENDAR as last line to the iCalendar file:
@@ -1569,7 +1572,7 @@ create_calendarsubscription_files() {
 
       # create file with URL to subscribed calendar:
       _output printf '%s' "+  Saving ${item} ${filename}..."
-      printf '%s\n' "${source_url[$i]}" > "${backupfolder_day}/${filename}"
+      printf '%s\r\n' "${source_url[$i]}" > "${backupfolder_day}/${filename}"
       _output printf '%s\n' "...success!"
       # increase counter $exported:
       exported=$((exported + 1))

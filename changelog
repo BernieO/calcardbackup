@@ -1,3 +1,7 @@
+v0.9.3_no-fd (24.06.2019)
+- improved: increased portability by using printf instead of echo
+- improved: various performance improvements
+
 v0.9.1_no-fd (11.06.2019)
 - improved: some redundant code has been removed to increase code readability
 - improved: use absolute path to sqlite3 database to simplify code
