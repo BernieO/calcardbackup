@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.2-3 (24.06.2019), AGPL-3.0"
+version="0.9.2-4 (24.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1370,7 +1370,7 @@ create_calendar_from_db() {
   # create iCalendar (.ics file) by reading calendardata directly from database (option -f | --fetch-from-database):
   # according to: https://tools.ietf.org/html/rfc5545
 
-  local line vtime component k ifs_original
+  local line vtime component ifs_original
   local -a tz_temp tz_data tz_ids
 
   # an iCalender file consists of calendar properties and calendar components.
@@ -1487,9 +1487,7 @@ create_calendar_from_db() {
       # check for END:VTIMEZONE:
       if [[ ${line} == END:VTI* ]]; then
         # transfer VTIMEZONE from the temporary array to the array containing all collected VTIMEZONE data:
-        for (( k=0; k<${#tz_temp[@]}; k++ )); do
-          tz_data+=("${tz_temp[$k]/%[[:space:]]}")
-        done
+        tz_data+=("${tz_temp[@]/%[[:space:]]}")
         # reset vtime indicator to 0:
         vtime=0
         # unset tz_temp, so there wont be any old data when collecting the next found timezone:
