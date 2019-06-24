@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.2-2 (24.06.2019), AGPL-3.0"
+version="0.9.2-3 (24.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -1402,6 +1402,7 @@ create_calendar_from_db() {
 
   # prepare variables:
   vtime=0
+  # fill first array element with dummy value to later be able to avoid check for unset array (changed in 0.7.0-11)):
   tz_ids[0]="dummy"
 
   # read calendardata line by line and collect components:
@@ -1466,18 +1467,15 @@ create_calendar_from_db() {
 
       # does this line define an timezone-id (TZID)?
       if [[ ${line} == TZID:* ]]; then
-        # loop through array with collected timezone-ids and check whether TZID is already stored in $tz_ids
-        # (start with second array item, because 1st is dummy to avoid check for unset array (changed in 0.7.0-11)):
-        for (( k=1; k<${#tz_ids[@]}; k++ )); do
-          if [[ "${tz_ids[$k]}" == "${line}" ]]; then
-            # match: TZID is already present in array: remember that timezone is already saved (set vtime indicator to 2):
-            vtime=2
-            # unset temporary array (filled with partially collected timezone-data):
-            unset -v tz_temp
-            # current VTIMEZONE component is already collected, so let's continue with the next line from database:
-            continue 2
-          fi
-        done
+        # check whether TZID is already stored in $tz_ids (check expanded array against line):
+        if [[ "${tz_ids[*]}" == *${line}* ]]; then
+          # match: TZID is already present in array: remember that timezone is already saved (set vtime indicator to 2):
+          vtime=2
+          # unset temporary array (filled with partially collected timezone-data):
+          unset -v tz_temp
+          # current VTIMEZONE component is already collected, so let's continue with the next line from database:
+          continue
+        fi
 
         # save timezone_id, since it is not yet in the array for comparing timezone_ids:
         tz_ids+=("${line}")
