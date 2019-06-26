@@ -1,3 +1,6 @@
+vX.X.X (XX.XX.XXXX)
+- improved: be more verbose, if command line client for according database is not installed
+
 v0.9.3 (24.06.2019)
 - improved: increased portability by using printf instead of echo
 - improved: various performance improvements

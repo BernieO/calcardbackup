@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.3 (24.06.2019), AGPL-3.0"
+version="0.9.3-1 (27.06.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -882,6 +882,11 @@ get_database_details() {
 
       # create command $dbcommand for database queries depending on database found in config.php:
       [[ "${dbtype}" == "mysql" ]] && {
+        if [[ "${snap}" == "no" ]]; then
+          # check if mysql|mariadb command line client is installed
+          # ( no need to check for nextcloud-snaps included cli-utility 'nextcloud.mysql-client', because already checked in function preparations() ):
+          command -v mysql > /dev/null || error_exit "ERROR: ${productname} database is MySQL/MariaDB. Therefore this script requires package 'mysql-client' or 'mariadb-client'." "Install according package and run script again"
+        fi
         # set database command for MySQL:
         # mysql>=5.6 throws a warning when using password on command line interface: https://bugs.mysql.com/bug.php?id=66546
         # avoiding that with option --defaults-extra-file and printf as suggested by Dave James Miller: https://stackoverflow.com/questions/20751352/suppress-warning-messages-using-mysql-from-within-terminal-but-password-written/20854048#comment42372603_22933056
@@ -900,6 +905,8 @@ get_database_details() {
         database="MySQL/MariaDB"
       }
       [[ "${dbtype}" == "pgsql" ]] && {
+        # check if postgresql command line client is installed:
+        command -v psql > /dev/null || error_exit "ERROR: ${productname} database is PostgreSQL. Therefore this script requires package 'postgresql-client'." "Install with 'apt-get install postgresql-client' and run script again"
         # set database command for PostgreSQL:
         # ATTENTION: variable $dbcommand will be passed to command "eval" later. So better take care when adding new stuff to $dbcommand!
         # actually no need to quote $dbhost and $dbprotocol here, because they can't contain spaces. Saves some lines of code (v0.7.2-22), but
