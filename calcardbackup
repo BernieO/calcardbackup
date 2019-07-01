@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.3-1 (27.06.2019), AGPL-3.0"
+version="0.9.3-2 (01.07.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -219,8 +219,8 @@ preparations() {
   fi
   # print warning when using deprecated cli option -g|--get-via-http or value fetch_from_database="no" in config file:
   if [[ "${fetch_from_database}" == "no" ]]; then
-    [[ -z "${config_file:-}" ]] && _output printf '%s\n' "-- WARNING: you are using deprecated option '-g|--get-via-http'" "-- WARNING: For security and performance reasons you might want to consider to not use this deprecated option!"
-    [[ -n "${config_file:-}" ]] && _output printf '%s\n' "-- WARNING: you are using deprecated value fetch_from_database=\"no\"" "-- WARNING: For security and performance reasons you might want to consider to use the default: fetch_from_database=\"yes\""
+    [[ -z "${config_file:-}" ]] && _output printf '%s\n' "-- WARNING: you are using deprecated option '-g|--get-via-http'" "-- WARNING: For security and performance reasons you might want to consider to not use this deprecated option!" "-- WARNING: this option might be removed in a future release of calcardbackup!"
+    [[ -n "${config_file:-}" ]] && _output printf '%s\n' "-- WARNING: you are using deprecated value fetch_from_database=\"no\"" "-- WARNING: For security and performance reasons you might want to consider to use the default: fetch_from_database=\"yes\"" "-- WARNING: the possibility to set this value to \"no\" might be removed in a future release of calcardbackup!"
   fi
 
   # check for package curl
