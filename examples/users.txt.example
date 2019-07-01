@@ -4,6 +4,7 @@ Thomas
 Emma
 
 # when using deprecated option '-g|--get-via-http' (not recommended!)
+# NOTE: option '-g|--get-via-http' might be removed in a future version of calcardbackup
 # give usernames and passwords separated by a colon:
 Thomas:PA55W0RD
 Emma:98765453

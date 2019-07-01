@@ -23,6 +23,7 @@ Falls Kalender/Adressbücher nur von ausgewählten Benutzern gesichert werden so
 
 ## Voraussetzungen
 - lokale Installation von ownCloud/Nextcloud >= 5.0 mit MySQL/MariaDB, PostgreSQL oder SQLite3
+- der zur Datenbank gehörende command line client
 - der das Skript startende User muss Leserechte für den gesamten Pfad zu ownClouds/Nextclouds `config.php`, zum Skript selbst und zu allen benutzten Konfigurationsdateien haben
 - GNU Bash >= 4.2 (prüfen mit `bash --version`)
 - *optional*: das Paket `gnupg`, um Backups zu verschlüsseln
@@ -80,8 +81,9 @@ Pfade (DATEI / VERZEICHNIS) sind absolute Pfade oder relative Pfade zum Arbeitsv
        Verschlüssele das komprimierte Backup mit AES256 (gnupg).
        Die erste Zeile von DATEI wird als Passphrase benutzt werden.
 -g | --get-via-http
-       ACHTUNG: diese Option ist veraltet. Sie ist nur vorhanden, um Rückwärtskompatibilität
-       zu gewährleisten.
+       ACHTUNG: diese Option ist veraltet und wird möglicherweise in einer zukünftigen Version
+       von calcardbackup entfernt werden; sie ist nur vorhanden, um Rückwärtskompatibilität zu
+       gewährleisten.
        Fordere Kalender-/Addressbuchdateien über http(s) vom ownCloud/Nextcloud Server an.
        Wenn diese Option benutzt wird, ist eine Datei mit Nutzernamen und dazugehörigen
        Klartext-Passwörtern zwingend notwendig (siehe Option '-u|--usersfile')
@@ -161,7 +163,7 @@ Behalte alle Sicherungen der letzten 30 Tage, für die Zeit davor aber nur solch
 
 8. `./calcardbackup /var/www/nextcloud -g -u /etc/calcardbackupusers -s -i`  
 Benutze die veraltete Methode, um Kalender- und Adressbuchdateien per http(s)-Anforderung vom ownCloud/Nextcloud Server herunterzuladen (`-g`, veraltet), finde die Nutzernamen und zugehörigen Klartext-Passwörter der zu sichernden Benutzer in der Datei /etc/calcardbackupusers (`-u /etc/calcardbackupusers`, verpflichtend bei Option -g), ignoriere ein nicht vertrauenswürdiges Zertifikat (`-s`, nur zwingend erforderlich bei Option -g) und sichere auch mit den Benutzern geteilte Kalender/Adressbücher (`-i`). Die Sicherung wird als komprimierte `*.tar.gz` Datei im Verzeichnis `./backups/` (Standard) gespeichert werden.  
-:warning: Die Option `-g` ist veraltet und es wird wegen der dabei notwendigen Datei mit Zugangsdaten der Nutzer stark davon abgeraten diese Option zu benutzen (siehe [Über die Option -g|--get-via-http](#über-die-option--g----get-via-http)).
+:warning: Die Option `-g` ist veraltet und es wird wegen der dabei notwendigen Datei mit Zugangsdaten der Nutzer stark davon abgeraten diese Option zu benutzen! Sie wird möglicherweise in einer zukünftigen Version von *calcardbackup* entfernt werden (siehe [Über die Option -g|--get-via-http](#über-die-option--g----get-via-http)).
 
 ## Nextcloud-Snap Benutzer
 
@@ -209,7 +211,7 @@ Gehen Sie folgendermaßen vor:
 
 ## Über die Option -g | -\-get-via-http
 
-:warning: Diese Option ist veraltet und es wird davon abgeraten sie zu benutzen wegen der Notwendigkeit, Klartext-Passwörter in einer eigenen Datei anzugeben.
+:warning: Diese Option ist veraltet und es wird davon abgeraten sie zu benutzen wegen der Notwendigkeit, Klartext-Passwörter in einer eigenen Datei anzugeben! Sie wird möglicherweise in einer zukünftigen Version von *calcardbackup* entfernt werden.
 
 Standardmäßig erstellt *calcardbackup* Sicherungsdateien von Kalendern und Adressbüchern durch Auslesen der entsprechenden Daten direkt von der Datenbank. Falls das Skript jedoch mit der Option `-g|--get-via-http` aufgerufen wird, wird *calcardbackup* die veraltete Methode benutzen, um die Sicherung zu erstellen und Kalender und Addressbücher vom ownCloud/Nextcloud Webinterface herunterladen. Hierfür ist eine Datei mit Nutzernamen und Passwörtern notwendig, die an das Skript mit der Option `-u|--usersfile` übergeben wird.
 
@@ -230,7 +232,7 @@ Falls, aus welchem Grund auch immer, *calcardbackup* mit der Option `-g|--get-vi
 __Vorteil dieser Herangehensweise__: falls die Datei `users.txt` in falsche Hände gerät, wird nur dieses neue Benutzerkonto kompromittiert sein.  
 __Nachteil__: neu erstellte Kalender/Adressbücher werden nicht automatisch gesichert. Sie  müssen zuerst mit diesem neuen Benutzerkonto geteilt werden.
 
-Aufgrund des neuen Standardverhaltens von *calcardbackup* >= 0.8.0 (die Sicherungsdateien direkt aus der Datenbank zu erstellen), ist diese Option eigentlich unnütz geworden. Falls diese Option trotzdem benutzt werden soll, um geteilte Elemente auch ohne die Option `-g` zu sichern, dann gibt es keinerlei Notwendigkeit Passwörter in der Datei `users.txt` anzugeben. Falls keine Datei mit Nutzernamen an das Skript mit der Option `-u` übergeben wird, wird die Option `-i` ignoriert werden.
+Aufgrund des neuen Standardverhaltens von *calcardbackup* >= 0.8.0 (die Sicherungsdateien direkt aus der Datenbank zu erstellen), ist diese Option eigentlich unnütz geworden. Falls diese Option trotzdem benutzt werden soll, um geteilte Elemente auch ohne die Option `-g` zu sichern, dann gibt es keinerlei Notwendigkeit Passwörter in der Datei `users.txt` anzugeben. Falls keine Datei mit Nutzernamen an das Skript mit der Option `-u` übergeben wird, wird die Option `-i` ignoriert werden (da sowieso alle existierenden Kalender/Addressbücher gesichert werden).
 
 ## Links
 
