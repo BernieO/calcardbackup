@@ -162,7 +162,6 @@ Keep all backups for the last 30 days, but keep only backups created on mondays 
 Use the deprecated method and get the addressbook/calendar files via https-request from the ownCloud/Nextcloud webinterface (`-g`, deprecated), find usernames and according cleartext passwords of users to be backed up in file /etc/calcardbackupusers (`-u calcardbackupusers`, mandatory with option -g), tell *calcardbackup* that the server is using a selfsigned certificate (`-s`, only needed with option -g) and include shared items (`-i`). The backup will be saved as compressed `*.tar.gz` file named `calcardbackup-YYYY-MM-DD.tar.gz` (default) in folder `./backups/` (default).  
 :warning: Using option `-g` is deprecated and not recommended anymore, due to the mandatory file with user credentials and other drawbacks! It might be removed in a future version of *calcardbackup* (see [About Option -g|--get-via-http](#about-option--g----get-via-http)).
 
-
 ## Nextcloud-snap Users
 
 If you are running [Nextcloud-Snap](https://github.com/nextcloud/nextcloud-snap), you have to use option `-p|--snap` to tell *calcardbackup* to use the cli utility `nextcloud.mysql-client` from the snap package.  
