@@ -123,7 +123,10 @@ backup_calendars="yes"
 
 # Create backup by fetching data directly from database
 # NOTE: changing this to "no" is deprecated and only available to provide backwards
-# compatibility. If set to "no", calcardbackup will get the calendars/addressbooks via
+# compatibility. As fetching data directly from the database is the default behaviour
+# of calcardbackup >= 0.8.0, this parameter might be removed in a future
+# version of calcardbackup.
+# If set to "no", calcardbackup will get the calendars/addressbooks via
 # http request from the ownCloud/Nextcloud server - a file with usernames and according
 # cleartext passwords (see 'usersfile') is then mandatory (set 'users_file="yes"').
 # Getting files via http request used to be the default behaviour until
