@@ -34,12 +34,11 @@ If only calendars/addressbooks of certain users shall be backed up, list them in
 ## Quick Installation Guide
 
 1. Clone the repository to your server (outside of webroot!) and enter the repo:  
-`cd /usr/local/bin`   
 `git clone https://github.com/BernieO/calcardbackup`  
 `cd calcardbackup`
 
 2. Change the ownership of repo to your webserver's user (here `www-data`):  
-`chown -R www-data:www-data .`  
+`sudo chown -R www-data:www-data .`
 
 3. Run the script as your webserver's user (here `www-data`) and give as first argument the path to your ownCloud/Nextcloud instance (here `/var/www/nextcloud`):  
 `sudo -u www-data ./calcardbackup "/var/www/nextcloud"`

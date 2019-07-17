@@ -32,12 +32,11 @@ Falls Kalender/Adressbücher nur von ausgewählten Benutzern gesichert werden so
 
 ## Schnellinstallation
 1. das Repository auf Ihren Server klonen (nicht ins webroot!) und ins Verzeichnis wechseln:  
-`cd /usr/local/bin`  
 `git clone https://github.com/BernieO/calcardbackup`  
 `cd calcardbackup`
 
 2. die Besitzrechte des Repository dem Webserver-User zuweisen (hier `www-data`):  
-`chown -R www-data:www-data .`
+`sudo chown -R www-data:www-data .`
 
 3. das Skript als Webserver-User (hier `www-data`) aufrufen und als Argument den Pfad zu ownCloud/Nextcloud übergeben (hier `/var/www/nextcloud`):  
 `sudo -u www-data ./calcardbackup "/var/www/nextcloud"`
