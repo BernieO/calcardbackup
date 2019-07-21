@@ -47,6 +47,25 @@ Falls Kalender/Adressbücher nur von ausgewählten Benutzern gesichert werden so
 
 Es gibt viele weitere Optionen, die dem Skript übergeben werden können (siehe [Optionen](#optionen) und [Beispiele](#beispiele)).
 
+### automatische, tägliche Ausführung durch Erstellen eines Cronjobs
+
+Wenn das Skript fehlerfrei läuft, empfiehlt es sich, die Ausführung zu automatisieren.  
+Für den täglichen Aufruf kann folgendermaßen ein Cronjob erstellt werden:
+
+1. zunächst eine Logdatei erstellen und die Besitzrechte dem Webserver-User (hier `www-data`) zuweisen:  
+   `sudo touch /var/log/calcardbackup.log`  
+   `sudo chown www-data:www-data /var/log/calcardbackup.log`
+
+2. die Cron-Tabelle des Webserver-Users (hier `www-data`) zum Bearbeiten öffnen mit:  
+   `sudo crontab -u www-data -e`  
+   und am Ende der Datei die folgende Zeile hinzufügen (Pfade anpassen!):
+   ```
+   0 2 * * * /pfad/zu/calcardbackup/calcardbackup "/var/www/nextcloud" > /var/log/calcardbackup.log 2>&1
+   ```
+
+Nun wird Cron *calcardbackup* jeden Tag um 02:00 Uhr morgens aufrufen.  
+Die Skriptausgabe der jeweils letzten Ausführung befindet sich in der Logdatei `/var/log/calcardbackup.log`.
+
 ## Optionen
 Alle Optionen können als Konfigurationsdatei oder über die Kommandozeile übergeben werden. Ohne Optionen, oder nur mit Option `-b|--batch` aufgerufen, benutzt das Skript die Datei `calcardbackup.conf` im Skriptverzeichnis als Konfigurationsdatei, sofern vorhanden.  
 Falls keine Konfigurationsdatei über die Option `-c|--configfile` an das Skript übergeben wird, muss der Pfad zur ownCloud/Nextcloud Instanz als erstes Argument übergeben werden.  

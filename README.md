@@ -49,6 +49,24 @@ If only calendars/addressbooks of certain users shall be backed up, list them in
 
 There are many more options available: have a look at sections [Options](#options) and [Usage examples](#usage-examples).
 
+### setup a cronjob for an automatic daily run
+
+Once *calcardbackup* runs without errors, a cronjob can be setup to run it automatically each day as follows:
+
+1. create a logfile and transfer its ownership to the webserver's user (here `www-data`):  
+   `sudo touch /var/log/calcardbackup.log`  
+   `sudo chown www-data:www-data /var/log/calcardbackup.log`
+
+2. edit the cron table of the webserver's user (here `www-data`) with:  
+   `sudo crontab -u www-data -e`  
+   and add the following line to the end of the file (change paths to fit your setup!):
+   ```
+   0 2 * * * /path/to/calcardbackup/calcardbackup "/var/www/nextcloud" > /var/log/calcardbackup.log 2>&1
+   ```
+
+Cron will now execute *calcardbackup* each day at 02:00am.  
+The output of the last run is written to `/var/log/calcardbackup.log`.
+
 ## Options
 
 All options can be specified in a configuration file or as command line arguments. If started with no options at all or only `-b|--batch`, the script attempts to use file `calcardbackup.conf` in the script's directory as configuration file.  
