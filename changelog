@@ -3,6 +3,7 @@ vX.X.X (XX.XX.XXXX)
 - improved: minor corrections in README.md and README_GER.md
 - improved: add note that deprecated option `-g` might be removed in a future release
 - improved: add section about cronjob to both READMEs
+- fixed: ignore cached objects of webcal calendars
 
 v0.9.3 (24.06.2019)
 - improved: increased portability by using printf instead of echo
