@@ -1,4 +1,4 @@
-vX.X.X (XX.XX.XXXX)
+v0.9.5 (25.09.2019)
 - fixed: adapt check of status.php for new parameter in Nextcloud 17.0
 - verified: compatible with Nextcloud 17.0
 
