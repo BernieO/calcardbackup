@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.4-1 (22.09.2019), AGPL-3.0"
+version="0.9.4-2 (25.09.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -644,7 +644,7 @@ read_status_php() {
   # Nextcloud 14.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"14.0.0.19","versionstring":"14.0.0","edition":"","productname":"Nextcloud"}
   # Nextcloud 15.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"15.0.0.10","versionstring":"15.0.0","edition":"","productname":"Nextcloud"}
   # Nextcloud 16.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"16.0.0.9","versionstring":"16.0.0","edition":"","productname":"Nextcloud"}
-  # Nextcloud 17RC2  {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"17.0.0.8","versionstring":"17.0.0 RC 2","edition":"","productname":"Nextcloud","extendedSupport":false}
+  # Nextcloud 17.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"17.0.0.9","versionstring":"17.0.0","edition":"","productname":"Nextcloud","extendedSupport":false}
 
   # regex matching versions mentioned above (tested with regex101.com):
   # ownCloud 10 changes: version(string) maybe hidden or hostname maybe present (see version.hide, show_server_hostname in config.php)
