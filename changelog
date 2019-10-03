@@ -1,8 +1,9 @@
-vX.X.X_no-fd (XX.XX.XXXX)
+v0.9.4_no-fd (03.10.2019)
 - improved: be more verbose, if command line client for according database is not installed
 - improved: minor corrections in README.md and README_GER.md
 - improved: add note that deprecated option `-g` might be removed in a future release
 - improved: add section about cronjob to both READMEs
+- fixed: ignore cached objects of webcal calendars
 
 v0.9.3_no-fd (24.06.2019)
 - improved: increased portability by using printf instead of echo

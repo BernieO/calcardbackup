@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.3-2_no-fd (16.07.2019), AGPL-3.0"
+version="0.9.4_no-fd (03.10.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -647,10 +647,12 @@ read_status_php() {
   # Nextcloud 14.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"14.0.0.19","versionstring":"14.0.0","edition":"","productname":"Nextcloud"}
   # Nextcloud 15.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"15.0.0.10","versionstring":"15.0.0","edition":"","productname":"Nextcloud"}
   # Nextcloud 16.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"16.0.0.9","versionstring":"16.0.0","edition":"","productname":"Nextcloud"}
+  # Nextcloud 17.0.0 {"installed":true,"maintenance":false,"needsDbUpgrade":false,"version":"17.0.0.9","versionstring":"17.0.0","edition":"","productname":"Nextcloud","extendedSupport":false}
 
   # regex matching versions mentioned above (tested with regex101.com):
-  # (due to options added in ownCloud 10.0: version(string) maybe hidden or hostname maybe present (see version.hide, show_server_hostname in config.php))
-  regex='^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[^"]*","versionstring":"[^"]*","edition":"[^"]*"(,"productname":"[^"]*")?(,"hostname":"[^"]*")?\}$'
+  # ownCloud 10 changes: version(string) maybe hidden or hostname maybe present (see version.hide, show_server_hostname in config.php)
+  # Nextcloud 17 adds parameter "extendedSupport" (see https://github.com/nextcloud/server/pull/15922)
+  regex='^\{"installed":"?(true|false)"?,("maintenance":"?(true|false)"?,("needsDbUpgrade":"?(true|false)"?,)?)?"version":"[^"]*","versionstring":"[^"]*","edition":"[^"]*"(,"productname":"[^"]*")?(,"hostname":"[^"]*")?(,"extendedSupport":(true|false))?\}$'
 
   # check status.php for valid installation of ownCloud/Nextcloud:
   case ${fetch_from_database} in
@@ -964,7 +966,7 @@ read_users_txt() {
     if [[ "${fetch_from_database}" == "no" ]]; then
       if [[ "${line#*:}" == "" ]]; then
         # continue with next line when using -g and no password for that user found in file with usernames and passwords:
-        _output printf '%s\n' "-  WARNING: skipping user '${line%%:*}' because of empty password!"
+        _output printf '%s\n' "-- WARNING: skipping user '${line%%:*}' because of empty password!"
         continue
       fi
       # otherwise keep end of line from first colon on as password:
@@ -1395,7 +1397,7 @@ create_calendar_from_db() {
   # create iCalendar (.ics file) by reading calendardata directly from database (option -f | --fetch-from-database):
   # according to: https://tools.ietf.org/html/rfc5545
 
-  local line vtime component ifs_original
+  local line vtime component ifs_original calendartype
   local -a tz_temp tz_data tz_ids
 
   # an iCalender file consists of calendar properties and calendar components.
@@ -1404,9 +1406,18 @@ create_calendar_from_db() {
   # and collect the components. Every single event contains the according timezone-components. They are unique for each timezone,
   # so we only need to collect each timezone once.
 
+  # ignore cached objects of webcal calendars (calendarsubscriptions) for Nextcloud >= 15.0.0
+  # ( Nextcloud >= 15.0.0 caches objects of calendarsubscriptions also in table calendarobjects. calendarids of calendarsubscriptions
+  #   might match calendarids of regular calendars. So we need to check for calendartype=0 of calendarobjects (calendarsubscriptions
+  #   have calendartype=1 for Nextcloud >= 15.0.0) (see https://github.com/nextcloud/server/pull/10059) )
+  if [[ "${productname}" == "Nextcloud" && ${main_version} -ge 15 ]]; then
+    # shellcheck disable=SC2034
+    calendartype="AND calendartype=0"
+  fi
+
   # prepare database query to collect all events from according calendarid (variable convert is needed for PostgreSQL):
   # shellcheck disable=SC2016
-  db_query='"SELECT ${convert:-calendardata} FROM ${table_calendarobjects} WHERE calendarid=${id[$i]};"'
+  db_query='"SELECT ${convert:-calendardata} FROM ${table_calendarobjects} WHERE calendarid=${id[$i]} ${calendartype:-};"'
 
   # print generic iCalendar properties (BEGIN, VERSION, PRODID, CALSCALE) (according to RFC5545 each line has to end with CR+LF):
   printf '%s\r\n' "BEGIN:VCALENDAR" "VERSION:2.0" "PRODID:https://github.com/BernieO/calcardbackup v${version%% *}" "CALSCALE:GREGORIAN" > "${backupfolder_day}/${filename}"
@@ -2047,7 +2058,7 @@ do
       compression_method="zip"
     ;;
     * )
-      _output printf '%s\n' "-  WARNING! Unrecognized option: ${1}"
+      _output printf '%s\n' "-- WARNING! Unrecognized option: ${1}"
     ;;
   esac
   shift
