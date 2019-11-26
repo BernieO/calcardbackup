@@ -15,6 +15,7 @@ Falls Kalender/Adressbücher nur von ausgewählten Benutzern gesichert werden so
 - [Optionen](#optionen)
 - [Beispiele](#beispiele)
 - [Nextcloud-Snap Benutzer](#nextcloud-snap-benutzer)
+- [Synology Benutzer](#synology-benutzer)
 - [Erwähnenswertes zur Verschlüsselungsoption](#erwähnenswertes-zur-verschlüsselungsoption)
 - [Funktioniert das auch mit einer nicht funktionierenden ownCloud/Nextcloud Installation?](#funktioniert-das-auch-mit-einer-nicht-funktionierenden-owncloudnextcloud-installation)
 - [Über die Option -g|--get-via-http](#über-die-option--g----get-via-http)
@@ -188,6 +189,13 @@ Benutze die veraltete Methode, um Kalender- und Adressbuchdateien per http(s)-An
 Falls [Nextcloud-Snap](https://github.com/nextcloud/nextcloud-snap) benutzt wird, muss das Skript mit Option `-p|--snap` aufgerufen werden. *calcardbackup* wird dann das im Snap-Paket enthaltene Dienstprogramm `nextcloud.mysql-client` benutzen, um auf die Datenbank zuzugreifen.  
 Damit dies funktioniert, muss *calcardbackup* mit `sudo` aufgerufen werden (als root ohne `sudo` aufgerufen wird auch fehlschlagen).  
 Als Pfad zu Nextcloud muss der Pfad zu den Konfigurationsdateien des Snap Paketes angegeben werden. Bei einer Standardinstallation ist dies `/var/snap/nextcloud/current/nextcloud`. Siehe [Beispiel Nr. 6](#beispiele).
+
+## Synology Benutzer
+
+Beim Synology DiskStation Manager (DSM) muss vor Aufruf von *calcardbackup* der Pfad zu `mysql` der `PATH` Variablen hinzugefügt werden. Beispiel:
+```
+sudo -u http PATH="$PATH:/usr/local/mariadb10/bin" ./calcardbackup "/volume1/web/nextcloud"
+```
 
 ## Erwähnenswertes zur Verschlüsselungsoption
 
