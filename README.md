@@ -15,6 +15,7 @@ If only calendars/addressbooks of certain users shall be backed up, list them in
 - [Options](#options)
 - [Usage Examples](#usage-examples)
 - [Nextcloud-Snap Users](#nextcloud-snap-users)
+- [Synology Users](#synology-users)
 - [Considerations about Encryption](#considerations-about-encryption)
 - [Does this also work with a broken instance?](#does-this-also-work-with-a-broken-owncloudnextcloud-instance)
 - [About Option -g|--get-via-http](#about-option--g----get-via-http)
@@ -179,11 +180,18 @@ Keep all backups for the last 30 days, but keep only backups created on mondays 
 Use the deprecated method and get the addressbook/calendar files via https-request from the ownCloud/Nextcloud webinterface (`-g`, deprecated), find usernames and according cleartext passwords of users to be backed up in file /etc/calcardbackupusers (`-u calcardbackupusers`, mandatory with option -g), tell *calcardbackup* that the server is using a selfsigned certificate (`-s`, only needed with option -g) and include shared items (`-i`). The backup will be saved as compressed `*.tar.gz` file named `calcardbackup-YYYY-MM-DD.tar.gz` (default) in folder `./backups/` (default).  
 :warning: Using option `-g` is deprecated and not recommended anymore, due to the mandatory file with user credentials and other drawbacks! It might be removed in a future version of *calcardbackup* (see [About Option -g|--get-via-http](#about-option--g----get-via-http)).
 
-## Nextcloud-snap Users
+## Nextcloud-Snap Users
 
 If you are running [Nextcloud-Snap](https://github.com/nextcloud/nextcloud-snap), you have to use option `-p|--snap` to tell *calcardbackup* to use the cli utility `nextcloud.mysql-client` from the snap package.  
 In order for this to work, *calcardbackup* has to be run with `sudo` (even running as root without `sudo` will fail).  
 As path to Nextcloud use the path to the configuration files of nextcloud. In a standard installation this would be `/var/snap/nextcloud/current/nextcloud`. See [usage example no.6](#usage-examples).
+
+## Synology Users
+
+In Synology DiskStation Manager (DSM) the path to `mysql` needs to be added to the `PATH` variable before running *calcardbackup*. Example:
+```
+sudo -u http PATH="$PATH:/usr/local/mariadb10/bin" ./calcardbackup "/volume1/web/nextcloud"
+```
 
 ## Considerations about Encryption
 
