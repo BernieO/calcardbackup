@@ -1,5 +1,5 @@
 vX.X.X (XX.XX.XXXX)
-- 
+- add section for Synology DSM users to both READMEs
 
 v0.9.5 (25.09.2019)
 - fixed: adapt check of status.php for new parameter in Nextcloud 17.0
