@@ -1,3 +1,10 @@
+### :warning:&nbsp;__calcardbackup wird zu [codeberg.org](https://codeberg.org/BernieO/calcardbackup) umziehen__&nbsp;:warning:
+
+__Finde die erste stabile Version v1.0 am 17.01.2020 unter:  
+:point_right:&nbsp;&nbsp;[https://codeberg.org/BernieO/calcardbackup](https://codeberg.org/BernieO/calcardbackup)__&nbsp;&nbsp;:point_left:
+
+---
+
 # calcardbackup
 
 [:gb: read this in english...](README.md)
