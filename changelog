@@ -1,5 +1,16 @@
-vX.X.X_no-fd (XX.XX.XXXX)
-- add section for Synology DSM users to both READMEs
+##########################################################################
+##                                                                      ##
+##   calcardbackup is going to move to codeberg.org in January 2020     ##
+##   v0.9.6 is the last release hosted on GitHub                        ##
+##   Find calcardbackup's first stable release v1.0 on 17.01.2020 at:   ##
+##   https://codeberg.org/BernieO/calcardbackup                         ##
+##                                                                      ##
+##########################################################################
+
+v0.9.6_no-fd (07.01.2020)
+- NOTICE: this is the last release hosted on GitHub
+- added: section for Synology DSM users to both READMEs
+- added: print info about moving to codeberg.org
 
 v0.9.5_no-fd (03.10.2019)
 - fixed: adapt check of status.php for new parameter in Nextcloud 17.0

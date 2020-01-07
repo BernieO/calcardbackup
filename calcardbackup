@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # calcardbackup - extracts ownCloud/Nextcloud calendars and addressbooks
-# Copyright (C) 2017-2019 Bernhard Ostertag
+# Copyright (C) 2017-2020 Bernhard Ostertag
 #
 # Source: https://github.com/BernieO/calcardbackup
 #
@@ -31,7 +31,7 @@
 set -euo pipefail
 
 # calcardbackup version:
-version="0.9.5_no-fd (03.10.2019), AGPL-3.0"
+version="0.9.6_no-fd (07.01.2019), AGPL-3.0"
 
 ###
 ### BEGIN: FUNCTION DEFINITIONS
@@ -104,6 +104,16 @@ print_header() {
   _output printf '\n%s\n' "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   _output printf '%s\n' "+"
   _output printf '%s\n' "+  $(date) --> START calcardbackup ver. ${version}"
+  _output printf '%s\n' "+"
+  _output printf '%s\n' "##########################################################################"
+  _output printf '%s\n' "##                                                                      ##"
+  _output printf '%s\n' "##   calcardbackup is going to move to codeberg.org in January 2020     ##"
+  _output printf '%s\n' "##   v0.9.6 is the last release hosted on GitHub                        ##"
+  _output printf '%s\n' "##   Find calcardbackup's first stable release v1.0 on 17.01.2020 at:   ##"
+  _output printf '%s\n' "##   https://codeberg.org/BernieO/calcardbackup                         ##"
+  _output printf '%s\n' "##                                                                      ##"
+  _output printf '%s\n' "##########################################################################"
+  _output printf '%s\n' "+"
 }
 
 set_required_paths() {
