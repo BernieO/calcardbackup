@@ -1,7 +1,7 @@
-### :warning:&nbsp;__calcardbackup wird zu [codeberg.org](https://codeberg.org/BernieO/calcardbackup) umziehen__&nbsp;:warning:
+:warning: __Archiviert, umgezogen zu Codeberg: [https://codeberg.org/BernieO/calcardbackup](https://codeberg.org/BernieO/calcardbackup)__
 
-__Finde die erste stabile Version v1.0 am 17.01.2020 unter:  
-:point_right:&nbsp;&nbsp;[https://codeberg.org/BernieO/calcardbackup](https://codeberg.org/BernieO/calcardbackup)__&nbsp;&nbsp;:point_left:
+:point_right: Dieses Repository auf GitHub ist veraltet.  
+:point_right: Bitte Links aktualisieren, damit sie auf [die neue URL des Repositories](https://codeberg.org/BernieO/calcardbackup) verweisen.
 
 ---
 
